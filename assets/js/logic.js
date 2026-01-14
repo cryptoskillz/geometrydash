@@ -919,6 +919,13 @@ async function draw() {
             drawKey("←", rx - 45, ly);
             drawKey("→", rx + 45, ly);
             drawKey("↓", rx, ly + 45);
+
+            // Unlock (Bottom center)
+            const mx = canvas.width / 2;
+            const my = canvas.height - 80;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+            ctx.fillText("UNLOCK", mx, my - 45);
+            drawKey("K", mx, my);
         }
     }
 
