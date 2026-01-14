@@ -54,6 +54,7 @@ let bossCoord = "";
 let enemyTemplates = {};
 let bossIntroEndTime = 0;
 let gameLoopStarted = false;
+let keyUsedForRoom = false;
 
 async function updateUI() {
     hpEl.innerText = player.hp;
@@ -221,6 +222,9 @@ async function initGame(isRestart = false) {
 
         gameData = gData;
         roomManifest = mData;
+
+        // Ensure player maintains inventory structure if not present in player.json
+        if (pData.inventory === undefined) pData.inventory = { keys: 0 };
         Object.assign(player, pData);
 
         // 2. Pre-load ALL room templates
@@ -387,17 +391,18 @@ function changeRoom(dx, dy) {
         levelMap[currentCoord].cleared = (enemies.length === 0);
     }
 
-    // Check if door was locked and consume a key
+    // Check if door was locked or recently unlocked by a key
     let doorUsed = null;
     if (dx === 1) doorUsed = "right";
     if (dx === -1) doorUsed = "left";
     if (dy === 1) doorUsed = "bottom";
     if (dy === -1) doorUsed = "top";
 
-    if (doorUsed && roomData.doors && roomData.doors[doorUsed].locked && player.inventory.keys > 0) {
-        player.inventory.keys--;
-        keysEl.innerText = player.inventory.keys;
-        roomData.doors[doorUsed].locked = 0; // Unlock permanently in this level instance
+    let keyWasUsedForThisRoom = false;
+    if (doorUsed && roomData.doors && roomData.doors[doorUsed]) {
+        if (roomData.doors[doorUsed].unlockedByKey) {
+            keyWasUsedForThisRoom = true;
+        }
     }
 
     player.roomX += dx;
@@ -421,6 +426,15 @@ function changeRoom(dx, dy) {
 
         spawnPlayer(dx, dy, roomData);
         roomStartTime = Date.now();
+        keyUsedForRoom = keyWasUsedForThisRoom; // Apply key usage penalty to next room
+
+        // If you enter a room through a door, it must be open (unlocked)
+        if (roomData.doors) {
+            const entryDoor = dx === 1 ? "left" : (dx === -1 ? "right" : (dy === 1 ? "top" : "bottom"));
+            if (roomData.doors[entryDoor]) {
+                roomData.doors[entryDoor].locked = 0;
+            }
+        }
 
         if (roomData.isBoss) {
             bossIntroEndTime = Date.now() + 2000;
@@ -463,11 +477,21 @@ function update() {
     }
 
     if (keys['KeyW']) {
-        //console.log(player)
         const door = doors.top || { active: 0, locked: 0 };
         const doorX = door.x !== undefined ? door.x : canvas.width / 2;
         const inDoorRange = player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
-        const canPass = door.active && (!door.locked || player.inventory.keys > 0) && !roomLocked;
+        const canPass = door.active && !door.locked && !roomLocked;
+
+        // Unlocking on touch with K key
+        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.y <= BOUNDARY + 5 && inDoorRange && keys['KeyK']) {
+            player.inventory.keys--;
+            keysEl.innerText = player.inventory.keys;
+            door.locked = 0;
+            door.unlockedByKey = true;
+            console.log("Top door unlocked via K key");
+            keys['KeyK'] = false;
+        }
+
         if (player.y > BOUNDARY || (inDoorRange && canPass)) {
             player.y -= player.speed;
         }
@@ -476,7 +500,18 @@ function update() {
         const door = doors.bottom || { active: 0, locked: 0 };
         const doorX = door.x !== undefined ? door.x : canvas.width / 2;
         const inDoorRange = player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
-        const canPass = door.active && (!door.locked || player.inventory.keys > 0) && !roomLocked;
+        const canPass = door.active && !door.locked && !roomLocked;
+
+        // Unlocking on touch with K key
+        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.y >= canvas.height - BOUNDARY - 5 && inDoorRange && keys['KeyK']) {
+            player.inventory.keys--;
+            keysEl.innerText = player.inventory.keys;
+            door.locked = 0;
+            door.unlockedByKey = true;
+            console.log("Bottom door unlocked via K key");
+            keys['KeyK'] = false;
+        }
+
         if (player.y < canvas.height - BOUNDARY || (inDoorRange && canPass)) {
             player.y += player.speed;
         }
@@ -485,7 +520,18 @@ function update() {
         const door = doors.left || { active: 0, locked: 0 };
         const doorY = door.y !== undefined ? door.y : canvas.height / 2;
         const inDoorRange = player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
-        const canPass = door.active && (!door.locked || player.inventory.keys > 0) && !roomLocked;
+        const canPass = door.active && !door.locked && !roomLocked;
+
+        // Unlocking on touch with K key
+        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.x <= BOUNDARY + 5 && inDoorRange && keys['KeyK']) {
+            player.inventory.keys--;
+            keysEl.innerText = player.inventory.keys;
+            door.locked = 0;
+            door.unlockedByKey = true;
+            console.log("Left door unlocked via K key");
+            keys['KeyK'] = false;
+        }
+
         if (player.x > BOUNDARY || (inDoorRange && canPass)) {
             player.x -= player.speed;
         }
@@ -494,17 +540,28 @@ function update() {
         const door = doors.right || { active: 0, locked: 0 };
         const doorY = door.y !== undefined ? door.y : canvas.height / 2;
         const inDoorRange = player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
-        const canPass = door.active && (!door.locked || player.inventory.keys > 0) && !roomLocked;
+        const canPass = door.active && !door.locked && !roomLocked;
+
+        // Unlocking on touch with K key
+        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.x >= canvas.width - BOUNDARY - 5 && inDoorRange && keys['KeyK']) {
+            player.inventory.keys--;
+            keysEl.innerText = player.inventory.keys;
+            door.locked = 0;
+            door.unlockedByKey = true;
+            console.log("Right door unlocked via K key");
+            keys['KeyK'] = false;
+        }
+
         if (player.x < canvas.width - BOUNDARY || (inDoorRange && canPass)) {
             player.x += player.speed;
         }
     }
 
     // Cheat Keys
-    if (keys['KeyK']) {
+    if (keys['KeyL']) { // Moved from K to L to avoid conflict with unlocking
         player.inventory.keys++;
         keysEl.innerText = player.inventory.keys;
-        keys['KeyK'] = false; // Prevents spam
+        keys['KeyL'] = false; // Prevents spam
     }
 
     if (keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']) {
@@ -569,30 +626,35 @@ function update() {
                             const isSpeedy = (roomData.speedGoal > 0) && (elapsed <= roomData.speedGoal);
 
                             let msg = "";
-                            if (isPerfect) {
-                                perfectStreak++;
+                            if (!keyUsedForRoom) {
+                                if (isPerfect) {
+                                    perfectStreak++;
 
-                                if (perfectStreak >= (gameData.perfectGoal || 3)) {
-                                    player.perfectCount++;
-                                    player.perfectTotalCount++;
-                                    player.perfectCount = 0;
-                                    msg = "PERFECT BONUS!"; // Bonus takes priority over combo text
-                                } else {
-                                    player.perfectCount++;
-                                    player.perfectTotalCount++;
+                                    if (perfectStreak >= (gameData.perfectGoal || 3)) {
+                                        player.perfectCount++;
+                                        player.perfectTotalCount++;
+                                        player.perfectCount = 0;
+                                        msg = "PERFECT BONUS!"; // Bonus takes priority over combo text
+                                    } else {
+                                        player.perfectCount++;
+                                        player.perfectTotalCount++;
+                                        player.speedCount++;
+                                        player.speedTotalCount++;
+                                        msg = isSpeedy ? "SPEEDY PERFECT!" : "PERFECT!";
+                                    }
+                                } else if (isSpeedy) {
+                                    msg = "SPEEDY!";
+                                    perfectStreak = 0;
                                     player.speedCount++;
                                     player.speedTotalCount++;
-                                    msg = isSpeedy ? "SPEEDY PERFECT!" : "PERFECT!";
+                                } else {
+                                    msg = "ROOM BONUS!"; // Default clear bonus if no key used
+                                    perfectStreak = 0;
+                                    player.speedCount = 0;
+                                    player.perfectCount = 0;
                                 }
-                            } else if (isSpeedy) {
-                                msg = "SPEEDY!";
-                                perfectStreak = 0;
-                                player.speedCount++;
-                                player.speedTotalCount++;
                             } else {
-                                perfectStreak = 0; // Reset streak if neither
-                                player.speedCount = 0;
-                                player.perfectCount = 0;
+                                console.log("Key used to enter room, no bonus awarded.");
                             }
 
                             if (msg) {
@@ -689,9 +751,9 @@ async function draw() {
     const roomLocked = enemies.length > 0;
     const doors = roomData.doors || {};
     const getDoorColor = (direction) => {
-        if (roomLocked) return "#c0392b"; // Red if locked
+        if (roomLocked) return "#c0392b"; // Red if enemy-locked
         const door = doors[direction] || { locked: 0 };
-        return door.locked ? "#c0392b" : "#222"; // Red for key-locked, Dark for open
+        return door.locked ? "#f1c40f" : "#222"; // Yellow for key-locked, Dark for open
     };
 
     if (doors.top && doors.top.active) {
