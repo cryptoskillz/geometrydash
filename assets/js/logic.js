@@ -427,7 +427,7 @@ function changeRoom(dx, dy) {
         canvas.height = roomData.height || 600;
 
         spawnPlayer(dx, dy, roomData);
-        roomStartTime = Date.now();
+        roomStartTime = Date.now() + (roomData.isBoss ? 2000 : 1000); // Start timer after freeze
         keyUsedForRoom = keyWasUsedForThisRoom; // Apply key usage penalty to next room
 
         // Immediate Room Bonus if key used
