@@ -51,6 +51,7 @@ let goldenPath = [];
 let roomTemplates = {};
 let levelMap = {}; // Pre-generated level structure
 let bossCoord = "";
+let enemyTemplates = {};
 let bossIntroEndTime = 0;
 let gameLoopStarted = false;
 
@@ -238,7 +239,18 @@ async function initGame(isRestart = false) {
         await Promise.all(templatePromises);
         console.log("All room templates loaded:", Object.keys(roomTemplates));
 
-        // 3. Generate Level
+        // 3. Pre-load ALL enemy templates
+        enemyTemplates = {};
+        const enemyManifest = await fetch('enemies/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ enemies: [] }));
+        const ePromises = enemyManifest.enemies.map(id =>
+            fetch(`enemies/${id}.json?t=` + Date.now())
+                .then(res => res.json())
+                .then(data => enemyTemplates[id] = data)
+        );
+        await Promise.all(ePromises);
+        console.log("All enemy templates loaded:", Object.keys(enemyTemplates));
+
+        // 4. Generate Level
         if (DEBUG_START_BOSS) {
             console.log("DEBUG MODE: Starting in Boss Room");
             bossCoord = "0,0";
@@ -301,27 +313,37 @@ window.addEventListener('keyup', e => keys[e.code] = false);
 
 function spawnEnemies() {
     enemies = [];
-    if (enemies.length > 0) return; // Don't double spawn if not cleared logic fails
 
-    // Use roomData.enemyCount if defined (strict override), otherwise random calculation
-    let count;
-    if (roomData.enemyCount !== undefined) {
-        count = roomData.enemyCount;
-    } else {
-        count = 3 + Math.floor(Math.random() * 3);
-        if (gameData.difficulty) count += gameData.difficulty;
-    }
-    const freezeUntil = Date.now() + 1000; // Freeze for 1s
-    player.invulnUntil = freezeUntil; // Player also safe for 1s
-    for (let i = 0; i < count; i++) {
-        enemies.push({
-            x: Math.random() * (canvas.width - 60) + 30,
-            y: Math.random() * (canvas.height - 60) + 30,
-            size: roomData.isBoss ? 40 : 25,
-            hp: roomData.isBoss ? 5 : 2,
-            speed: (1 + Math.random()) * (roomData.isBoss ? 0.5 : 1),
-            freezeUntil: freezeUntil
+    const freezeUntil = Date.now() + 1000;
+    player.invulnUntil = freezeUntil;
+
+    // Use roomData.enemies if defined (array of {type, count}), otherwise fallback
+    if (roomData.enemies && Array.isArray(roomData.enemies)) {
+        roomData.enemies.forEach(group => {
+            const template = enemyTemplates[group.type];
+            if (template) {
+                for (let i = 0; i < group.count; i++) {
+                    const inst = JSON.parse(JSON.stringify(template));
+                    inst.x = Math.random() * (canvas.width - 60) + 30;
+                    inst.y = Math.random() * (canvas.height - 60) + 30;
+                    inst.freezeUntil = freezeUntil;
+                    enemies.push(inst);
+                }
+            }
         });
+    } else {
+        // Fallback: Random Grunts
+        let count = 3 + Math.floor(Math.random() * 3);
+        if (gameData.difficulty) count += gameData.difficulty;
+        const template = enemyTemplates["grunt"] || { hp: 2, speed: 1, size: 25 };
+
+        for (let i = 0; i < count; i++) {
+            const inst = JSON.parse(JSON.stringify(template));
+            inst.x = Math.random() * (canvas.width - 60) + 30;
+            inst.y = Math.random() * (canvas.height - 60) + 30;
+            inst.freezeUntil = freezeUntil;
+            enemies.push(inst);
+        }
     }
 }
 

@@ -1,0 +1,8 @@
+{
+    "type": "grunt",
+    "hp": 2,
+    "speed": 1.2,
+    "size": 25,
+    "color": "rgba(231, 76, 60, 0.8)",
+    "description": "Standard dungeon dweller."
+}

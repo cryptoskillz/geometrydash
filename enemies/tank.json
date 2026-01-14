@@ -1,0 +1,8 @@
+{
+    "type": "tank",
+    "hp": 6,
+    "speed": 0.6,
+    "size": 35,
+    "color": "rgba(230, 126, 34, 0.8)",
+    "description": "Slow and heavily armored."
+}

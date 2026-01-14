@@ -2,8 +2,17 @@
     "name": "Boss Room 1",
     "bossName": "The Guardian",
     "speedGoal": 0,
-    "enemyCount": 10,
     "isBoss": true,
+    "enemies": [
+        {
+            "type": "boss",
+            "count": 1
+        },
+        {
+            "type": "grunt",
+            "count": 5
+        }
+    ],
     "doors": {
         "top": {
             "locked": 0,

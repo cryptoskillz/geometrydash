@@ -1,0 +1,8 @@
+{
+    "type": "speedy",
+    "hp": 1,
+    "speed": 2.2,
+    "size": 20,
+    "color": "rgba(155, 89, 182, 0.8)",
+    "description": "Fast but fragile."
+}

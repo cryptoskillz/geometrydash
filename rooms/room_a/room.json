@@ -14,5 +14,19 @@
         "right": {
             "locked": 0
         }
-    }
+    },
+    "enemies": [
+        {
+            "type": "grunt",
+            "count": 1
+        },
+        {
+            "type": "speedy",
+            "count": 1
+        },
+        {
+            "type": "tank",
+            "count": 1
+        }
+    ]
 }

@@ -1,0 +1,8 @@
+{
+    "enemies": [
+        "grunt",
+        "speedy",
+        "tank",
+        "boss"
+    ]
+}
