@@ -14,6 +14,7 @@ const mapCanvas = document.getElementById('minimapCanvas');
 const mctx = mapCanvas.getContext('2d');
 const debugSelect = document.getElementById('debug-select');
 const debugForm = document.getElementById('debug-form');
+const debugPanel = document.getElementById('debug-panel');
 
 // --- Game State ---
 let player = {
@@ -263,10 +264,12 @@ const DOOR_THICKNESS = 15;
 const DEBUG_START_BOSS = false; // TOGGLE THIS FOR DEBUGGING
 const DEBUG_PLAYER = true;
 const CHEATS_ENABLED = false;
+const DEBUG_WINDOW_ENABLED = true;
 
 // configurations
 // configurations
 async function initGame(isRestart = false) {
+    if (debugPanel) debugPanel.style.display = DEBUG_WINDOW_ENABLED ? 'flex' : 'none';
     gameState = isRestart ? STATES.PLAY : STATES.START;
     overlayEl.style.display = 'none';
     welcomeEl.style.display = isRestart ? 'none' : 'flex';

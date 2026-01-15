@@ -9,19 +9,16 @@ bugs
     when you enter a room you sometimes see bullets from previous room 
     boss name should not show if hes dead just the portal
     you should only get a room bonus once
+    if you increase the size the player hit box should also increase
+    restart should reset the player stats including debug (maybe not)
 
-
-next up 
-    quit game option
-    enemies become twice as hard if you kill the boss and back track
-    
-mini map
-    item should show the whole mini mao
-    item suould shou secret rooms
-    itek will show boss
-    wds
-
-
+bullets
+    ricochet
+    explode
+    pierce     
+    topandbotton
+    leftandright
+    all
 
 bombs
 bombs are dropped with space bar 
@@ -35,6 +32,35 @@ bombs are in the invetroy and can be picked up, when you press the space bar the
         canBePlaced
         canBeDropped
         canBeThrown
+
+key binding
+    i = inventory
+    m = shows full map
+    s = stats
+    p = perfect
+    q = quit game
+    r = reset game
+    
+
+next up 
+    add a quit game option
+    enemies become twice as hard if you kill the boss and back track
+    
+mini map
+    item should show the whole mini map
+    item suould shou secret rooms
+    itek will show boss
+    wds
+
+debug window 
+    CHEATS_ENABLED
+    enemies
+    bombs
+    items
+
+
+
+
 rooms
     Boss room
     secrets roons
@@ -42,6 +68,23 @@ rooms
     special room
         special rooms are things like shops etc they can have a max per level attr
         special room that gets smaller the longer you are in it (squeeze room)
+    guantlet room
+        enemies with spawn
+    scroll rooms 
+        extra large rooms that you scroll through
+    large rooms 
+        rooms where you grow in size every tick until you are so big you cannot move
+    small rooms
+        rooms where you get smaller and if you dont kill all the enemies before you go to nothing you die
+    squeeze rooms
+        rooms that get smaller the longer you are in them
+    rotate roons
+        roons that rotate as you in them
+    backwards
+        rooms that revers the controls
+
+items
+
 
 modifiers
     luck
