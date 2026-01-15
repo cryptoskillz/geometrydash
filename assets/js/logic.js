@@ -261,7 +261,7 @@ const BOUNDARY = 20;
 const DOOR_SIZE = 50;
 const DOOR_THICKNESS = 15;
 // Load configurations (Async)
-const DEBUG_START_BOSS = true; // TOGGLE THIS FOR DEBUGGING
+const DEBUG_START_BOSS = false; // TOGGLE THIS FOR DEBUGGING
 const DEBUG_PLAYER = true;
 const CHEATS_ENABLED = false;
 const DEBUG_WINDOW_ENABLED = true;
@@ -539,8 +539,7 @@ function changeRoom(dx, dy) {
                 roomData.doors[entryDoor].locked = 0;
             }
         }
-
-        if (roomData.isBoss) {
+        if (roomData.isBoss && !nextEntry.cleared) {
             bossIntroEndTime = Date.now() + 2000;
         }
 
@@ -1000,7 +999,7 @@ async function draw() {
     });
 
     // Boss Intro Sequence
-    if (roomData.isBoss) {
+    if (roomData.isBoss && !roomData.cleared) {
         if (Date.now() < bossIntroEndTime) {
             // Draw Boss Name during intro
             ctx.fillStyle = "#e74c3c"; // Red text for visibility
