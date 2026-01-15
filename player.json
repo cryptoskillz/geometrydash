@@ -10,12 +10,24 @@
     "invuln": false,
     "invulnUntil": 0,
     "invulnColor": "white",
+    "bulletSpeed": 14,
+    "bulletSize": 5,
+    "bulletDamage": 1,
+    "bulletRange": 70,
+    "bulletCurve": 0,
+    "bulletSpread": 0,
+    "bulletSpreadRate": 0,
+    "bulletNumber": 1,
+    "bulletHomming": false,
+    "bulletFireRate": 0.5,
     "lastShot": 0,
     "speedCount": 0,
     "speedTotalCount": 0,
     "perfectCount": 0,
     "perfectTotalCount": 0,
     "inventory": {
-        "keys": 5
+        "keys": 5,
+        "NormalBomb": 5,
+        "GoldenBomb": 5
     }
 }

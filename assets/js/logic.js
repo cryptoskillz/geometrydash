@@ -582,15 +582,62 @@ function update() {
     }
 
     if (keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']) {
-        if (Date.now() - (player.lastShot || 0) > 300) {
+        const fireDelay = (player.bulletFireRate !== undefined ? player.bulletFireRate : 0.3) * 1000;
+        if (Date.now() - (player.lastShot || 0) > fireDelay) {
             bulletsInRoom++;
-            let vx = 0, vy = 0;
-            if (keys['ArrowUp']) vy = -7;
-            else if (keys['ArrowDown']) vy = 7;
-            else if (keys['ArrowLeft']) vx = -7;
-            else if (keys['ArrowRight']) vx = 7;
+            let baseAngle = 0;
+            if (keys['ArrowUp']) baseAngle = -Math.PI / 2;
+            else if (keys['ArrowDown']) baseAngle = Math.PI / 2;
+            else if (keys['ArrowLeft']) baseAngle = Math.PI;
+            else if (keys['ArrowRight']) baseAngle = 0;
 
-            bullets.push({ x: player.x, y: player.y, vx, vy, life: 60 });
+            if (player.bulletHomming) {
+                if (enemies.length === 0) return;
+                let nearest = null;
+                let minDist = Infinity;
+                enemies.forEach(en => {
+                    let d = Math.hypot(player.x - en.x, player.y - en.y);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearest = en;
+                    }
+                });
+                if (nearest) {
+                    baseAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+                }
+            }
+
+            const bulletCount = player.bulletNumber || 1;
+            const spreadRate = player.bulletSpreadRate || 0.2; // Radians between streams
+
+            for (let i = 0; i < bulletCount; i++) {
+                let angle = baseAngle;
+
+                if (bulletCount > 1) {
+                    // Center the arc
+                    angle += (i - (bulletCount - 1) / 2) * spreadRate;
+                }
+
+                if (player.bulletSpread) {
+                    angle += (Math.random() - 0.5) * player.bulletSpread;
+                }
+
+                const speed = player.bulletSpeed || 7;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+
+                bullets.push({
+                    x: player.x,
+                    y: player.y,
+                    vx,
+                    vy,
+                    life: player.bulletRange || 60,
+                    damage: player.bulletDamage || 1,
+                    size: player.bulletSize || 5,
+                    curve: player.bulletCurve || 0,
+                    homing: player.bulletHomming
+                });
+            }
             player.lastShot = Date.now();
         }
     }
@@ -606,6 +653,37 @@ function update() {
 
     // Bullet Logic
     bullets.forEach((b, i) => {
+        if (b.homing && enemies.length > 0) {
+            let nearest = null;
+            let minDist = Infinity;
+            enemies.forEach(en => {
+                let d = Math.hypot(b.x - en.x, b.y - en.y);
+                if (d < minDist) {
+                    minDist = d;
+                    nearest = en;
+                }
+            });
+            if (nearest) {
+                let desiredAngle = Math.atan2(nearest.y - b.y, nearest.x - b.x);
+                let currentAngle = Math.atan2(b.vy, b.vx);
+                let speed = Math.hypot(b.vx, b.vy);
+                let diff = desiredAngle - currentAngle;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                let steerAmount = 0.1;
+                if (Math.abs(diff) < steerAmount) currentAngle = desiredAngle;
+                else currentAngle += Math.sign(diff) * steerAmount;
+                b.vx = Math.cos(currentAngle) * speed;
+                b.vy = Math.sin(currentAngle) * speed;
+            }
+        }
+        if (b.curve) {
+            let speed = Math.hypot(b.vx, b.vy);
+            let angle = Math.atan2(b.vy, b.vx);
+            angle += b.curve; // curve as angle delta per frame
+            b.vx = Math.cos(angle) * speed;
+            b.vy = Math.sin(angle) * speed;
+        }
         b.x += b.vx;
         b.y += b.vy;
         b.life--;
@@ -629,7 +707,7 @@ function update() {
             if (dist < en.size) {
                 const isFrozen = Date.now() < en.freezeUntil;
                 if (!isFrozen) {
-                    en.hp--;
+                    en.hp -= (b.damage || 1);
                     hitsInRoom++;
                     bullets.splice(bi, 1);
                     if (en.hp <= 0) {
@@ -803,11 +881,32 @@ async function draw() {
     ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
     ctx.fill();
 
+    // Reload Bar (when fire rate is > 1s)
+    const fireRate = player.bulletFireRate !== undefined ? player.bulletFireRate : 0.3;
+    if (fireRate > 1) {
+        const fireDelay = fireRate * 1000;
+        const elapsed = Date.now() - (player.lastShot || 0);
+        if (elapsed < fireDelay) {
+            const barWidth = 40;
+            const barHeight = 4;
+            const bx = player.x - barWidth / 2;
+            const by = player.y - player.size - 10;
+
+            // Background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(bx, by, barWidth, barHeight);
+
+            // Progress (Cooldown)
+            ctx.fillStyle = '#3498db'; // Nice blue for reload
+            ctx.fillRect(bx, by, barWidth * (elapsed / fireDelay), barHeight);
+        }
+    }
+
     // Draw Bullets
     ctx.fillStyle = 'yellow';
     bullets.forEach(b => {
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, b.size || 5, 0, Math.PI * 2);
         ctx.fill();
     });
 
