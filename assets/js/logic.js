@@ -4,7 +4,6 @@ const ctx = canvas.getContext('2d');
 const hpEl = document.getElementById('hp');
 const keysEl = document.getElementById('keys');
 const roomEl = document.getElementById('room');
-const playerEl = document.getElementById('player');
 const overlayEl = document.getElementById('overlay');
 const welcomeEl = document.getElementById('welcome');
 const uiEl = document.getElementById('ui');
@@ -13,6 +12,8 @@ const perfectEl = document.getElementById('perfect');
 const roomNameEl = document.getElementById('roomName');
 const mapCanvas = document.getElementById('minimapCanvas');
 const mctx = mapCanvas.getContext('2d');
+const debugSelect = document.getElementById('debug-select');
+const debugForm = document.getElementById('debug-form');
 
 // --- Game State ---
 let player = {
@@ -61,11 +62,85 @@ async function updateUI() {
     keysEl.innerText = player.inventory.keys;
     roomEl.innerText = `${player.roomX},${player.roomY}`;
     roomNameEl.innerText = roomData.name || "Unknown Room";
-    // console.log(player);
-    if (DEBUG_PLAYER) {
-        const playerDup = structuredClone(player);
-        playerEl.innerText = `Player: ${JSON.stringify(playerDup, null, 2)}`;
+    updateDebugEditor();
+}
+
+function updateDebugEditor() {
+    if (!debugForm || !debugSelect) return;
+
+    // Only rebuild if it's the first time or we changed source/room
+    // For now, let's keep it simple and rebuild only when source changes or on manual calls
+    // To prevent rebuilding every frame, we check if we actually need a full refresh.
+    // However, for this demo, let's just make a dedicated "refresh" trigger.
+}
+
+function renderDebugForm() {
+    if (!debugForm || !debugSelect) return;
+    debugForm.innerHTML = '';
+    const type = debugSelect.value;
+    const target = type === 'player' ? player : roomData;
+
+    function createFields(parent, obj, path) {
+        for (const key in obj) {
+            // Ignore internal props or noisy ones
+            if (key === 'lastShot' || key === 'invulnUntil') continue;
+
+            const value = obj[key];
+            const currentPath = path ? `${path}.${key}` : key;
+
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                const group = document.createElement('div');
+                group.className = 'debug-nested';
+                const header = document.createElement('div');
+                header.style.color = '#5dade2';
+                header.style.fontSize = '12px';
+                header.style.marginBottom = '5px';
+                header.innerText = key;
+                group.appendChild(header);
+                createFields(group, value, currentPath);
+                parent.appendChild(group);
+            } else {
+                const field = document.createElement('div');
+                field.className = 'debug-field';
+
+                const label = document.createElement('label');
+                label.innerText = key;
+                field.appendChild(label);
+
+                const input = document.createElement('input');
+                if (typeof value === 'boolean') {
+                    input.type = 'checkbox';
+                    input.checked = value;
+                } else if (typeof value === 'number') {
+                    input.type = 'number';
+                    input.value = value;
+                    input.step = 'any';
+                } else {
+                    input.type = 'text';
+                    input.value = value;
+                }
+
+                input.addEventListener('input', (e) => {
+                    let newVal = input.type === 'checkbox' ? input.checked : input.value;
+                    if (input.type === 'number') newVal = parseFloat(newVal);
+
+                    // Update state
+                    let o = type === 'player' ? player : roomData;
+                    const parts = currentPath.split('.');
+                    for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]];
+                    o[parts[parts.length - 1]] = newVal;
+
+                    // Sync UI if needed
+                    if (key === 'hp' || key === 'luck') updateUI();
+                });
+
+                field.appendChild(input);
+                parent.appendChild(field);
+            }
+        }
     }
+
+    createFields(debugForm, target, '');
 }
 
 // --- Level Generation Logic ---
@@ -297,6 +372,7 @@ initGame();
 
 // --- Input Handling ---
 window.addEventListener('keydown', e => {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
     if (gameState === STATES.START) {
         gameState = STATES.PLAY;
         welcomeEl.style.display = 'none';
@@ -315,7 +391,15 @@ window.addEventListener('keydown', e => {
         restartGame();
     }
 });
-window.addEventListener('keyup', e => keys[e.code] = false);
+window.addEventListener('keyup', e => {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    keys[e.code] = false;
+});
+
+// Debug Listeners
+if (debugSelect) debugSelect.addEventListener('change', renderDebugForm);
+// Force initial render of the form
+setTimeout(renderDebugForm, 100);
 
 function spawnEnemies() {
     enemies = [];
@@ -462,6 +546,8 @@ function changeRoom(dx, dy) {
         } else {
             enemies = [];
         }
+        updateUI();
+        renderDebugForm(); // Refresh form for new room
     } else {
         console.error("Critical: Room not found in levelMap at", nextCoord);
         // Fallback: stay in current room but reset coords
