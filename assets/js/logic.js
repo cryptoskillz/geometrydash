@@ -780,11 +780,12 @@ function update() {
         bullets.forEach((b, bi) => {
             let dist = Math.hypot(b.x - en.x, b.y - en.y);
             if (dist < en.size) {
+                bullets.splice(bi, 1); // Always destroy bullet on impact
                 const isFrozen = Date.now() < en.freezeUntil;
                 if (!isFrozen) {
                     en.hp -= (b.damage || 1);
                     hitsInRoom++;
-                    bullets.splice(bi, 1);
+
                     if (en.hp <= 0) {
                         enemies.splice(ei, 1);
                         if (enemies.length === 0) {
