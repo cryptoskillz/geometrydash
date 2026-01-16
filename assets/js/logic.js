@@ -94,8 +94,12 @@ function renderDebugForm() {
                 group.className = 'debug-nested';
                 const header = document.createElement('div');
                 header.style.color = '#5dade2';
-                header.style.fontSize = '12px';
-                header.style.marginBottom = '5px';
+                header.style.fontSize = '13px';
+                header.style.fontWeight = 'bold';
+                header.style.marginBottom = '8px';
+                header.style.marginLeft = '-10px';
+                header.style.paddingBottom = '4px';
+                header.style.borderBottom = '1px solid rgba(93, 173, 226, 0.3)';
                 header.innerText = key;
                 group.appendChild(header);
                 createFields(group, value, currentPath);
@@ -666,7 +670,7 @@ function update() {
     }
 
     if (keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']) {
-        const fireDelay = (player.bulletFireRate !== undefined ? player.bulletFireRate : 0.3) * 1000;
+        const fireDelay = (player.Bullet?.fireRate !== undefined ? player.Bullet.fireRate : 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
             bulletsInRoom++;
             let baseAngle = 0;
@@ -675,7 +679,7 @@ function update() {
             else if (keys['ArrowLeft']) baseAngle = Math.PI;
             else if (keys['ArrowRight']) baseAngle = 0;
 
-            if (player.bulletHomming) {
+            if (player.Bullet?.homming) {
                 if (enemies.length === 0) return;
                 let nearest = null;
                 let minDist = Infinity;
@@ -691,8 +695,8 @@ function update() {
                 }
             }
 
-            const bulletCount = player.bulletNumber || 1;
-            const spreadRate = player.bulletSpreadRate || 0.2; // Radians between streams
+            const bulletCount = player.Bullet?.number || 1;
+            const spreadRate = player.Bullet?.spreadRate || 0.2; // Radians between streams
 
             for (let i = 0; i < bulletCount; i++) {
                 let angle = baseAngle;
@@ -702,11 +706,11 @@ function update() {
                     angle += (i - (bulletCount - 1) / 2) * spreadRate;
                 }
 
-                if (player.bulletSpread) {
-                    angle += (Math.random() - 0.5) * player.bulletSpread;
+                if (player.Bullet?.spread) {
+                    angle += (Math.random() - 0.5) * player.Bullet.spread;
                 }
 
-                const speed = player.bulletSpeed || 7;
+                const speed = player.Bullet?.speed || 7;
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
 
@@ -715,11 +719,11 @@ function update() {
                     y: player.y,
                     vx,
                     vy,
-                    life: player.bulletRange || 60,
-                    damage: player.bulletDamage || 1,
-                    size: player.bulletSize || 5,
-                    curve: player.bulletCurve || 0,
-                    homing: player.bulletHomming
+                    life: player.Bullet?.range || 60,
+                    damage: player.Bullet?.damage || 1,
+                    size: player.Bullet?.size || 5,
+                    curve: player.Bullet?.curve || 0,
+                    homing: player.Bullet?.homming
                 });
             }
             player.lastShot = Date.now();
@@ -771,7 +775,7 @@ function update() {
         b.x += b.vx;
         b.y += b.vy;
 
-        if (player.bulletWallBounce) {
+        if (player.Bullet?.wallBounce) {
             if (b.x < 0) { b.x = 0; b.vx = -b.vx; }
             if (b.x > canvas.width) { b.x = canvas.width; b.vx = -b.vx; }
             if (b.y < 0) { b.y = 0; b.vy = -b.vy; }
@@ -797,19 +801,19 @@ function update() {
             let dist = Math.hypot(b.x - en.x, b.y - en.y);
             if (dist < en.size) {
                 // Explosion Logic
-                if (player.bulletExplode && !b.isShard) {
-                    const shardCount = player.bulletExplodeNumberOfShards || 8;
+                if (player.Bullet?.Explode?.active && !b.isShard) {
+                    const shardCount = player.Bullet.Explode.shards || 8;
                     const step = (Math.PI * 2) / shardCount;
                     for (let i = 0; i < shardCount; i++) {
                         const angle = step * i;
                         bullets.push({
                             x: b.x,
                             y: b.y,
-                            vx: Math.cos(angle) * (player.bulletSpeed || 7),
-                            vy: Math.sin(angle) * (player.bulletSpeed || 7),
-                            life: 30,
-                            damage: player.bulletExplodeDamage || 0.1,
-                            size: player.bulletExplodeSize || 2,
+                            vx: Math.cos(angle) * (player.Bullet?.speed || 7),
+                            vy: Math.sin(angle) * (player.Bullet?.speed || 7),
+                            life: player.Bullet.Explode.shardRange || 30,
+                            damage: player.Bullet.Explode.damage || 0.1,
+                            size: player.Bullet.Explode.size || 2,
                             isShard: true
                         });
                     }
@@ -993,7 +997,7 @@ async function draw() {
     ctx.fill();
 
     // Reload Bar (when fire rate is > 1s)
-    const fireRate = player.bulletFireRate !== undefined ? player.bulletFireRate : 0.3;
+    const fireRate = player.Bullet?.fireRate !== undefined ? player.Bullet.fireRate : 0.3;
     if (fireRate > 1) {
         const fireDelay = fireRate * 1000;
         const elapsed = Date.now() - (player.lastShot || 0);
