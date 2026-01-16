@@ -796,6 +796,25 @@ function update() {
         bullets.forEach((b, bi) => {
             let dist = Math.hypot(b.x - en.x, b.y - en.y);
             if (dist < en.size) {
+                // Explosion Logic
+                if (player.bulletExplode && !b.isShard) {
+                    const shardCount = player.bulletExplodeNumberOfShards || 8;
+                    const step = (Math.PI * 2) / shardCount;
+                    for (let i = 0; i < shardCount; i++) {
+                        const angle = step * i;
+                        bullets.push({
+                            x: b.x,
+                            y: b.y,
+                            vx: Math.cos(angle) * (player.bulletSpeed || 7),
+                            vy: Math.sin(angle) * (player.bulletSpeed || 7),
+                            life: 30,
+                            damage: player.bulletExplodeDamage || 0.1,
+                            size: player.bulletExplodeSize || 2,
+                            isShard: true
+                        });
+                    }
+                }
+
                 bullets.splice(bi, 1); // Always destroy bullet on impact
                 const isFrozen = Date.now() < en.freezeUntil;
                 if (!isFrozen) {
