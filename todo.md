@@ -5,14 +5,8 @@ start room
     each time you finish the game you will unlock more stuff
 
 bugs
-    when you enter a room you sometimes see bullets from previous room 
-    you should only get a room bonus once
-    if you increase the size the player hit box should also increase
-    restart should reset the player stats including debug (maybe not)
-    there can only be one adjacent room with a door leading boss otherwise it will delete one of the doors
-    if you increase the size the enemie hit box should also increase
     bullets should not go through invlu enemies
-    ibvul perido not required ons tart room
+    ibvul perido not required ons start room
 
 bullets
     ricochet
@@ -35,6 +29,13 @@ bombs are in the invetroy and can be picked up, when you press the space bar the
         canBeDropped
         canBeThrown
 
+enemies
+    have enemies be able to use bullets
+    have swarm enemies that run away unless there are x of them
+    have run away enemies
+    last enemy tougher
+
+
 key binding
     i = inventory
     m = shows full map
@@ -51,7 +52,7 @@ next up
 mini map
     item should show the whole mini map
     item suould shou secret rooms
-    itek will show boss
+    item will show boss
     wds
 
 debug window 
