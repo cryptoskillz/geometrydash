@@ -23,6 +23,7 @@
         "fireRate": 0.5,
         "wallBounce": false,
         "pierce": false,
+        "topAndBottom": false,
         "Explode": {
             "active": false,
             "shards": 8,

@@ -714,18 +714,49 @@ function update() {
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
 
-                bullets.push({
-                    x: player.x,
-                    y: player.y,
-                    vx,
-                    vy,
-                    life: player.Bullet?.range || 60,
-                    damage: player.Bullet?.damage || 1,
-                    size: player.Bullet?.size || 5,
-                    curve: player.Bullet?.curve || 0,
-                    homing: player.Bullet?.homming,
-                    hitEnemies: [] // Track which enemies this bullet has hit (for pierce)
-                });
+                // topAndBottom mode: fire one bullet north and one south
+                if (player.Bullet?.topAndBottom) {
+                    // North bullet (up)
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        vx: 0,
+                        vy: -speed,
+                        life: player.Bullet?.range || 60,
+                        damage: player.Bullet?.damage || 1,
+                        size: player.Bullet?.size || 5,
+                        curve: player.Bullet?.curve || 0,
+                        homing: player.Bullet?.homming,
+                        hitEnemies: []
+                    });
+                    // South bullet (down)
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        vx: 0,
+                        vy: speed,
+                        life: player.Bullet?.range || 60,
+                        damage: player.Bullet?.damage || 1,
+                        size: player.Bullet?.size || 5,
+                        curve: player.Bullet?.curve || 0,
+                        homing: player.Bullet?.homming,
+                        hitEnemies: []
+                    });
+                } else {
+                    // Normal mode: fire in aimed direction
+                    bullets.push({
+                        x: player.x,
+                        y: player.y,
+                        vx,
+                        vy,
+                        life: player.Bullet?.range || 60,
+                        damage: player.Bullet?.damage || 1,
+                        size: player.Bullet?.size || 5,
+                        curve: player.Bullet?.curve || 0,
+                        homing: player.Bullet?.homming,
+                        hitEnemies: []
+                    });
+                }
             }
             player.lastShot = Date.now();
         }
