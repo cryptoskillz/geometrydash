@@ -9,6 +9,7 @@ bugs
     you should only get a room bonus once
     if you increase the size the player hit box should also increase
     restart should reset the player stats including debug (maybe not)
+    there can only be one adjacent room with a door leading boss otherwise it will delete one of the doors
     if you increase the size the enemie hit box should also increase
     bullets should not go through invlu enemies
     ibvul perido not required ons tart room
