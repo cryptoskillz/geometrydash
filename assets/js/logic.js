@@ -723,7 +723,8 @@ function update() {
                     damage: player.Bullet?.damage || 1,
                     size: player.Bullet?.size || 5,
                     curve: player.Bullet?.curve || 0,
-                    homing: player.Bullet?.homming
+                    homing: player.Bullet?.homming,
+                    hitEnemies: [] // Track which enemies this bullet has hit (for pierce)
                 });
             }
             player.lastShot = Date.now();
@@ -819,7 +820,10 @@ function update() {
                     }
                 }
 
-                bullets.splice(bi, 1); // Always destroy bullet on impact
+                // Only destroy bullet if not piercing
+                if (!player.Bullet?.pierce) {
+                    bullets.splice(bi, 1);
+                }
                 const isFrozen = Date.now() < en.freezeUntil;
                 if (!isFrozen) {
                     en.hp -= (b.damage || 1);
