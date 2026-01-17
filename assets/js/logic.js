@@ -569,6 +569,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
     */
 
     //check if the have bullets, they are in a mode where no bullets should be fired
+    console.log(player.Bullet?.NoBullets);
     if (player.Bullet?.NoBullets) {
         return;
     }
