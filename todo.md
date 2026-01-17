@@ -9,25 +9,19 @@ start room
     the second time you will have doors
     each time you finish the game you will unlock more stuff
 
+player 
+    iron man mode (ooe hit dead, all modifiers reset)
 
 
 bullets  
-    no bullets
     added ammo, if it is active it should count count
-    
+   if a bullet hits you it will cause no damage but disapear
+   there will be a mr glass item where your own bullets hurt you 
 
 bombs
-bombs are dropped with space bar 
-you can only have one bomb type at a time it upgrades from normal to golden 
 bombs can get be dropped, thrown and kicked with items you pick as well as default settings
 bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
-    bombs.josn
-        size
-        damage
-        timer
-        canBePlaced
-        canBeDropped
-        canBeThrown
+
 
 enemies
     have enemies be able to use bullets
@@ -51,6 +45,7 @@ mini map
     item suould shou secret rooms
     item will show boss
     wds
+    whole mini map should be shown always (is this true we have a button which will show the full map)
 
 debug window 
     CHEATS_ENABLED
