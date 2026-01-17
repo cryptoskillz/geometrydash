@@ -19,8 +19,8 @@ bullets
    there will be a mr glass item where your own bullets hurt you 
 
 bombs
-bombs can get be dropped, thrown and kicked with items you pick as well as default settings
-bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
+    bombs can get be dropped, thrown and kicked with items you pick as well as default settings
+    bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
 
 bombs check should relaod the bombs.json file if the bomb type is changed
 bombs are not drawing
