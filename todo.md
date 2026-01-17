@@ -14,6 +14,8 @@ start room
 bullets  
     no bullets
     frontLocked it only fires forward the way you are moving
+    added ammo, if it is active it should count count
+    
 
 bombs
 bombs are dropped with space bar 

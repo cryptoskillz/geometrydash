@@ -567,6 +567,11 @@ function fireBullet(direction, speed, vx, vy, angle) {
     4 = west
     360 = 360 degres
     */
+
+    //check if the have bullets, they are in a mode where no bullets should be fired
+    if (player.Bullet?.NoBullets) {
+        return;
+    }
     if (direction === 0) {
         bullets.push({
             x: player.x,
@@ -855,14 +860,11 @@ function update() {
                             // South bullet (down)
                             fireBullet(3, speed, vx, vy, angle);
                         }
-
                         if (keys['ArrowDown']) {
                             // North bullet (up)
                             fireBullet(1, speed, vx, vy, angle);
-
                         }
                         if (keys['ArrowLeft']) {
-
                             // East bullet (right)
                             fireBullet(2, speed, vx, vy, angle);
 

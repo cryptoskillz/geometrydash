@@ -11,6 +11,12 @@
     "invulnUntil": 0,
     "invulnColor": "white",
     "Bullet": {
+        "count": {
+            "active": false,
+            "timer": 0,
+            "max": 100,
+            "amount": 100
+        },
         "speed": 14,
         "size": 5,
         "damage": 1,
@@ -25,7 +31,7 @@
         "pierce": false,
         "backfire": false,
         "frontLocked": true,
-        "NoBullets": false,
+        "NoBullets": true,
         "multiDirectional": {
             "active": false,
             "fireNorth": false,
