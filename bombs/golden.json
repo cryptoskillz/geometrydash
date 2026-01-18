@@ -13,7 +13,7 @@
     "explodeOnImpactPerfectTotalCount": 0,
     "radius": 100,
     "range": 70,
-    "damage": 6,
+    "damage": 1,
     "explosionDuration": 1000,
     "explosionColour": "#FF0000",
     "canDamagePlayer": true,

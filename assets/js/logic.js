@@ -30,6 +30,8 @@ let keys = {};
 
 let bomb = { bombType: "" }
 let bombsInRoom = 0;
+let screenShake = { power: 0, endAt: 0 };
+
 
 let bulletsInRoom = 0;
 let hitsInRoom = 0;
@@ -1272,7 +1274,22 @@ function goContinue() {
 async function draw() {
     await updateUI();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // --- Screen shake transform ---
+    if (screenShake.power > 0) {
+        const now = Date.now();
+        if (now < screenShake.endAt) {
+            const p = (screenShake.endAt - now) / (screenShake.endAt - (screenShake.endAt - 180)); // rough decay
+            const strength = screenShake.power * Math.max(0, Math.min(1, p));
 
+            ctx.save();
+            ctx.translate(
+                (Math.random() - 0.5) * strength,
+                (Math.random() - 0.5) * strength
+            );
+        } else {
+            screenShake.power = 0;
+        }
+    }
 
 
     // Draw Doors
@@ -1367,26 +1384,47 @@ async function draw() {
                 // 🔥 key line: starts at baseR (bomb perimeter), grows to maxR
                 const r = b.baseR + (b.maxR - b.baseR) * p;
 
-                //Player damage (once per bomb)
-                if (
-                    b.canDamagePlayer &&
-                    !b.didPlayerDamage &&
-                    !player.invuln &&
-                    Date.now() >= b.explosionStartAt
-                ) {
-                    const distToPlayer = Math.hypot(player.x - b.x, player.y - b.y);
+                // --- Player damage + knockback + shake (once per bomb) ---
+                if (b.canDamagePlayer && !b.didPlayerDamage && !player.invuln) {
+                    const dist = Math.hypot(player.x - b.x, player.y - b.y);
 
-                    if (distToPlayer <= r + player.size) {
+                    if (dist <= r + player.size) {
                         b.didPlayerDamage = true;
 
+                        // Damage
                         player.hp -= b.damage;
                         hpEl.innerText = player.hp;
 
-                        // i-frames (reuse your existing logic)
+                        // i-frames (your existing style)
                         player.invuln = true;
                         setTimeout(() => player.invuln = false, 1000);
+
+                        // Knockback (push away from blast)
+                        const dx = player.x - b.x;
+                        const dy = player.y - b.y;
+                        const len = Math.hypot(dx, dy) || 1;
+
+                        const nx = dx / len;
+                        const ny = dy / len;
+
+                        // strength scales with how close you are (closer = stronger)
+                        const closeness = 1 - Math.min(1, dist / (b.maxR + player.size));
+                        const push = (b.push || 18) + closeness * 20; // tune numbers
+
+                        player.x += nx * push;
+                        player.y += ny * push;
+
+                        // clamp so player doesn't get pushed out of room
+                        player.x = Math.max(BOUNDARY + player.size, Math.min(canvas.width - BOUNDARY - player.size, player.x));
+                        player.y = Math.max(BOUNDARY + player.size, Math.min(canvas.height - BOUNDARY - player.size, player.y));
+
+                        // Screen shake
+                        const shakePower = (b.shake || 8) + closeness * 10;
+                        screenShake.power = Math.max(screenShake.power, shakePower);
+                        screenShake.endAt = Date.now() + (b.shakeDuration || 180);
                     }
                 }
+
 
                 // Chain reaction: trigger other bombs inside current explosion radius
                 for (let j = 0; j < bombs.length; j++) {
@@ -1618,7 +1656,10 @@ async function draw() {
             ctx.restore();
         }
 
-
+        // If we applied shake, restore the context
+        if (screenShake.power > 0 && Date.now() < screenShake.endAt) {
+            ctx.restore();
+        }
     }
     requestAnimationFrame(() => {
         update();
