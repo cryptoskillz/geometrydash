@@ -735,6 +735,10 @@ function update() {
         gamePause();
     }
 
+    if (keys['KeyR'] && DEBUG_WINDOW_ENABLED) {
+        restartGame();
+    }
+
     if (keys['KeyW']) {
         const door = doors.top || { active: 0, locked: 0 };
         const doorX = door.x !== undefined ? door.x : canvas.width / 2;
