@@ -1717,12 +1717,12 @@ async function draw() {
             drawKey("→", rx + 45, ly);
             drawKey("↓", rx, ly + 45);
 
-            // Unlock (Bottom center)
+            // draw space bar
             let mx = canvas.width / 6;
             let my = canvas.height - 80;
             ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-            ctx.fillText("UNLOCK", mx, my - 45);
-            drawKey("K", mx, my);
+            ctx.fillText("ITEM", mx, my - 45);
+            drawKey("⎵", mx, my);
             //restart
             mx = mx + 100
             ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
