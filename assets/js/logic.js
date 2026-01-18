@@ -582,25 +582,39 @@ function changeRoom(dx, dy) {
 }
 
 async function dropBomb() {
-    //get the bombtyoe from player.json
     const bombType = player.bombType || "normal";
-    //check if the bomb type has changed
+
     if (bomb.bombType !== bombType) {
-        const bombJson = await Promise.all([
-            fetch(`/bombs/${bombType}.json?t=` + Date.now()).then(res => res.json())
-        ])
-        bomb = bombJson[0];
-        console.log(bomb)
+        const bombJson = await fetch(`/bombs/${bombType}.json?t=${Date.now()}`).then(res => res.json());
+        bomb = bombJson;
     }
 
-    bombs.push({
-        x: player.x,
-        y: player.y,
-        r: bomb.size || 20,
-        colour: bomb.colour || "white",
-        expiresAt: Date.now() + (bomb.timer || 1000)
-    });
+    const r = bomb.size || 20;
 
+    // default facing if never moved yet
+    let dirX = player.lastMoveX ?? 0;
+    let dirY = player.lastMoveY ?? 1;
+
+    // if both are 0, default down
+    if (dirX === 0 && dirY === 0) dirY = 1;
+
+    const gap = 6;
+    const backDist = player.size + r + gap;
+
+    const b = {
+        x: player.x - dirX * backDist,
+        y: player.y - dirY * backDist,
+        r,
+        colour: bomb.colour || "white",
+        damage: bomb.damage || 1,
+        expiresAt: Date.now() + (bomb.timer || 1000)
+    };
+
+    // optional: clamp to room bounds so it doesn't spawn outside
+    b.x = Math.max(BOUNDARY + b.r, Math.min(canvas.width - BOUNDARY - b.r, b.x));
+    b.y = Math.max(BOUNDARY + b.r, Math.min(canvas.height - BOUNDARY - b.r, b.y));
+
+    bombs.push(b);
 }
 
 function fireBullet(direction, speed, vx, vy, angle) {
@@ -742,6 +756,8 @@ function update() {
     }
 
     if (keys['KeyW']) {
+        player.lastMoveX = 0;
+        player.lastMoveY = -1;
         const door = doors.top || { active: 0, locked: 0 };
         const doorX = door.x !== undefined ? door.x : canvas.width / 2;
         const inDoorRange = player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
@@ -762,6 +778,8 @@ function update() {
         }
     }
     if (keys['KeyS']) {
+        player.lastMoveX = 0;
+        player.lastMoveY = 1;
         const door = doors.bottom || { active: 0, locked: 0 };
         const doorX = door.x !== undefined ? door.x : canvas.width / 2;
         const inDoorRange = player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
@@ -782,6 +800,8 @@ function update() {
         }
     }
     if (keys['KeyA']) {
+        player.lastMoveX = -1;
+        player.lastMoveY = 0;
         const door = doors.left || { active: 0, locked: 0 };
         const doorY = door.y !== undefined ? door.y : canvas.height / 2;
         const inDoorRange = player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
@@ -802,6 +822,8 @@ function update() {
         }
     }
     if (keys['KeyD']) {
+        player.lastMoveX = 1;
+        player.lastMoveY = 0;
         const door = doors.right || { active: 0, locked: 0 };
         const doorY = door.y !== undefined ? door.y : canvas.height / 2;
         const inDoorRange = player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
@@ -1339,6 +1361,8 @@ async function draw() {
             bombs.splice(bombs.indexOf(b), 1);
             return;
         }
+
+
         ctx.save();
         ctx.fillStyle = b.colour;
         ctx.beginPath();

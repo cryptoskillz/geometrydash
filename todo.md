@@ -7,11 +7,9 @@ bombs
     bombs can get be dropped, thrown and kicked with items you pick as well as default settings
     bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
 
-    start a bomb timer when dropped 
-    use a bomb array to show multipile bombs
     make the bombs drop to the to the right of the player if they are not moving if they are moving make it drop behind them
     add collision to bombs
-    restart clear the bombs
+   
 
 start room
     if its first time it should just say game complete and unlock door and take you back to the menu
@@ -21,6 +19,8 @@ start room
 
 player 
     iron man mode (ooe hit dead, all modifiers reset)
+    if speed is over 2 x starting speed show a blur effect
+    if you stay in a room for too long show a ghost demon
 
 
 bullets  

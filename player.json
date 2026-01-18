@@ -56,6 +56,6 @@
     "bombType": "golden",
     "inventory": {
         "keys": 5,
-        "bombs": 5
+        "bombs": 115
     }
 }
