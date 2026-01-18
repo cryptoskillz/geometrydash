@@ -11,6 +11,12 @@
     "invulnUntil": 0,
     "invulnColor": "white",
     "Bullet": {
+        "count": {
+            "active": false,
+            "timer": 0,
+            "max": 100,
+            "amount": 100
+        },
         "speed": 14,
         "size": 5,
         "damage": 1,
@@ -21,9 +27,19 @@
         "number": 1,
         "homming": false,
         "fireRate": 0.5,
-        "wallBounce": false,
+        "wallBounce": true,
         "pierce": false,
-        "topAndBottom": false,
+        "backfire": false,
+        "frontLocked": false,
+        "NoBullets": false,
+        "multiDirectional": {
+            "active": false,
+            "fireNorth": false,
+            "fireEast": false,
+            "fireSouth": false,
+            "fireWest": false,
+            "fire360": false
+        },
         "Explode": {
             "active": false,
             "shards": 8,
@@ -37,9 +53,9 @@
     "speedTotalCount": 0,
     "perfectCount": 0,
     "perfectTotalCount": 0,
+    "bombType": "golden",
     "inventory": {
         "keys": 5,
-        "NormalBomb": 5,
-        "GoldenBomb": 5
+        "bombs": 5
     }
 }

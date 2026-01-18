@@ -29,7 +29,7 @@
     "enemies": [
         {
             "type": "grunt",
-            "count": 2
+            "count": 10
         },
         {
             "type": "speedy",

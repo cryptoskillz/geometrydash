@@ -10,6 +10,7 @@ const uiEl = document.getElementById('ui');
 const statsEl = document.getElementById('stats');
 const perfectEl = document.getElementById('perfect');
 const roomNameEl = document.getElementById('roomName');
+const bombsEl = document.getElementById('bombs');
 const mapCanvas = document.getElementById('minimapCanvas');
 const mctx = mapCanvas.getContext('2d');
 const debugSelect = document.getElementById('debug-select');
@@ -24,14 +25,18 @@ let player = {
 };
 let bullets = [];
 let enemies = [];
+let bombs = [];
 let keys = {};
+
+let bomb = { bombType: "" }
+let bombsInRoom = 0;
 
 let bulletsInRoom = 0;
 let hitsInRoom = 0;
 let perfectStreak = 0;
 let gameData = { perfectGoal: 3 };
 
-const STATES = { START: 0, PLAY: 1, GAMEOVER: 2, GAMEPAUSE: 3 };
+const STATES = { START: 0, PLAY: 1, GAMEOVER: 2, GAMEMENU: 3 };
 let gameState = STATES.START;
 
 let visitedRooms = {}; // Track state of each coordinate
@@ -61,7 +66,17 @@ let keyUsedForRoom = false;
 async function updateUI() {
     hpEl.innerText = player.hp;
     keysEl.innerText = player.inventory.keys;
-    roomEl.innerText = `${player.roomX},${player.roomY}`;
+    //check if bomb type is golden and if so set the count colour to gold 
+    if (player.bombType === "golden") {
+        bombsEl.style.color = "gold";
+    } else {
+        bombsEl.style.color = "white";
+    }
+    bombsEl.innerText = player.inventory.bombs;
+    //update cords only if debug mode is enabled otherwise hide this
+    if (DEBUG_WINDOW_ENABLED) {
+        roomEl.innerText = `Coords: ${player.roomX},${player.roomY}`;
+    }
     roomNameEl.innerText = roomData.name || "Unknown Room";
     updateDebugEditor();
 }
@@ -263,6 +278,14 @@ async function initGame(isRestart = false) {
     welcomeEl.style.display = isRestart ? 'none' : 'flex';
     if (uiEl) uiEl.style.display = isRestart ? 'block' : 'none';
     bullets = [];
+    bombs = [];
+
+    //check if debug mode is enabled and if so show the room cords
+    if (DEBUG_WINDOW_ENABLED) {
+        roomEl.style.display = 'block';
+    } else {
+        roomEl.style.display = 'none';
+    }
 
     // Reset player
     player.hp = 3;
@@ -558,7 +581,134 @@ function changeRoom(dx, dy) {
     }
 }
 
+async function dropBomb() {
+    //get the bombtyoe from player.json
+    const bombType = player.bombType || "normal";
+    //check if the bomb type has changed
+    if (bomb.bombType !== bombType) {
+        const bombJson = await Promise.all([
+            fetch(`/bombs/${bombType}.json?t=` + Date.now()).then(res => res.json())
+        ])
+        bomb = bombJson[0];
+        console.log(bomb)
+    }
+    bombs.push({
+        x: player.x,
+        y: player.y,
+        r: bomb.size || 20,
+        colour: bomb.colour || "white",
+    });
 
+}
+
+function fireBullet(direction, speed, vx, vy, angle) {
+    /*
+    0 = normal
+    1= north
+    2 = east
+    3 = south
+    4 = west
+    360 = 360 degres
+    */
+
+    //check if the have bullets, they are in a mode where no bullets should be fired
+    if (player.Bullet?.NoBullets) {
+        return;
+    }
+    if (direction === 0) {
+        bullets.push({
+            x: player.x,
+            y: player.y,
+            vx,
+            vy,
+            life: player.Bullet?.range || 60,
+            damage: player.Bullet?.damage || 1,
+            size: player.Bullet?.size || 5,
+            curve: player.Bullet?.curve || 0,
+            homing: player.Bullet?.homming,
+            hitEnemies: []
+        });
+    }
+
+    //360 degrees
+    if (direction === 360) {
+        for (let i = 0; i < 360; i++) {
+            bullets.push({
+                x: player.x,
+                y: player.y,
+                vx: Math.cos(i * Math.PI / 180) * speed,
+                vy: Math.sin(i * Math.PI / 180) * speed,
+                life: player.Bullet?.range || 60,
+                damage: player.Bullet?.damage || 1,
+                size: player.Bullet?.size || 5,
+                curve: player.Bullet?.curve || 0,
+                homing: player.Bullet?.homming,
+                hitEnemies: []
+            });
+        }
+    }
+
+    //up
+    if (direction === 1) {
+        bullets.push({
+            x: player.x,
+            y: player.y,
+            vx: 0,
+            vy: -speed,
+            life: player.Bullet?.range || 60,
+            damage: player.Bullet?.damage || 1,
+            size: player.Bullet?.size || 5,
+            curve: player.Bullet?.curve || 0,
+            homing: player.Bullet?.homming,
+            hitEnemies: []
+        });
+    }
+    //right
+    if (direction === 2) {
+        bullets.push({
+            x: player.x,
+            y: player.y,
+            vx: speed,
+            vy: 0,
+            life: player.Bullet?.range || 60,
+            damage: player.Bullet?.damage || 1,
+            size: player.Bullet?.size || 5,
+            curve: player.Bullet?.curve || 0,
+            homing: player.Bullet?.homming,
+            hitEnemies: []
+        });
+    }
+
+    //down
+    if (direction === 3) {
+        bullets.push({
+            x: player.x,
+            y: player.y,
+            vx: 0,
+            vy: speed,
+            life: player.Bullet?.range || 60,
+            damage: player.Bullet?.damage || 1,
+            size: player.Bullet?.size || 5,
+            curve: player.Bullet?.curve || 0,
+            homing: player.Bullet?.homming,
+            hitEnemies: []
+        });
+    }
+    if (direction === 4) {
+        bullets.push({
+            x: player.x,
+            y: player.y,
+            vx: -speed,
+            vy: 0,
+            life: player.Bullet?.range || 60,
+            damage: player.Bullet?.damage || 1,
+            size: player.Bullet?.size || 5,
+            curve: player.Bullet?.curve || 0,
+            homing: player.Bullet?.homming,
+            hitEnemies: []
+        });
+    }
+}
 
 function update() {
 
@@ -570,7 +720,7 @@ function update() {
 
     // Auto-clear current room in cache if empty
     if (!roomLocked) {
-        const currentCoord = `${player.roomX},${player.roomY}`;
+        const currentCoord = `${player.roomX}, ${player.roomY}`;
         if (visitedRooms[currentCoord] && !visitedRooms[currentCoord].cleared) {
             visitedRooms[currentCoord].cleared = true;
             if (roomData.isBoss) {
@@ -581,8 +731,12 @@ function update() {
         }
     }
 
-    if (keys['KeyP']) {
-        gamePause();
+    if (keys['KeyM']) {
+        gameMenu();
+    }
+
+    if (keys['KeyR'] && DEBUG_WINDOW_ENABLED) {
+        restartGame();
     }
 
     if (keys['KeyW']) {
@@ -666,6 +820,19 @@ function update() {
         }
     }
 
+
+    //check for space key
+    if (keys['KeyB']) {
+        if (player.inventory && player.inventory.bombs > 0) {
+            player.inventory.bombs--;
+            //bombsInRoom++;
+            console.log("Bombs used, bombs left: " + player.inventory.bombs);
+            keys['KeyB'] = false;
+            dropBomb();
+        }
+        updateUI();
+    }
+
     // Cheat Keys
     if (CHEATS_ENABLED && keys['KeyL']) {
         player.inventory.keys++;
@@ -719,48 +886,101 @@ function update() {
                 const vy = Math.sin(angle) * speed;
 
                 // topAndBottom mode: fire one bullet north and one south
-                if (player.Bullet?.topAndBottom) {
-                    // North bullet (up)
-                    bullets.push({
-                        x: player.x,
-                        y: player.y,
-                        vx: 0,
-                        vy: -speed,
-                        life: player.Bullet?.range || 60,
-                        damage: player.Bullet?.damage || 1,
-                        size: player.Bullet?.size || 5,
-                        curve: player.Bullet?.curve || 0,
-                        homing: player.Bullet?.homming,
-                        hitEnemies: []
-                    });
-                    // South bullet (down)
-                    bullets.push({
-                        x: player.x,
-                        y: player.y,
-                        vx: 0,
-                        vy: speed,
-                        life: player.Bullet?.range || 60,
-                        damage: player.Bullet?.damage || 1,
-                        size: player.Bullet?.size || 5,
-                        curve: player.Bullet?.curve || 0,
-                        homing: player.Bullet?.homming,
-                        hitEnemies: []
-                    });
-                } else {
-                    // Normal mode: fire in aimed direction
-                    bullets.push({
-                        x: player.x,
-                        y: player.y,
-                        vx,
-                        vy,
-                        life: player.Bullet?.range || 60,
-                        damage: player.Bullet?.damage || 1,
-                        size: player.Bullet?.size || 5,
-                        curve: player.Bullet?.curve || 0,
-                        homing: player.Bullet?.homming,
-                        hitEnemies: []
-                    });
+                if (player.Bullet?.multiDirectional.active) {
+                    if (player.Bullet?.multiDirectional.fire360) {
+                        // All Directional mode: fire in all directions
+                        fireBullet(360, speed, vx, vy, angle)
+                    }
+
+                    else {
+                        if (player.Bullet?.multiDirectional.fireNorth) {
+                            // North bullet (up)
+                            fireBullet(1, speed, vx, vy, angle);
+                        }
+                        if (player.Bullet?.multiDirectional.fireEast) {
+                            // East bullet (right)
+                            fireBullet(2, speed, vx, vy, angle);
+                        }
+                        if (player.Bullet?.multiDirectional.fireSouth) {
+                            // South bullet (down)
+                            fireBullet(3, speed, vx, vy, angle);
+                        }
+                        if (player.Bullet?.multiDirectional.fireWest) {
+                            // West bullet (left)
+                            fireBullet(4, speed, vx, vy, angle);
+                        }
+                    }
                 }
+                else {
+                    // Normal mode: fire in aimed direction
+                    fireBullet(0)
+                    //check if backFire is active and if it is then fire the opposite arrow key
+                    if (player.Bullet?.backfire) {
+                        if (keys['ArrowUp']) {
+                            // South bullet (down)
+                            fireBullet(3, speed, vx, vy, angle);
+                        }
+                        if (keys['ArrowDown']) {
+                            // North bullet (up)
+                            fireBullet(1, speed, vx, vy, angle);
+                        }
+                        if (keys['ArrowLeft']) {
+                            // East bullet (right)
+                            fireBullet(2, speed, vx, vy, angle);
+
+                        }
+                        if (keys['ArrowRight']) {
+                            // West bullet (left)
+                            fireBullet(4, speed, vx, vy, angle);
+                        }
+                    }
+                    else if (player.Bullet?.frontLocked) {
+                        //fire the bullet in the direction the player is moving, if the player is not moving then fire the bullet in the direction the player is looking
+                        //looking should only work if the player is not moving ie no wasd key is pressed
+                        if (!keys['KeyS'] && !keys['KeyW'] && !keys['KeyA'] && !keys['KeyD']) {
+                            if (keys['ArrowUp']) {
+                                // North bullet (up)
+                                fireBullet(1, speed, vx, vy, angle);
+                            }
+                            if (keys['ArrowDown']) {
+                                // South bullet (down)
+                                fireBullet(3, speed, vx, vy, angle);
+                            }
+                            if (keys['ArrowLeft']) {
+                                // West bullet (left)
+                                fireBullet(4, speed, vx, vy, angle);
+                            }
+                            if (keys['ArrowRight']) {
+                                // East bullet (right)
+                                fireBullet(2, speed, vx, vy, angle);
+                            }
+                        }
+                        else {
+                            //if the player is moving then fire the bullet in the direction the player is moving
+                            if (keys['KeyS']) {
+                                fireBullet(3, speed, vx, vy, angle);
+                            }
+                            if (keys['KeyW']) {
+                                fireBullet(1, speed, vx, vy, angle);
+                            }
+                            if (keys['KeyA']) {
+                                fireBullet(4, speed, vx, vy, angle);
+                            }
+                            if (keys['KeyD']) {
+                                fireBullet(2, speed, vx, vy, angle);
+                            }
+
+                        }
+                    }
+                    else {
+                        //fire in the direction the player is looking, default fire 
+                        fireBullet(0, speed, vx, vy, angle);
+                    }
+
+
+
+                }
+
             }
             player.lastShot = Date.now();
         }
@@ -883,7 +1103,7 @@ function update() {
                     if (en.hp <= 0) {
                         enemies.splice(ei, 1);
                         if (enemies.length === 0) {
-                            const currentCoord = `${player.roomX},${player.roomY}`;
+                            const currentCoord = `${player.roomX}, ${player.roomY}`;
                             if (visitedRooms[currentCoord]) visitedRooms[currentCoord].cleared = true;
 
                             const isPerfect = bulletsInRoom === hitsInRoom && bulletsInRoom > 0;
@@ -938,13 +1158,13 @@ function update() {
 
         // Portal Collision (Boss Room Victory)
         if (roomData.isBoss) {
-            const currentCoord = `${player.roomX},${player.roomY}`;
+            const currentCoord = `${player.roomX}, ${player.roomY}`;
             if (visitedRooms[currentCoord] && visitedRooms[currentCoord].cleared) {
                 const cx = canvas.width / 2;
                 const cy = canvas.height / 2;
                 const distToPortal = Math.hypot(player.x - cx, player.y - cy);
 
-                // console.log(`Portal Check - Dist: ${distToPortal.toFixed(2)} | Player: ${player.x.toFixed(0)},${player.y.toFixed(0)} | Center: ${cx},${cy}`);
+                // console.log(`Portal Check - Dist: ${ distToPortal.toFixed(2) } | Player: ${ player.x.toFixed(0) }, ${ player.y.toFixed(0) } | Center: ${ cx }, ${ cy }`);
 
                 if (distToPortal < 50) {
                     console.log("VICTORY TRIGGERED!");
@@ -989,7 +1209,7 @@ function gameOver() {
     overlayEl.style.display = 'flex';
     statsEl.innerText = "Rooms cleared: " + (Math.abs(player.roomX) + Math.abs(player.roomY));
     document.querySelector('#overlay h1').innerText = "Game Over";
-    overlayEl.querySelector('#cancelBtn').style.display = 'none';
+    overlayEl.querySelector('#continueBtn').style.display = 'none';
 }
 
 function gameWon() {
@@ -1000,8 +1220,8 @@ function gameWon() {
     document.querySelector('#overlay h1').style.color = "#f1c40f"; // Gold for victory
 }
 
-function gamePause() {
-    gameState = STATES.GAMEPAUSE;
+function gameMenu() {
+    gameState = STATES.gameMenu;
     overlay.style.display = 'flex';
     overlayTitle.innerText = "Pause";
     overlayEl.querySelector('#continueBtn').style.display = '';
@@ -1023,6 +1243,8 @@ function goContinue() {
 async function draw() {
     await updateUI();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
 
     // Draw Doors
     const roomLocked = enemies.length > 0;
@@ -1091,6 +1313,18 @@ async function draw() {
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.size || 5, 0, Math.PI * 2);
         ctx.fill();
+    });
+
+
+    // Draw Bomb (if active)
+
+    bombs.forEach(b => {
+        ctx.save();
+        ctx.fillStyle = b.colour;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     });
 
     // Boss Intro Sequence
@@ -1209,25 +1443,36 @@ async function draw() {
             ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
             ctx.fillText("UNLOCK", mx, my - 45);
             drawKey("K", mx, my);
-
+            //restart
             mx = mx + 100
             ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-            ctx.fillText("RESTART", mx, my - 45);
-            drawKey("P", mx, my);
+            ctx.fillText("MENU", mx, my - 45);
+            drawKey("M", mx, my);
+            //bomb
+            mx = mx + 100
+            ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+            ctx.fillText("BOMB", mx, my - 45);
+            drawKey("B", mx, my);
+            if (DEBUG_WINDOW_ENABLED) {
+                mx = mx + 100
+                ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+                ctx.fillText("RESTART", mx, my - 45);
+                drawKey("R", mx, my);
+            }
         }
     }
 
 
     // Draw Portal (only if cleared and NOT in intro)
     if (roomData.isBoss && (!bossIntroEndTime || Date.now() > bossIntroEndTime)) {
-        const currentCoord = `${player.roomX},${player.roomY}`;
+        const currentCoord = `${player.roomX}, ${player.roomY}`;
         if (visitedRooms[currentCoord] && visitedRooms[currentCoord].cleared) {
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
             const time = Date.now() / 200;
             const distToPortal = Math.hypot(player.x - cx, player.y - cy);
 
-            console.log(`Portal Check - Dist: ${distToPortal.toFixed(2)} | Player: ${player.x.toFixed(0)},${player.y.toFixed(0)} | Center: ${cx},${cy}`);
+            console.log(`Portal Check - Dist: ${distToPortal.toFixed(2)} | Player: ${player.x.toFixed(0)}, ${player.y.toFixed(0)} | Center: ${cx}, ${cy}`);
 
             if (distToPortal < 50) {
                 console.log("VICTORY TRIGGERED!");

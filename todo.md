@@ -1,41 +1,35 @@
+bugs
+    homing missles should start at the side of the key that was pressde
+    if you get hit perfect bonus will reset 
+    360 bullet mode the right bullet is a little slow
+
+bombs
+    bombs can get be dropped, thrown and kicked with items you pick as well as default settings
+    bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
+
+    start a bomb timer when dropped 
+    use a bomb array to show multipile bombs
+    make the bombs drop to the to the right of the player if they are not moving if they are moving make it drop behind them
+    add collision to bombs
+    restart clear the bombs
+
 start room
     if its first time it should just say game complete and unlock door and take you back to the menu
     implemebt new and save game (use sqllite to store the game data)
     the second time you will have doors
     each time you finish the game you will unlock more stuff
 
-bugs
-    homing missles should start at the side of the key that was pressde
-    if you get hit perfect bonus will reset 
+player 
+    iron man mode (ooe hit dead, all modifiers reset)
+
 
 bullets  
-    Multiirectional Bullets if any key is pressed it fires the others that are linked ie if top is pressed and left is active it fires left, if left is presses it fires left only,  If top and left is active when you press right top, left and right are fired
-        left x
-        top x
-        let x
-        bottom x
+    added ammo, if it is active it should count count
+   if a bullet hits you it will cause no damage but disapear
+   there will be a mr glass item where your own bullets hurt you 
 
-TopAndBottom
-    if top or bottom is pressed it fires top and bottom
-LeftAndRight
-    if left or right is pressed it fires left and right
-All
-    if any key is pressed it fires all
 
-frontLocked it only fires forward the way you are moving
 
-bombs
-bombs are dropped with space bar 
-you can only have one bomb type at a time it upgrades from normal to golden 
-bombs can get be dropped, thrown and kicked with items you pick as well as default settings
-bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
-    bombs.josn
-        size
-        damage
-        timer
-        canBePlaced
-        canBeDropped
-        canBeThrown
 
 enemies
     have enemies be able to use bullets
@@ -53,18 +47,24 @@ key binding
 
 next up 
     enemies become twice as hard if you kill the boss and back track
+    restart / continue / main menu should have hot keys on the main menu
     
 mini map
     item should show the whole mini map
     item suould shou secret rooms
     item will show boss
     wds
+    whole mini map should be shown always (is this true we have a button which will show the full map)
 
 debug window 
     CHEATS_ENABLED
     enemies
-    bombs
-    items
+    updateDebugEditor make it update in realtime when something happens in the game
+    when you click off of it it should focus back on the game
+    add a export json option
+    move the cords into this 
+    go to room (renders it in)
+
 
 
 
@@ -120,18 +120,11 @@ if it is done in under 10 show speedy.
 
 
 player.json
-   
-    bullet spped
-    bullet size
-    bullet damage
-    bullet range
-    bullet curve
-    bullet spread
     unvuk period
-implemment key pick up 
-implement bomb item
-implement bomb pick up
-implement bomb place
+    implemment key pick up 
+    implement bomb item
+    implement bomb pick up
+    implement bomb place
 
 add a timer
 add a heatlh bar
