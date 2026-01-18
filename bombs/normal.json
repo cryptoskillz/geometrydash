@@ -16,7 +16,7 @@
     "damage": 6,
     "explosionDuration": 1000,
     "explosionColour": "#ff0000",
-    "damagePlayer": false,
+    "canDamagePlayer": true,
     "active": true,
     "timer": 1000,
     "max": 100,

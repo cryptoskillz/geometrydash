@@ -608,6 +608,8 @@ async function dropBomb() {
 
         colour: bomb.colour || "white",
         damage: bomb.damage || 1,
+        canDamagePlayer: !!bomb.canDamagePlayer,
+
 
         explodeAt: Date.now() + timer,
         exploding: false,
@@ -1364,6 +1366,27 @@ async function draw() {
 
                 // 🔥 key line: starts at baseR (bomb perimeter), grows to maxR
                 const r = b.baseR + (b.maxR - b.baseR) * p;
+
+                //Player damage (once per bomb)
+                if (
+                    b.canDamagePlayer &&
+                    !b.didPlayerDamage &&
+                    !player.invuln &&
+                    Date.now() >= b.explosionStartAt
+                ) {
+                    const distToPlayer = Math.hypot(player.x - b.x, player.y - b.y);
+
+                    if (distToPlayer <= r + player.size) {
+                        b.didPlayerDamage = true;
+
+                        player.hp -= b.damage;
+                        hpEl.innerText = player.hp;
+
+                        // i-frames (reuse your existing logic)
+                        player.invuln = true;
+                        setTimeout(() => player.invuln = false, 1000);
+                    }
+                }
 
                 // Chain reaction: trigger other bombs inside current explosion radius
                 for (let j = 0; j < bombs.length; j++) {

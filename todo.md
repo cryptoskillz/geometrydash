@@ -4,6 +4,8 @@ bugs
     360 bullet mode the right bullet is a little slow
 
 bombs
+    bomb radius
+    
     bombs can get be dropped, thrown and kicked with items you pick as well as default settings
     bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
     add collision to bombs
