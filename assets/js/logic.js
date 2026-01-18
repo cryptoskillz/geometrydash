@@ -734,6 +734,89 @@ function fireBullet(direction, speed, vx, vy, angle) {
     }
 }
 
+// --- Generic "Use" action (SPACE) ---
+// Call this once per frame near the top of update(), BEFORE the WASD blocks.
+function tryUse() {
+    if (!keys["Space"]) return;
+
+    // consume input so it fires once
+    keys["Space"] = false;
+
+    if (gameState !== STATES.PLAY) return;
+
+    const roomLocked = enemies.length > 0;
+    const doors = roomData.doors || {};
+    if (roomLocked) return; // keep your existing rule: can't unlock while enemies alive
+
+    // Helper: are we close enough to a door?
+    const inRangeTop = (door) => {
+        const doorX = door.x !== undefined ? door.x : canvas.width / 2;
+        return player.y <= BOUNDARY + 5 && player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
+    };
+    const inRangeBottom = (door) => {
+        const doorX = door.x !== undefined ? door.x : canvas.width / 2;
+        return player.y >= canvas.height - BOUNDARY - 5 && player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
+    };
+    const inRangeLeft = (door) => {
+        const doorY = door.y !== undefined ? door.y : canvas.height / 2;
+        return player.x <= BOUNDARY + 5 && player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
+    };
+    const inRangeRight = (door) => {
+        const doorY = door.y !== undefined ? door.y : canvas.height / 2;
+        return player.x >= canvas.width - BOUNDARY - 5 && player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
+    };
+
+    // Prefer the door the player is "facing" (lastMoveX/lastMoveY), fall back to any nearby door.
+    const candidates = [];
+    if (doors.top?.active) candidates.push({ dir: "top", door: doors.top, inRange: inRangeTop });
+    if (doors.bottom?.active) candidates.push({ dir: "bottom", door: doors.bottom, inRange: inRangeBottom });
+    if (doors.left?.active) candidates.push({ dir: "left", door: doors.left, inRange: inRangeLeft });
+    if (doors.right?.active) candidates.push({ dir: "right", door: doors.right, inRange: inRangeRight });
+
+    const facingDir =
+        player.lastMoveY === -1 ? "top" :
+            player.lastMoveY === 1 ? "bottom" :
+                player.lastMoveX === -1 ? "left" :
+                    player.lastMoveX === 1 ? "right" : null;
+
+    let target = null;
+
+    // 1) facing door if in range
+    if (facingDir) {
+        const c = candidates.find(x => x.dir === facingDir);
+        if (c && c.inRange(c.door)) target = c;
+    }
+
+    // 2) otherwise first door in range
+    if (!target) {
+        target = candidates.find(c => c.inRange(c.door)) || null;
+    }
+
+    if (!target) return; // nothing to use right now
+
+    // --- "Use" behavior for doors (for now) ---
+    const d = target.door;
+
+    // unlock if locked and player has keys
+    if (d.locked) {
+        if (player.inventory?.keys > 0) {
+            player.inventory.keys--;
+            keysEl.innerText = player.inventory.keys;
+            d.locked = 0;
+            d.unlockedByKey = true;
+            console.log(`${target.dir} door unlocked via USE (Space)`);
+        } else {
+            console.log("Door is locked - no keys");
+        }
+        return;
+    }
+
+    // (optional) if you ever add "open but interact" doors, handle here
+    console.log(`${target.dir} door used (already unlocked)`);
+}
+
+
+
 function update() {
 
     if (gameState !== STATES.PLAY) return;
@@ -762,90 +845,62 @@ function update() {
     if (keys['KeyR'] && DEBUG_WINDOW_ENABLED) {
         restartGame();
     }
+    tryUse()
 
-    if (keys['KeyW']) {
+    // --- Movement blocks (WASD) ---
+    // Replace your current 4 movement blocks with these versions.
+    // The only change: the unlock logic is removed (SPACE handles it), movement stays same.
+
+    if (keys["KeyW"]) {
         player.lastMoveX = 0;
         player.lastMoveY = -1;
+
         const door = doors.top || { active: 0, locked: 0 };
         const doorX = door.x !== undefined ? door.x : canvas.width / 2;
         const inDoorRange = player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
         const canPass = door.active && !door.locked && !roomLocked;
 
-        // Unlocking on touch with K key
-        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.y <= BOUNDARY + 5 && inDoorRange && keys['KeyK']) {
-            player.inventory.keys--;
-            keysEl.innerText = player.inventory.keys;
-            door.locked = 0;
-            door.unlockedByKey = true;
-            console.log("Top door unlocked via K key");
-            keys['KeyK'] = false;
-        }
-
         if (player.y > BOUNDARY || (inDoorRange && canPass)) {
             player.y -= player.speed;
         }
     }
-    if (keys['KeyS']) {
+
+    if (keys["KeyS"]) {
         player.lastMoveX = 0;
         player.lastMoveY = 1;
+
         const door = doors.bottom || { active: 0, locked: 0 };
         const doorX = door.x !== undefined ? door.x : canvas.width / 2;
         const inDoorRange = player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
         const canPass = door.active && !door.locked && !roomLocked;
 
-        // Unlocking on touch with K key
-        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.y >= canvas.height - BOUNDARY - 5 && inDoorRange && keys['KeyK']) {
-            player.inventory.keys--;
-            keysEl.innerText = player.inventory.keys;
-            door.locked = 0;
-            door.unlockedByKey = true;
-            console.log("Bottom door unlocked via K key");
-            keys['KeyK'] = false;
-        }
-
         if (player.y < canvas.height - BOUNDARY || (inDoorRange && canPass)) {
             player.y += player.speed;
         }
     }
-    if (keys['KeyA']) {
+
+    if (keys["KeyA"]) {
         player.lastMoveX = -1;
         player.lastMoveY = 0;
+
         const door = doors.left || { active: 0, locked: 0 };
         const doorY = door.y !== undefined ? door.y : canvas.height / 2;
         const inDoorRange = player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
         const canPass = door.active && !door.locked && !roomLocked;
 
-        // Unlocking on touch with K key
-        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.x <= BOUNDARY + 5 && inDoorRange && keys['KeyK']) {
-            player.inventory.keys--;
-            keysEl.innerText = player.inventory.keys;
-            door.locked = 0;
-            door.unlockedByKey = true;
-            console.log("Left door unlocked via K key");
-            keys['KeyK'] = false;
-        }
-
         if (player.x > BOUNDARY || (inDoorRange && canPass)) {
             player.x -= player.speed;
         }
     }
-    if (keys['KeyD']) {
+
+    if (keys["KeyD"]) {
         player.lastMoveX = 1;
         player.lastMoveY = 0;
+
         const door = doors.right || { active: 0, locked: 0 };
         const doorY = door.y !== undefined ? door.y : canvas.height / 2;
         const inDoorRange = player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
         const canPass = door.active && !door.locked && !roomLocked;
-
-        // Unlocking on touch with K key
-        if (!roomLocked && door.active && door.locked && player.inventory && player.inventory.keys > 0 && player.x >= canvas.width - BOUNDARY - 5 && inDoorRange && keys['KeyK']) {
-            player.inventory.keys--;
-            keysEl.innerText = player.inventory.keys;
-            door.locked = 0;
-            door.unlockedByKey = true;
-            console.log("Right door unlocked via K key");
-            keys['KeyK'] = false;
-        }
 
         if (player.x < canvas.width - BOUNDARY || (inDoorRange && canPass)) {
             player.x += player.speed;
@@ -853,7 +908,8 @@ function update() {
     }
 
 
-    //check for space key
+
+    //check for bomb
     if (keys['KeyB']) {
         if (player.inventory && player.inventory.bombs > 0) {
             player.inventory.bombs--;
