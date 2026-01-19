@@ -9,7 +9,7 @@
     "y": 200,
     "invuln": false,
     "invulnUntil": 0,
-    "invulTimer": 1000000,
+    "invulTimer": 100,
     "invulnColor": "white",
     "lastShot": 0,
     "speedCount": 0,

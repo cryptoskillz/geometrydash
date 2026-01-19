@@ -14,6 +14,7 @@
     "radius": 100,
     "range": 70,
     "damage": 2,
+    "fireRate": 0.5,
     "explosionDuration": 1000,
     "explosionColour": "#FF0000",
     "canDamagePlayer": true,

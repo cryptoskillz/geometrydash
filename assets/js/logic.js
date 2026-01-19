@@ -334,7 +334,7 @@ async function initGame(isRestart = false) {
         ])
 
         bomb = bData;
-        gun = gData;
+        gun = gunData;
 
         // 2. Pre-load ALL room templates
         roomTemplates = {};
@@ -601,7 +601,8 @@ function changeRoom(dx, dy) {
 }
 
 async function dropBomb() {
-    console.log(bomb)
+    //check the bomb interval and see if enough time has passed before we can drop another
+
     const baseR = bomb.size || 20;         // visible bomb radius
     const maxR = bomb.radius || 120;      // explosion max radius
     const timer = bomb.timer || 1000;
@@ -645,9 +646,8 @@ function fireBullet(direction, speed, vx, vy, angle) {
     4 = west
     360 = 360 degres
     */
-
     //check if the have bullets, they are in a mode where no bullets should be fired
-    if (player.Bullet?.NoBullets) {
+    if (gun.Bullet?.NoBullets) {
         return;
     }
     if (direction === 0) {
@@ -656,13 +656,14 @@ function fireBullet(direction, speed, vx, vy, angle) {
             y: player.y,
             vx,
             vy,
-            life: player.Bullet?.range || 60,
-            damage: player.Bullet?.damage || 1,
-            size: player.Bullet?.size || 5,
-            curve: player.Bullet?.curve || 0,
-            homing: player.Bullet?.homming,
+            life: gun.Bullet?.range || 60,
+            damage: gun.Bullet?.damage || 1,
+            size: gun.Bullet?.size || 5,
+            curve: gun.Bullet?.curve || 0,
+            homing: gun.Bullet?.homming,
             hitEnemies: []
         });
+
     }
 
     //360 degrees
@@ -673,11 +674,11 @@ function fireBullet(direction, speed, vx, vy, angle) {
                 y: player.y,
                 vx: Math.cos(i * Math.PI / 180) * speed,
                 vy: Math.sin(i * Math.PI / 180) * speed,
-                life: player.Bullet?.range || 60,
-                damage: player.Bullet?.damage || 1,
-                size: player.Bullet?.size || 5,
-                curve: player.Bullet?.curve || 0,
-                homing: player.Bullet?.homming,
+                life: gun.Bullet?.range || 60,
+                damage: gun.Bullet?.damage || 1,
+                size: gun.Bullet?.size || 5,
+                curve: gun.Bullet?.curve || 0,
+                homing: gun.Bullet?.homming,
                 hitEnemies: []
             });
         }
@@ -690,11 +691,11 @@ function fireBullet(direction, speed, vx, vy, angle) {
             y: player.y,
             vx: 0,
             vy: -speed,
-            life: player.Bullet?.range || 60,
-            damage: player.Bullet?.damage || 1,
-            size: player.Bullet?.size || 5,
-            curve: player.Bullet?.curve || 0,
-            homing: player.Bullet?.homming,
+            life: gun.Bullet?.range || 60,
+            damage: gun.Bullet?.damage || 1,
+            size: gun.Bullet?.size || 5,
+            curve: gun.Bullet?.curve || 0,
+            homing: gun.Bullet?.homming,
             hitEnemies: []
         });
     }
@@ -705,11 +706,11 @@ function fireBullet(direction, speed, vx, vy, angle) {
             y: player.y,
             vx: speed,
             vy: 0,
-            life: player.Bullet?.range || 60,
-            damage: player.Bullet?.damage || 1,
-            size: player.Bullet?.size || 5,
-            curve: player.Bullet?.curve || 0,
-            homing: player.Bullet?.homming,
+            life: gun.Bullet?.range || 60,
+            damage: gun.Bullet?.damage || 1,
+            size: gun.Bullet?.size || 5,
+            curve: gun.Bullet?.curve || 0,
+            homing: gun.Bullet?.homming,
             hitEnemies: []
         });
     }
@@ -721,11 +722,11 @@ function fireBullet(direction, speed, vx, vy, angle) {
             y: player.y,
             vx: 0,
             vy: speed,
-            life: player.Bullet?.range || 60,
-            damage: player.Bullet?.damage || 1,
-            size: player.Bullet?.size || 5,
-            curve: player.Bullet?.curve || 0,
-            homing: player.Bullet?.homming,
+            life: gun.Bullet?.range || 60,
+            damage: gun.Bullet?.damage || 1,
+            size: gun.Bullet?.size || 5,
+            curve: gun.Bullet?.curve || 0,
+            homing: gun.Bullet?.homming,
             hitEnemies: []
         });
     }
@@ -735,14 +736,16 @@ function fireBullet(direction, speed, vx, vy, angle) {
             y: player.y,
             vx: -speed,
             vy: 0,
-            life: player.Bullet?.range || 60,
-            damage: player.Bullet?.damage || 1,
-            size: player.Bullet?.size || 5,
-            curve: player.Bullet?.curve || 0,
-            homing: player.Bullet?.homming,
+            life: gun.Bullet?.range || 60,
+            damage: gun.Bullet?.damage || 1,
+            size: gun.Bullet?.size || 5,
+            curve: gun.Bullet?.curve || 0,
+            homing: gun.Bullet?.homming,
             hitEnemies: []
         });
     }
+
+    console.log(bullets)
 }
 
 // --- Generic "Use" action (SPACE) ---
@@ -939,7 +942,7 @@ function update() {
     }
 
     if (keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight']) {
-        const fireDelay = (player.Bullet?.fireRate !== undefined ? player.Bullet.fireRate : 0.3) * 1000;
+        const fireDelay = (gun.Bullet?.fireRate !== undefined ? gun.Bullet.fireRate : 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
             bulletsInRoom++;
             let baseAngle = 0;
@@ -948,7 +951,7 @@ function update() {
             else if (keys['ArrowLeft']) baseAngle = Math.PI;
             else if (keys['ArrowRight']) baseAngle = 0;
 
-            if (player.Bullet?.homming) {
+            if (gun.Bullet?.homming) {
                 if (enemies.length === 0) return;
                 let nearest = null;
                 let minDist = Infinity;
@@ -964,8 +967,8 @@ function update() {
                 }
             }
 
-            const bulletCount = player.Bullet?.number || 1;
-            const spreadRate = player.Bullet?.spreadRate || 0.2; // Radians between streams
+            const bulletCount = gun.Bullet?.number || 1;
+            const spreadRate = gun.Bullet?.spreadRate || 0.2; // Radians between streams
 
             for (let i = 0; i < bulletCount; i++) {
                 let angle = baseAngle;
@@ -975,35 +978,35 @@ function update() {
                     angle += (i - (bulletCount - 1) / 2) * spreadRate;
                 }
 
-                if (player.Bullet?.spread) {
-                    angle += (Math.random() - 0.5) * player.Bullet.spread;
+                if (gun.Bullet?.spread) {
+                    angle += (Math.random() - 0.5) * gun.Bullet.spread;
                 }
 
-                const speed = player.Bullet?.speed || 7;
+                const speed = gun.Bullet?.speed || 7;
                 const vx = Math.cos(angle) * speed;
                 const vy = Math.sin(angle) * speed;
 
                 // topAndBottom mode: fire one bullet north and one south
-                if (player.Bullet?.multiDirectional.active) {
-                    if (player.Bullet?.multiDirectional.fire360) {
+                if (gun.Bullet?.multiDirectional.active) {
+                    if (gun.Bullet?.multiDirectional.fire360) {
                         // All Directional mode: fire in all directions
                         fireBullet(360, speed, vx, vy, angle)
                     }
 
                     else {
-                        if (player.Bullet?.multiDirectional.fireNorth) {
+                        if (gun.Bullet?.multiDirectional.fireNorth) {
                             // North bullet (up)
                             fireBullet(1, speed, vx, vy, angle);
                         }
-                        if (player.Bullet?.multiDirectional.fireEast) {
+                        if (gun.Bullet?.multiDirectional.fireEast) {
                             // East bullet (right)
                             fireBullet(2, speed, vx, vy, angle);
                         }
-                        if (player.Bullet?.multiDirectional.fireSouth) {
+                        if (gun.Bullet?.multiDirectional.fireSouth) {
                             // South bullet (down)
                             fireBullet(3, speed, vx, vy, angle);
                         }
-                        if (player.Bullet?.multiDirectional.fireWest) {
+                        if (gun.Bullet?.multiDirectional.fireWest) {
                             // West bullet (left)
                             fireBullet(4, speed, vx, vy, angle);
                         }
@@ -1013,7 +1016,7 @@ function update() {
                     // Normal mode: fire in aimed direction
                     fireBullet(0)
                     //check if backFire is active and if it is then fire the opposite arrow key
-                    if (player.Bullet?.backfire) {
+                    if (gun.Bullet?.backfire) {
                         if (keys['ArrowUp']) {
                             // South bullet (down)
                             fireBullet(3, speed, vx, vy, angle);
@@ -1032,7 +1035,7 @@ function update() {
                             fireBullet(4, speed, vx, vy, angle);
                         }
                     }
-                    else if (player.Bullet?.frontLocked) {
+                    else if (gun.Bullet?.frontLocked) {
                         //fire the bullet in the direction the player is moving, if the player is not moving then fire the bullet in the direction the player is looking
                         //looking should only work if the player is not moving ie no wasd key is pressed
                         if (!keys['KeyS'] && !keys['KeyW'] && !keys['KeyA'] && !keys['KeyD']) {
@@ -1129,7 +1132,7 @@ function update() {
         b.x += b.vx;
         b.y += b.vy;
 
-        if (player.Bullet?.wallBounce) {
+        if (gun.Bullet?.wallBounce) {
             if (b.x < 0) { b.x = 0; b.vx = -b.vx; }
             if (b.x > canvas.width) { b.x = canvas.width; b.vx = -b.vx; }
             if (b.y < 0) { b.y = 0; b.vy = -b.vy; }
@@ -1155,31 +1158,31 @@ function update() {
             let dist = Math.hypot(b.x - en.x, b.y - en.y);
             if (dist < en.size) {
                 // For piercing bullets, check if this enemy was already hit
-                if (player.Bullet?.pierce && b.hitEnemies && b.hitEnemies.includes(ei)) {
+                if (gun.Bullet?.pierce && b.hitEnemies && b.hitEnemies.includes(ei)) {
                     return; // Skip this enemy, already hit by this bullet
                 }
 
                 // Explosion Logic
-                if (player.Bullet?.Explode?.active && !b.isShard) {
-                    const shardCount = player.Bullet.Explode.shards || 8;
+                if (gun.Bullet?.Explode?.active && !b.isShard) {
+                    const shardCount = gun.Bullet.Explode.shards || 8;
                     const step = (Math.PI * 2) / shardCount;
                     for (let i = 0; i < shardCount; i++) {
                         const angle = step * i;
                         bullets.push({
                             x: b.x,
                             y: b.y,
-                            vx: Math.cos(angle) * (player.Bullet?.speed || 7),
-                            vy: Math.sin(angle) * (player.Bullet?.speed || 7),
-                            life: player.Bullet.Explode.shardRange || 30,
-                            damage: player.Bullet.Explode.damage || 0.1,
-                            size: player.Bullet.Explode.size || 2,
+                            vx: Math.cos(angle) * (gun.Bullet?.speed || 7),
+                            vy: Math.sin(angle) * (gun.Bullet?.speed || 7),
+                            life: gun.Bullet.Explode.shardRange || 30,
+                            damage: gun.Bullet.Explode.damage || 0.1,
+                            size: gun.Bullet.Explode.size || 2,
                             isShard: true
                         });
                     }
                 }
 
                 // Only destroy bullet if not piercing
-                if (!player.Bullet?.pierce) {
+                if (!gun.Bullet?.pierce) {
                     bullets.splice(bi, 1);
                 } else {
                     // Track that this bullet hit this enemy
@@ -1450,7 +1453,7 @@ async function draw() {
     ctx.fill();
 
     // Reload Bar (when fire rate is > 1s)
-    const fireRate = player.Bullet?.fireRate !== undefined ? player.Bullet.fireRate : 0.3;
+    const fireRate = gun.Bullet?.fireRate !== undefined ? gun.Bullet.fireRate : 0.3;
     if (fireRate > 1) {
         const fireDelay = fireRate * 1000;
         const elapsed = Date.now() - (player.lastShot || 0);
