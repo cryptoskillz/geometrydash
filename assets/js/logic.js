@@ -1196,6 +1196,7 @@ async function draw() {
     requestAnimationFrame(() => { update(); draw(); });
 }
 
+
 function drawMinimap() {
     const mapSize = 100;
     const roomSize = 12;
@@ -1208,7 +1209,9 @@ function drawMinimap() {
     mctx.lineWidth = 1;
     mctx.strokeRect(0, 0, mapSize, mapSize);
 
+    // Draw Explored Rooms
     mctx.save();
+    // Center map on player's room
     mctx.translate(mapSize / 2, mapSize / 2);
 
     for (let coord in visitedRooms) {
@@ -1218,21 +1221,34 @@ function drawMinimap() {
         const isCurrent = rx === player.roomX && ry === player.roomY;
         const isCleared = visitedRooms[coord].cleared;
 
+        // Relative position (inverted Y for intuitive map)
         const dx = (rx - player.roomX) * (roomSize + padding);
         const dy = (ry - player.roomY) * (roomSize + padding);
 
+        // Only draw if within minimap bounds
         if (Math.abs(dx) < mapSize / 2 - 5 && Math.abs(dy) < mapSize / 2 - 5) {
-            let color = isCleared ? "#27ae60" : "#e74c3c";
-            if (rx === 0 && ry === 0) color = "#f1c40f";
-            if (visitedRooms[coord].roomData.isBoss) color = "#c0392b";
+            let color = isCleared ? "#27ae60" : "#e74c3c"; // Green (safe) vs Red (uncleared)
+
+            // Special Colors
+            if (rx === 0 && ry === 0) color = "#f1c40f"; // Yellow for Start
+            if (visitedRooms[coord].roomData.isBoss) color = "#c0392b"; // Dark Red for Boss
 
             mctx.fillStyle = isCurrent ? "#fff" : color;
             mctx.fillRect(dx - roomSize / 2, dy - roomSize / 2, roomSize, roomSize);
+
+            // Simple exit indicators
+            const dData = visitedRooms[coord].roomData.doors;
+            if (dData) {
+                mctx.fillStyle = "#000";
+                if (dData.top && dData.top.active) mctx.fillRect(dx - 1, dy - roomSize / 2, 2, 2);
+                if (dData.bottom && dData.bottom.active) mctx.fillRect(dx - 1, dy + roomSize / 2 - 2, 2, 2);
+                if (dData.left && dData.left.active) mctx.fillRect(dx - roomSize / 2, dy - 1, 2, 2);
+                if (dData.right && dData.right.active) mctx.fillRect(dx + roomSize / 2 - 2, dy - 1, 2, 2);
+            }
         }
     }
     mctx.restore();
 }
-
 function gameWon() {
     gameState = STATES.GAMEOVER;
     overlayEl.style.display = 'flex';
