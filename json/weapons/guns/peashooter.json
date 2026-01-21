@@ -21,6 +21,7 @@
         "spread": 0,
         "spreadRate": 0,
         "number": 5,
+        "recoil": 0.5,
         "homing": false,
         "fireRate": 0.1,
         "wallBounce": false,

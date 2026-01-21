@@ -839,20 +839,18 @@ function update() {
         }
     }
 
-    // --- 4. SHOOTING LOGIC (Homing, Backfire, Frontlocked Restored) ---
+    // --- 4. SHOOTING LOGIC (With JSON Recoil + Modes) ---
     const shootingKeys = keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
     if (shootingKeys) {
         const fireDelay = (gun.Bullet?.fireRate ?? 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
 
-            // Step A: Base Aim Angle
             let centerAngle = 0;
             if (keys['ArrowUp']) centerAngle = -Math.PI / 2;
             else if (keys['ArrowDown']) centerAngle = Math.PI / 2;
             else if (keys['ArrowLeft']) centerAngle = Math.PI;
             else if (keys['ArrowRight']) centerAngle = 0;
 
-            // Step B: Homing Override
             if (gun.Bullet?.homing && enemies.length > 0) {
                 let nearest = enemies.reduce((a, b) =>
                     Math.hypot(player.x - a.x, player.y - a.y) < Math.hypot(player.x - b.x, player.y - b.y) ? a : b
@@ -862,16 +860,31 @@ function update() {
 
             const count = gun.Bullet?.number || 1;
             const spread = gun.Bullet?.spreadRate || 0.2;
+            const recoilVal = gun.Bullet?.recoil || 0;
 
-            // Step C: Execution Loop
+            // Apply Recoil based on JSON
+            player.x -= Math.cos(centerAngle) * (recoilVal * count);
+            player.y -= Math.sin(centerAngle) * (recoilVal * count);
+            player.x = Math.max(BOUNDARY, Math.min(canvas.width - BOUNDARY, player.x));
+            player.y = Math.max(BOUNDARY, Math.min(canvas.height - BOUNDARY, player.y));
+
             for (let i = 0; i < count; i++) {
                 let finalAngle = centerAngle + (count > 1 ? (i - (count - 1) / 2) * spread : 0);
                 const speed = gun.Bullet?.speed || 7;
                 const vx = Math.cos(finalAngle) * speed;
                 const vy = Math.sin(finalAngle) * speed;
 
-                if (gun.Bullet?.backfire) {
-                    fireBullet(0, speed, vx, vy, finalAngle); // Normal shot
+                if (gun.Bullet?.multiDirectional?.active) {
+                    if (gun.Bullet.multiDirectional.fire360) fireBullet(360, speed, vx, vy, finalAngle);
+                    else {
+                        if (gun.Bullet.multiDirectional.fireNorth) fireBullet(1, speed, vx, vy, finalAngle);
+                        if (gun.Bullet.multiDirectional.fireEast) fireBullet(2, speed, vx, vy, finalAngle);
+                        if (gun.Bullet.multiDirectional.fireSouth) fireBullet(3, speed, vx, vy, finalAngle);
+                        if (gun.Bullet.multiDirectional.fireWest) fireBullet(4, speed, vx, vy, finalAngle);
+                    }
+                }
+                else if (gun.Bullet?.backfire) {
+                    fireBullet(0, speed, vx, vy, finalAngle);
                     if (keys['ArrowUp']) fireBullet(3, speed, vx, vy, finalAngle);
                     if (keys['ArrowDown']) fireBullet(1, speed, vx, vy, finalAngle);
                     if (keys['ArrowLeft']) fireBullet(2, speed, vx, vy, finalAngle);
@@ -880,13 +893,11 @@ function update() {
                 else if (gun.Bullet?.frontLocked) {
                     const moving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
                     if (!moving) {
-                        // Fire in Arrow Key direction
                         if (keys['ArrowUp']) fireBullet(1, speed, vx, vy, finalAngle);
                         else if (keys['ArrowDown']) fireBullet(3, speed, vx, vy, finalAngle);
                         else if (keys['ArrowLeft']) fireBullet(4, speed, vx, vy, finalAngle);
                         else if (keys['ArrowRight']) fireBullet(2, speed, vx, vy, finalAngle);
                     } else {
-                        // Fire in WASD direction
                         if (keys['KeyW']) fireBullet(1, speed, vx, vy, finalAngle);
                         if (keys['KeyS']) fireBullet(3, speed, vx, vy, finalAngle);
                         if (keys['KeyA']) fireBullet(4, speed, vx, vy, finalAngle);
@@ -927,7 +938,7 @@ function update() {
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
 
-            let steerAmount = 0.1 + (i % 3) * 0.02;
+            let steerAmount = 0.12 + (i % 3) * 0.02;
             if (Math.abs(diff) < steerAmount) currentAngle = desiredAngle;
             else currentAngle += Math.sign(diff) * steerAmount;
 
