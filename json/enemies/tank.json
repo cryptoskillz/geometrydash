@@ -1,6 +1,6 @@
 {
     "type": "tank",
-    "hp": 6,
+    "hp": 25,
     "damage": 2,
     "knockback": 100,
     "shake": 2,
