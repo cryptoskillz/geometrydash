@@ -668,7 +668,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
             homing: gun.Bullet?.homming,
             shape: gun.Bullet?.geometry?.shape || "circle",
             animated: gun.Bullet?.geometry?.animated || false,
-            filled: gun.Bullet?.geometry?.filled || true,
+            filled: gun.Bullet?.geometry?.filled,
             colour: gun.Bullet?.colour || "yellow",
             hitEnemies: []
         });
@@ -690,7 +690,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
                 homing: gun.Bullet?.homming,
                 shape: gun.Bullet?.geometry?.shape || "circle",
                 animated: gun.Bullet?.geometry?.animated || false,
-                filled: gun.Bullet?.geometry?.filled || true,
+                filled: gun.Bullet?.geometry?.filled,
                 colour: gun.Bullet?.colour || "yellow",
 
                 hitEnemies: []
@@ -712,7 +712,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
             homing: gun.Bullet?.homming,
             shape: gun.Bullet?.geometry?.shape || "circle",
             animated: gun.Bullet?.geometry?.animated || false,
-            filled: gun.Bullet?.geometry?.filled || true,
+            filled: gun.Bullet?.geometry?.filled,
             colour: gun.Bullet?.colour || "yellow",
 
             hitEnemies: []
@@ -732,7 +732,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
             homing: gun.Bullet?.homming,
             shape: gun.Bullet?.geometry?.shape || "circle",
             animated: gun.Bullet?.geometry?.animated || false,
-            filled: gun.Bullet?.geometry?.filled || true,
+            filled: gun.Bullet?.geometry?.filled,
             colour: gun.Bullet?.colour || "yellow",
             hitEnemies: []
         });
@@ -752,7 +752,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
             homing: gun.Bullet?.homming,
             shape: gun.Bullet?.geometry?.shape || "circle",
             animated: gun.Bullet?.geometry?.animated || false,
-            filled: gun.Bullet?.geometry?.filled || true,
+            filled: gun.Bullet?.geometry?.filled,
             colour: gun.Bullet?.colour || "yellow",
             hitEnemies: []
         });
@@ -771,15 +771,15 @@ function fireBullet(direction, speed, vx, vy, angle) {
             homing: gun.Bullet?.homming,
             shape: gun.Bullet?.geometry?.shape || "circle",
             animated: gun.Bullet?.geometry?.animated || false,
-            filled: gun.Bullet?.geometry?.filled || true,
+            filled: gun.Bullet?.geometry?.filled,
             colour: gun.Bullet?.colour || "yellow",
             hitEnemies: []
         });
 
 
     }
-    console.log(gun.Bullet?.geometry?.filled)
-    console.log(bullets[bullets.length - 1])
+    //console.log(gun.Bullet?.geometry?.filled)
+    //console.log(bullets[bullets.length - 1])
 
 }
 
