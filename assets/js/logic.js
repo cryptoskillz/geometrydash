@@ -844,64 +844,34 @@ function update() {
     if (shootingKeys) {
         const fireDelay = (gun.Bullet?.fireRate ?? 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
-            bulletsInRoom++;
-            let baseAngle = 0;
-            if (keys['ArrowUp']) baseAngle = -Math.PI / 2;
-            else if (keys['ArrowDown']) baseAngle = Math.PI / 2;
-            else if (keys['ArrowLeft']) baseAngle = Math.PI;
-            else if (keys['ArrowRight']) baseAngle = 0;
+            let centerAngle = 0;
+            if (keys['ArrowUp']) centerAngle = -Math.PI / 2;
+            else if (keys['ArrowDown']) centerAngle = Math.PI / 2;
+            else if (keys['ArrowLeft']) centerAngle = Math.PI;
+            else if (keys['ArrowRight']) centerAngle = 0;
 
-            // Initial Homing Aim
-            console.log(gun.Bullet.homing)
             if (gun.Bullet?.homing && enemies.length > 0) {
-                let nearest = enemies.reduce((a, b) => Math.hypot(player.x - a.x, player.y - a.y) < Math.hypot(player.x - b.x, player.y - b.y) ? a : b);
-                baseAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+                let nearest = enemies.reduce((a, b) =>
+                    Math.hypot(player.x - a.x, player.y - a.y) < Math.hypot(player.x - b.x, player.y - b.y) ? a : b
+                );
+                centerAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
             }
 
-            const bulletCount = gun.Bullet?.number || 1;
-            for (let i = 0; i < bulletCount; i++) {
-                let angle = baseAngle + (bulletCount > 1 ? (i - (bulletCount - 1) / 2) * (gun.Bullet.spreadRate || 0.2) : 0);
-                const speed = gun.Bullet?.speed || 7;
-                const vx = Math.cos(angle) * speed;
-                const vy = Math.sin(angle) * speed;
+            const count = gun.Bullet?.number || 1;
+            const spread = gun.Bullet?.spreadRate || 0.2;
 
-                if (gun.Bullet?.multiDirectional?.active) {
-                    if (gun.Bullet.multiDirectional.fire360) fireBullet(360, speed, vx, vy, angle);
-                    else {
-                        if (gun.Bullet.multiDirectional.fireNorth) fireBullet(1, speed, vx, vy, angle);
-                        if (gun.Bullet.multiDirectional.fireEast) fireBullet(2, speed, vx, vy, angle);
-                        if (gun.Bullet.multiDirectional.fireSouth) fireBullet(3, speed, vx, vy, angle);
-                        if (gun.Bullet.multiDirectional.fireWest) fireBullet(4, speed, vx, vy, angle);
-                    }
-                } else if (gun.Bullet?.backfire) {
-                    fireBullet(0, speed, vx, vy, angle);
-                    if (keys['ArrowUp']) fireBullet(3, speed, vx, vy, angle);
-                    if (keys['ArrowDown']) fireBullet(1, speed, vx, vy, angle);
-                    if (keys['ArrowLeft']) fireBullet(2, speed, vx, vy, angle);
-                    if (keys['ArrowRight']) fireBullet(4, speed, vx, vy, angle);
-                } else if (gun.Bullet?.frontLocked) {
-                    const moveKeyActive = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-                    if (!moveKeyActive) {
-                        if (keys['ArrowUp']) fireBullet(1, speed, vx, vy, angle);
-                        else if (keys['ArrowDown']) fireBullet(3, speed, vx, vy, angle);
-                        else if (keys['ArrowLeft']) fireBullet(4, speed, vx, vy, angle);
-                        else if (keys['ArrowRight']) fireBullet(2, speed, vx, vy, angle);
-                    } else {
-                        if (keys['KeyW']) fireBullet(1, speed, vx, vy, angle);
-                        else if (keys['KeyS']) fireBullet(3, speed, vx, vy, angle);
-                        else if (keys['KeyA']) fireBullet(4, speed, vx, vy, angle);
-                        else if (keys['KeyD']) fireBullet(2, speed, vx, vy, angle);
-                    }
-                } else {
-                    fireBullet(0, speed, vx, vy, angle);
-                }
+            for (let i = 0; i < count; i++) {
+                let finalAngle = centerAngle + (count > 1 ? (i - (count - 1) / 2) * spread : 0);
+                const speed = gun.Bullet?.speed || 7;
+                const vx = Math.cos(finalAngle) * speed;
+                const vy = Math.sin(finalAngle) * speed;
+                fireBullet(0, speed, vx, vy, finalAngle);
             }
             player.lastShot = Date.now();
         }
     }
 
     // --- 5. BULLETS, PARTICLES, & ENEMIES ---
-    // Update Particles (Trails)
     if (typeof particles !== 'undefined') {
         for (let i = particles.length - 1; i >= 0; i--) {
             particles[i].life -= 0.05;
@@ -912,8 +882,15 @@ function update() {
     bullets.forEach((b, i) => {
         // Active Homing Steering
         if (gun.Bullet?.homing && enemies.length > 0) {
-            let nearest = enemies.reduce((a, b_en) => Math.hypot(b.x - a.x, b.y - a.y) < Math.hypot(b.x - b_en.x, b.y - b_en.y) ? a : b_en);
-            let desiredAngle = Math.atan2(nearest.y - b.y, nearest.x - b.x);
+            let nearest = enemies.reduce((prev, curr) => {
+                let d1 = Math.hypot(b.x - prev.x, b.y - prev.y);
+                let d2 = Math.hypot(b.x - curr.x, b.y - curr.y);
+                return d1 < d2 ? prev : curr;
+            });
+
+            let offsetX = Math.sin(i * 0.5) * 15;
+            let offsetY = Math.cos(i * 0.5) * 15;
+            let desiredAngle = Math.atan2((nearest.y + offsetY) - b.y, (nearest.x + offsetX) - b.x);
             let currentAngle = Math.atan2(b.vy, b.vx);
             let speed = Math.hypot(b.vx, b.vy);
 
@@ -921,7 +898,7 @@ function update() {
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
 
-            let steerAmount = 0.12;
+            let steerAmount = 0.1 + (i % 3) * 0.02;
             if (Math.abs(diff) < steerAmount) currentAngle = desiredAngle;
             else currentAngle += Math.sign(diff) * steerAmount;
 
@@ -929,13 +906,13 @@ function update() {
             b.vy = Math.sin(currentAngle) * speed;
         }
 
-        // Trail Effect (Particle spawning)
-        if (typeof particles !== 'undefined' && Math.random() > 0.3) {
+        // Particle Trails
+        if (typeof particles !== 'undefined' && Math.random() > 0.4) {
             particles.push({
                 x: b.x, y: b.y,
                 color: b.colour || 'yellow',
                 life: 0.5,
-                size: (b.size || 5) * 0.6
+                size: (b.size || 5) * 0.5
             });
         }
 
@@ -953,14 +930,39 @@ function update() {
             let angle = Math.atan2(player.y - en.y, player.x - en.x);
             en.x += Math.cos(angle) * en.speed; en.y += Math.sin(angle) * en.speed;
         }
+
         bullets.forEach((b, bi) => {
             if (Math.hypot(b.x - en.x, b.y - en.y) < en.size) {
+                // RESTORED: Explode / Shard Logic
+                const explode = gun.Bullet?.Explode;
+                if (explode && explode.active && !b.isShard) {
+                    const numShards = explode.shards || 8;
+                    for (let s = 0; s < numShards; s++) {
+                        const shardAngle = (Math.PI * 2 / numShards) * s;
+                        bullets.push({
+                            x: b.x, y: b.y,
+                            vx: Math.cos(shardAngle) * ((gun.Bullet?.speed || 7) * 0.7),
+                            vy: Math.sin(shardAngle) * ((gun.Bullet?.speed || 7) * 0.7),
+                            life: explode.shardRange || 30,
+                            size: explode.size || 2,
+                            damage: explode.damage || 0.1,
+                            colour: b.colour,
+                            isShard: true,
+                            shape: b.shape,
+                            filled: b.filled
+                        });
+                    }
+                }
+
                 en.hp -= (b.damage || 1); hitsInRoom++;
                 if (!gun.Bullet?.pierce) bullets.splice(bi, 1);
                 if (en.hp <= 0) enemies.splice(ei, 1);
             }
         });
-        if (Math.hypot(player.x - en.x, player.y - en.y) < player.size + en.size) playerHit(en, true, true, true);
+
+        if (Math.hypot(player.x - en.x, player.y - en.y) < player.size + en.size) {
+            playerHit(en, true, true, true);
+        }
     });
 
     // --- 6. TRANSITIONS ---
