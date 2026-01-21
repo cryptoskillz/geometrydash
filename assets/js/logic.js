@@ -1180,7 +1180,9 @@ async function draw() {
     // 7. --- BOSS/ENEMIES ---
     if (roomData.isBoss && !roomData.cleared && Date.now() < (bossIntroEndTime || 0)) {
         ctx.fillStyle = "#e74c3c"; ctx.font = "bold 50px 'Courier New'"; ctx.textAlign = "center";
-        ctx.fillText("BOSS", canvas.width / 2, canvas.height / 2);
+        // --- Updated Boss Intro Text ---
+        const bossName = (enemyTemplates["boss"]?.name || "BOSS").toUpperCase();
+        ctx.fillText(bossName, canvas.width / 2, canvas.height / 2);
     } else {
         enemies.forEach(en => {
             ctx.fillStyle = Date.now() < en.freezeUntil ? "#3498db" : (en.color || "#e74c3c");
