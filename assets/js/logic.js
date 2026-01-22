@@ -22,7 +22,22 @@ const introMusic = new Audio('assets/music/tron.mp3');
 introMusic.loop = true;
 introMusic.volume = 0.4;
 // --- MUSIC TOGGLE LOGIC ---
+// --- MUSIC TOGGLE LOGIC ---
 let lastMusicToggle = 0;
+
+// --- DEBUG LOGGING ---
+let debugLogs = [];
+const MAX_DEBUG_LOGS = 10;
+
+function log(...args) {
+    if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED) {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        debugLogs.push(msg);
+        if (debugLogs.length > MAX_DEBUG_LOGS) {
+            debugLogs.shift();
+        }
+    }
+}
 
 // --- Game State ---
 let player = {
@@ -318,8 +333,8 @@ function generateLevel(length) {
 
     }
 
-    console.log("Level Generated upfront with", Object.keys(levelMap).length, "rooms.");
-    console.log("Golden Path:", goldenPath);
+    log("Level Generated upfront with", Object.keys(levelMap).length, "rooms.");
+    log("Golden Path:", goldenPath);
 }
 
 const BOUNDARY = 20;
@@ -340,7 +355,7 @@ let lastMKeyTime = 0;
 async function initGame(isRestart = false) {
     if (debugPanel) debugPanel.style.display = DEBUG_WINDOW_ENABLED ? 'flex' : 'none';
     // Attempt to start music immediately
-    introMusic.play().catch(() => console.log("Waiting for interaction to play music..."));
+    introMusic.play().catch(() => log("Waiting for interaction to play music..."));
 
     // One-time listener to start music on first click/key if blocked by browser
     const startAudio = () => {
@@ -402,7 +417,7 @@ async function initGame(isRestart = false) {
             // This attempts to play immediately. 
             // If the browser blocks it, the 'keydown' listener below will catch it.
             window.introMusic.play().catch(() => {
-                console.log("Autoplay blocked: Waiting for first user interaction to start music.");
+                log("Autoplay blocked: Waiting for first user interaction to start music.");
             });
 
             // Fallback: Start music on the very first key press or click if autoplay failed
@@ -547,10 +562,10 @@ function spawnEnemies() {
 
     // Use roomData.enemies if defined (array of {type, count}), otherwise fallback
     if (roomData.enemies && Array.isArray(roomData.enemies)) {
-        console.log(`Spawning enemies for room: ${roomData.name}`, roomData.enemies);
+        log(`Spawning enemies for room: ${roomData.name}`, roomData.enemies);
         roomData.enemies.forEach(group => {
             const template = enemyTemplates[group.type];
-            console.log(`Looking for enemy type: ${group.type}, found: ${!!template}`);
+            log(`Looking for enemy type: ${group.type}, found: ${!!template}`);
             if (template) {
                 for (let i = 0; i < group.count; i++) {
                     const inst = JSON.parse(JSON.stringify(template));
@@ -667,7 +682,7 @@ function changeRoom(dx, dy) {
         if (keyUsedForRoom && !levelMap[nextCoord].bonusAwarded) {
             const baseChance = roomData.keyBonus !== undefined ? roomData.keyBonus : 1.0;
             const finalChance = baseChance + (player.luck || 0);
-            console.log(`Bonus Roll - Base: ${baseChance}, Luck: ${player.luck}, Final: ${finalChance}`);
+            log(`Bonus Roll - Base: ${baseChance}, Luck: ${player.luck}, Final: ${finalChance}`);
             if (Math.random() < finalChance) {
                 levelMap[nextCoord].bonusAwarded = true; // Mark bonus as awarded
                 perfectEl.innerText = "ROOM BONUS!";
@@ -885,11 +900,11 @@ function updateMusicToggle() {
             if (introMusic.paused) {
                 introMusic.play();
                 musicMuted = false;
-                console.log("Music Playing");
+                log("Music Playing");
             } else {
                 introMusic.pause();
                 musicMuted = true;
-                console.log("Music Paused");
+                log("Music Paused");
             }
             lastMusicToggle = now;
         }
@@ -1139,15 +1154,15 @@ function updateUse() {
             keysEl.innerText = player.inventory.keys;
             d.locked = 0;
             d.unlockedByKey = true;
-            console.log(`${target.dir} door unlocked via USE (Space)`);
+            log(`${target.dir} door unlocked via USE (Space)`);
         } else {
-            console.log("Door is locked - no keys");
+            log("Door is locked - no keys");
         }
         return;
     }
 
     // (optional) if you ever add "open but interact" doors, handle here
-    console.log(`${target.dir} door used (already unlocked)`);
+    log(`${target.dir} door used (already unlocked)`);
 }
 
 function updateRestart() {
@@ -1263,14 +1278,14 @@ function playerHit(en, invuln = false, knockback = false, shakescreen = false) {
             player.hp -= en.damage || 1;
             player.invulnUntil = now + 1000;
             SFX.playerHit(0.2);
-            console.log(`Player hit! HP: ${player.hp}, Damage: ${en.damage || 1}`);
+            log(`Player hit! HP: ${player.hp}, Damage: ${en.damage || 1}`);
 
             // If the player dies from this hit, the next update() call will catch it
             if (typeof updateUI === "function") updateUI();
 
             // Check for game over immediately after taking damage
             if (player.hp <= 0) {
-                console.log("Player HP <= 0, triggering game over");
+                log("Player HP <= 0, triggering game over");
                 player.hp = 0;
                 gameOver();
             }
@@ -1337,6 +1352,14 @@ function drawBombs(doors) {
             if (!b.didDamage) {
                 b.didDamage = true;
                 enemies.forEach(en => { if (Math.hypot(b.x - en.x, b.y - en.y) < b.maxR) en.hp -= b.damage; });
+
+                if (b.canDamagePlayer) {
+                    const distToPlayer = Math.hypot(b.x - player.x, b.y - player.y);
+                    if (distToPlayer < b.maxR) {
+                        // Pass a mock enemy object to playerHit
+                        playerHit({ x: b.x, y: b.y, damage: 1, shake: 5, shakeDuration: 300 }, true, true, true);
+                    }
+                }
             }
 
             ctx.save(); ctx.globalAlpha = 1 - p; ctx.fillStyle = b.explosionColour;
@@ -1582,6 +1605,28 @@ function drawMinimap() {
 
 
     mctx.restore();
+
+    drawBossIntro();
+    drawDebugLogs();
+}
+
+function drawDebugLogs() {
+    if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED && debugLogs.length > 0) {
+        ctx.save();
+        ctx.font = "12px 'Courier New'";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.fillRect(10, canvas.height - 15 - (debugLogs.length * 15), 400, (debugLogs.length * 15) + 5);
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillStyle = "#00FF00"; // Hacker green
+
+        debugLogs.forEach((msg, i) => {
+            ctx.fillText(msg, 15, canvas.height - 10 - ((debugLogs.length - 1 - i) * 15));
+        });
+
+        ctx.restore();
+    }
 }
 
 function drawBossIntro() {

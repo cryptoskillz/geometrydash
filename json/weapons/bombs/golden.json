@@ -1,6 +1,6 @@
 {
     "bombType": "golden",
-    "size": 100,
+    "size": 10,
     "colour": "#ffff00",
     "explodeOnImpact": false,
     "openDoors": true,
@@ -8,7 +8,7 @@
     "radius": 100,
     "range": 70,
     "damage": 2,
-    "fireRate": 0.5,
+    "fireRate": 0.1,
     "explosionDuration": 1000,
     "explosionColour": "#FF0000",
     "canDamagePlayer": true,
