@@ -914,13 +914,13 @@ function updateMusicToggle() {
 function updateRoomTransitions(doors, roomLocked) {
 
     // --- 8. ROOM TRANSITIONS ---
-    if (!roomLocked) {
-        const t = 15;
-        if (player.x < t && doors.left?.active && !doors.left?.locked) changeRoom(-1, 0);
-        else if (player.x > canvas.width - t && doors.right?.active && !doors.right?.locked) changeRoom(1, 0);
-        else if (player.y < t && doors.top?.active && !doors.top?.locked) changeRoom(0, -1);
-        else if (player.y > canvas.height - t && doors.bottom?.active && !doors.bottom?.locked) changeRoom(0, 1);
-    }
+    // --- 8. ROOM TRANSITIONS ---
+    const t = 15;
+    // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
+    if (player.x < t && doors.left?.active && !doors.left?.locked && (!roomLocked || doors.left?.forcedOpen)) changeRoom(-1, 0);
+    else if (player.x > canvas.width - t && doors.right?.active && !doors.right?.locked && (!roomLocked || doors.right?.forcedOpen)) changeRoom(1, 0);
+    else if (player.y < t && doors.top?.active && !doors.top?.locked && (!roomLocked || doors.top?.forcedOpen)) changeRoom(0, -1);
+    else if (player.y > canvas.height - t && doors.bottom?.active && !doors.bottom?.locked && (!roomLocked || doors.bottom?.forcedOpen)) changeRoom(0, 1);
 }
 
 function updateRoomLock() {
@@ -951,7 +951,12 @@ function drawDoors() {
     const doors = roomData.doors || {};
     Object.entries(doors).forEach(([dir, door]) => {
         if (!door.active || door.hidden) return;
-        ctx.fillStyle = roomLocked ? "#c0392b" : (door.locked ? "#f1c40f" : "#222");
+
+        let color = "#222"; // default open
+        if (roomLocked && !door.forcedOpen) color = "#c0392b"; // red if locked by enemies (and not forced)
+        else if (door.locked) color = "#f1c40f"; // yellow if locked by key
+
+        ctx.fillStyle = color;
         const dx = door.x ?? canvas.width / 2, dy = door.y ?? canvas.height / 2;
         if (dir === 'top') ctx.fillRect(dx - DOOR_SIZE / 2, 0, DOOR_SIZE, DOOR_THICKNESS);
         if (dir === 'bottom') ctx.fillRect(dx - DOOR_SIZE / 2, canvas.height - DOOR_THICKNESS, DOOR_SIZE, DOOR_THICKNESS);
@@ -1354,7 +1359,11 @@ function drawBombs(doors) {
 
                     // If bomb blast hits the door
                     if (Math.hypot(b.x - dX, b.y - dY) < b.maxR + 30) {
-                        if (b.openDoors && door.locked) door.locked = 0; // Unlock like Space bar
+                        if (b.openLockedDoors && door.locked) door.locked = 0; // Unlock standard locks
+                        if (b.openRedDoors) {
+                            // Force open even if enemies are present
+                            door.forcedOpen = true;
+                        }
                         if (b.openSecretRooms && door.hidden) { door.hidden = false; door.active = true; }
                     }
                 });
@@ -1402,10 +1411,10 @@ function updateBombDropping() {
                 x: player.x, y: player.y,
                 explodeAt: now + bomb.timer,
                 explosionDuration: bomb.explosionDuration,
-                baseR: 15, maxR: bomb.radius,
+                baseR: bomb.size || 15, maxR: bomb.radius,
                 damage: bomb.damage, colour: bomb.colour,
                 explosionColour: bomb.explosionColour,
-                openDoors: bomb.openDoors, openSecretRooms: bomb.openSecretRooms,
+                openLockedDoors: bomb.openLockedDoors, openRedDoors: bomb.openRedDoors, openSecretRooms: bomb.openSecretRooms,
                 canDamagePlayer: bomb.canDamagePlayer,
                 exploding: false, didDamage: false, didDoorCheck: false
             });
@@ -1432,7 +1441,8 @@ function updateMovementAndDoors(doors, roomLocked) {
 
             const inDoorRange = playerPos > doorRef - (DOOR_SIZE / 2) && playerPos < doorRef + (DOOR_SIZE / 2);
             // canPass checks if bomb or key removed the 'locked' status
-            const canPass = door.active && !door.locked && !door.hidden && !roomLocked;
+            // If door.forcedOpen is true, we ignore roomLocked
+            const canPass = door.active && !door.locked && !door.hidden && (!roomLocked || door.forcedOpen);
 
             if (dx !== 0) {
                 const limit = dx < 0 ? BOUNDARY : canvas.width - BOUNDARY;

@@ -1,9 +1,10 @@
 {
     "bombType": "golden",
-    "size": 10,
+    "size": 30,
     "colour": "#ffff00",
     "explodeOnImpact": false,
-    "openDoors": true,
+    "openLockedDoors": true,
+    "openRedDoors": true,
     "openSecretRooms": true,
     "radius": 100,
     "range": 70,

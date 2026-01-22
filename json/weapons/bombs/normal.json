@@ -1,7 +1,8 @@
 {
     "bombType": "normal",
     "size": 10,
-    "openDoors": false,
+    "openLockedDoors": true,
+    "openRedDoors": true,
     "openSecretRooms": true,
     "explodeOnImpact": false,
     "explodeOnTimer": false,
