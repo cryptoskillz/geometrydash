@@ -2,7 +2,7 @@
     "name": "Pea Shooter",
     "Bullet": {
         "particles": {
-            "active": false,
+            "active": true,
             "frequency": 0.5,
             "life": 0.5,
             "sizeMult": 0.5
@@ -32,13 +32,13 @@
         "curve": 0,
         "spread": 0.5,
         "spreadRate": 0.5,
-        "number": 5,
+        "number": 1,
         "recoil": 1,
         "homing": true,
         "fireRate": 0.1,
         "wallBounce": true,
-        "pierce": false,
-        "backfire": false,
+        "pierce": true,
+        "reverseFire": true,
         "frontLocked": false,
         "NoBullets": false,
         "critChance": 0.2,

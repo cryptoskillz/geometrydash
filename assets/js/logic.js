@@ -801,6 +801,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
     // 2. Spawning Logic (using else-if to prevent duplicate logic execution)
     if (direction === 0) {
         bullets.push(createBullet(vx, vy));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(-vx, -vy));
     }
     else if (direction === 360) {
         for (let i = 0; i < 360; i += 10) {
@@ -810,15 +811,19 @@ function fireBullet(direction, speed, vx, vy, angle) {
     }
     else if (direction === 1) { // North
         bullets.push(createBullet(0, -speed));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(0, speed));
     }
     else if (direction === 2) { // East
         bullets.push(createBullet(speed, 0));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(-speed, 0));
     }
     else if (direction === 3) { // South
         bullets.push(createBullet(0, speed));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(0, -speed));
     }
     else if (direction === 4) { // West
         bullets.push(createBullet(-speed, 0));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(speed, 0));
     }
 
     bulletsInRoom++;
