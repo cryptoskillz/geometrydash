@@ -789,6 +789,8 @@ function fireBullet(direction, speed, vx, vy, angle) {
 function tryUse() {
     if (!keys["Space"]) return;
 
+
+
     // consume input so it fires once
     keys["Space"] = false;
 
@@ -878,6 +880,13 @@ function update() {
     if (gameState !== STATES.PLAY) return;
 
     if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // --- RESTART LOGIC ---
+    if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED && keys['KeyR']) {
+
+        // if (gameState === STATES.GAMEOVER ) {
+        restartGame();
+    }
 
     // --- 0. MUSIC TOGGLE (With Safety Check) ---
     if (keys['KeyM'] && Date.now() - (lastMKeyTime || 0) > 300) {
