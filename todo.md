@@ -2,8 +2,7 @@ bugs
     add back all bullet tyoes stupid ai keeps removng it
     m top toggle music
     guradian loads
-    hp when hit
-    game over when no hp
+
     
 
 

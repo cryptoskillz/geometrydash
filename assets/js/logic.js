@@ -504,9 +504,17 @@ window.addEventListener('keydown', e => {
     if (gameState === STATES.GAMEOVER && e.code === 'Enter') {
         restartGame();
     }
-    // P key to resume from pause menu
-    if (gameState === STATES.GAMEMENU && e.code === 'KeyP') {
-        goContinue();
+    // Pause menu key controls
+    if (gameState === STATES.GAMEMENU) {
+        if (e.code === 'KeyP' || e.code === 'KeyC') {
+            goContinue();  // P or C = Continue
+        }
+        if (e.code === 'KeyR') {
+            restartGame(); // R = Restart
+        }
+        if (e.code === 'KeyM') {
+            goToWelcome(); // M = Main Menu
+        }
     }
 });
 window.addEventListener('keyup', e => {
