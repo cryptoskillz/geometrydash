@@ -898,7 +898,36 @@ function update() {
         if (visitedRooms[currentCoord]) visitedRooms[currentCoord].cleared = true;
     }
 
-    // --- 2. MOVEMENT ---
+    // --- 2. BOMB DROPPING ---
+    if (keys['KeyB'] && player.inventory?.bombs > 0) {
+        const now = Date.now();
+        // Prevent dropping multiple bombs too fast (300ms delay)
+        if (now - (player.lastBombTime || 0) > 300) {
+            player.inventory.bombs--;
+            player.lastBombTime = now;
+
+            // Push new bomb object
+            bombs.push({
+                x: player.x,
+                y: player.y,
+                explodeAt: now + 1500, // Explode after 1.5 seconds
+                explosionDuration: 300,
+                baseR: 10,
+                maxR: 80,
+                damage: 5,
+                colour: "#e67e22",
+                explosionColour: "rgba(230, 126, 34, 0.6)",
+                exploding: false,
+                didDamage: false,
+                canDamagePlayer: true
+            });
+
+            SFX.shoot(0.1); // Sound of dropping
+            updateUI();
+        }
+    }
+
+    // --- 3. MOVEMENT ---
     const moveKeys = { "KeyW": [0, -1, 'top'], "KeyS": [0, 1, 'bottom'], "KeyA": [-1, 0, 'left'], "KeyD": [1, 0, 'right'] };
     for (let [key, [dx, dy, dir]] of Object.entries(moveKeys)) {
         if (keys[key]) {
@@ -972,7 +1001,6 @@ function update() {
                 b.x = Math.max(0, Math.min(canvas.width, b.x));
                 b.y = Math.max(0, Math.min(canvas.height, b.y));
             } else {
-                // EXPLODE ON WALL
                 if (gun.Bullet?.Explode?.active && !b.isShard) {
                     const ex = gun.Bullet.Explode;
                     const step = (Math.PI * 2) / ex.shards;
@@ -986,7 +1014,6 @@ function update() {
                 bullets.splice(i, 1); return;
             }
         }
-
         b.life--;
         if (b.life <= 0) bullets.splice(i, 1);
     });
@@ -994,7 +1021,6 @@ function update() {
     // --- 6. ENEMIES ---
     enemies.forEach((en, ei) => {
         if (en.isDead) { en.deathTimer--; if (en.deathTimer <= 0) enemies.splice(ei, 1); return; }
-
         let angle = Math.atan2(player.y - en.y, player.x - en.x);
         en.x += Math.cos(angle) * en.speed; en.y += Math.sin(angle) * en.speed;
 
@@ -1002,33 +1028,22 @@ function update() {
             let dist = Math.hypot(b.x - en.x, b.y - en.y);
             if (dist < en.size) {
                 if (gun.Bullet?.pierce && b.hitEnemies?.includes(ei)) return;
-
-                // --- TRIGGER EXPLODE OBJECT PROPERTIES ---
                 if (gun.Bullet?.Explode?.active && !b.isShard) {
                     const ex = gun.Bullet.Explode;
                     const step = (Math.PI * 2) / ex.shards;
                     for (let i = 0; i < ex.shards; i++) {
                         bullets.push({
-                            x: b.x, y: b.y,
-                            vx: Math.cos(step * i) * (gun.Bullet?.speed || 7),
-                            vy: Math.sin(step * i) * (gun.Bullet?.speed || 7),
-                            life: ex.shardRange,   // Takes effect from JSON
-                            damage: ex.damage,     // Takes effect from JSON
-                            size: ex.size,         // Takes effect from JSON
-                            isShard: true,
-                            colour: b.colour
+                            x: b.x, y: b.y, vx: Math.cos(step * i) * (gun.Bullet?.speed || 7), vy: Math.sin(step * i) * (gun.Bullet?.speed || 7),
+                            life: ex.shardRange, damage: ex.damage, size: ex.size, isShard: true, colour: b.colour
                         });
                     }
                 }
-
                 if (gun.Bullet?.pierce) {
                     if (!b.hitEnemies) b.hitEnemies = [];
                     b.hitEnemies.push(ei);
                 }
-
                 en.hp -= (b.damage || 1);
                 SFX.explode(0.08);
-
                 if (!gun.Bullet?.pierce) bullets.splice(bi, 1);
                 if (en.hp <= 0) { en.isDead = true; en.deathTimer = 30; }
             }
@@ -1085,72 +1100,51 @@ async function draw() {
     ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : '#5dade2';
     ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2); ctx.fill();
 
-    // --- COOLDOWN PROGRESS BAR ---
-    const fr = gun.Bullet?.fireRate || 0;
-    if (fr >= 5) {
-        const now = Date.now();
-        const elapsed = now - (player.lastShot || 0);
-        const cooldownMs = fr * 1000;
-
-        if (elapsed < cooldownMs) {
-            const progress = elapsed / cooldownMs;
-            const barWidth = 40;
-            const barHeight = 4;
-            const x = player.x - barWidth / 2;
-            const y = player.y - player.size - 15;
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillRect(x, y, barWidth, barHeight);
-
-            ctx.fillStyle = "#00f2ff";
-            ctx.fillRect(x, y, barWidth * progress, barHeight);
-        }
-    }
-
     // 4.5 --- PARTICLE TRAILS ---
     if (typeof particles !== 'undefined') {
         particles.forEach(p => {
-            ctx.save();
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
+            ctx.save(); ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); ctx.restore();
         });
     }
 
-    // 5. --- BULLETS (Updated for visual rotation on bounce/curve) ---
+    // 5. --- BULLETS ---
     bullets.forEach(b => {
         ctx.fillStyle = b.colour || 'yellow';
         const s = b.size || 5;
         ctx.save();
         ctx.translate(b.x, b.y);
-
-        // Rotate the shape to face where the bullet is currently moving (vx, vy)
         ctx.rotate(Math.atan2(b.vy, b.vx));
-
-        if (b.animated) ctx.rotate(b.spinAngle = (b.spinAngle || 0) + 0.15);
-
         ctx.beginPath();
-        if (b.shape === 'triangle') {
-            // Triangle points forward (along X axis after rotation)
-            ctx.moveTo(s, 0);
-            ctx.lineTo(-s, s);
-            ctx.lineTo(-s, -s);
-            ctx.closePath();
-        }
+        if (b.shape === 'triangle') { ctx.moveTo(s, 0); ctx.lineTo(-s, s); ctx.lineTo(-s, -s); ctx.closePath(); }
         else if (b.shape === 'square') ctx.rect(-s, -s, s * 2, s * 2);
         else ctx.arc(0, 0, s, 0, Math.PI * 2);
-
-        b.filled ? ctx.fill() : ctx.stroke();
+        ctx.fill();
         ctx.restore();
     });
 
     // 6. --- BOMBS ---
     for (let i = bombs.length - 1; i >= 0; i--) {
         const b = bombs[i]; const now = Date.now();
-        if (!b.exploding && now >= b.explodeAt) { b.exploding = true; b.explosionStartAt = now; }
+        // Trigger explosion state
+        if (!b.exploding && now >= b.explodeAt) {
+            b.exploding = true;
+            b.explosionStartAt = now;
+            SFX.explode(0.2);
+
+            // OPTIONAL: Add shards to bomb explosion
+            if (gun.Bullet?.Explode?.active) {
+                const ex = gun.Bullet.Explode;
+                const step = (Math.PI * 2) / ex.shards;
+                for (let j = 0; j < ex.shards; j++) {
+                    bullets.push({
+                        x: b.x, y: b.y, vx: Math.cos(step * j) * 5, vy: Math.sin(step * j) * 5,
+                        life: ex.shardRange, damage: 2, size: ex.size * 2, isShard: true, colour: "orange"
+                    });
+                }
+            }
+        }
+
         if (b.exploding) {
             const p = Math.min(1, (now - b.explosionStartAt) / b.explosionDuration), r = b.baseR + (b.maxR - b.baseR) * p;
             if (b.canDamagePlayer && !b.didPlayerDamage && !isInv && Math.hypot(player.x - b.x, player.y - b.y) < r + player.size) {
@@ -1165,35 +1159,25 @@ async function draw() {
             ctx.save(); ctx.globalAlpha = 1 - p; ctx.fillStyle = b.explosionColour;
             ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
             if (p >= 1) bombs.splice(i, 1);
-        } else { ctx.fillStyle = b.colour; ctx.beginPath(); ctx.arc(b.x, b.y, b.baseR, 0, Math.PI * 2); ctx.fill(); }
+        } else {
+            // Pulse effect for ticking bomb
+            const pulse = 1 + Math.sin(now / 100) * 0.2;
+            ctx.fillStyle = b.colour; ctx.beginPath(); ctx.arc(b.x, b.y, b.baseR * pulse, 0, Math.PI * 2); ctx.fill();
+        }
     }
 
-    // 7. --- BOSS/ENEMIES ---
-    if (roomData.isBoss && !roomData.cleared && Date.now() < (bossIntroEndTime || 0)) {
-        ctx.fillStyle = "#e74c3c"; ctx.font = "bold 50px 'Courier New'"; ctx.textAlign = "center";
-        ctx.fillText((enemyTemplates["boss"]?.name || "BOSS").toUpperCase(), canvas.width / 2, canvas.height / 2);
-    } else {
-        enemies.forEach(en => {
-            ctx.save();
-            if (en.isDead) ctx.globalAlpha = Math.max(0, en.deathTimer / (en.deathDuration || 30));
+    // 7. --- ENEMIES ---
+    enemies.forEach(en => {
+        ctx.save();
+        if (en.isDead) ctx.globalAlpha = Math.max(0, en.deathTimer / 30);
+        ctx.fillStyle = en.hitTimer > 0 ? "white" : (en.color || "#e74c3c");
+        if (en.hitTimer > 0) en.hitTimer--;
+        ctx.beginPath(); ctx.arc(en.x, en.y, en.size, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    });
 
-            if (en.hitTimer > 0) {
-                ctx.fillStyle = en.lastHitWasCrit ? "#ff00ff" : "white";
-                en.hitTimer--;
-            } else if (en.freezeUntil && Date.now() < en.freezeUntil) {
-                ctx.fillStyle = "#3498db";
-            } else {
-                ctx.fillStyle = en.color || "#e74c3c";
-            }
-
-            ctx.beginPath(); ctx.arc(en.x, en.y, en.size, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-        });
-    }
-
-    // 8. --- UI ---
     if (isShaking) ctx.restore();
-    drawMinimap(); drawTutorial();
+    drawMinimap();
     requestAnimationFrame(() => { update(); draw(); });
 }
 
