@@ -501,8 +501,13 @@ window.addEventListener('keydown', e => {
         return;
     }
     keys[e.code] = true;
-    if (gameState === STATES.GAMEOVER && e.code === 'Enter') {
-        restartGame();
+    if (gameState === STATES.GAMEOVER) {
+        if (e.code === 'Enter' || e.code === 'KeyR') {
+            restartGame();
+        }
+        if (e.code === 'KeyM') {
+            goToWelcome();
+        }
     }
     // Pause menu key controls
     if (gameState === STATES.GAMEMENU) {
