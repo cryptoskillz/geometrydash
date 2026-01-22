@@ -504,6 +504,10 @@ window.addEventListener('keydown', e => {
     if (gameState === STATES.GAMEOVER && e.code === 'Enter') {
         restartGame();
     }
+    // P key to resume from pause menu
+    if (gameState === STATES.GAMEMENU && e.code === 'KeyP') {
+        goContinue();
+    }
 });
 window.addEventListener('keyup', e => {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
@@ -811,6 +815,11 @@ function update() {
     updateRestart();
     updateMusicToggle(); // <--- Added this
     if (keys["Space"]) updateUse();
+    if (keys["KeyP"]) {
+        keys["KeyP"] = false; // Prevent repeated triggers
+        gameMenu();
+        return;
+    }
 
     // 2. World Logic
     updateRoomLock();
@@ -1393,7 +1402,7 @@ function gameWon() {
 }
 
 function gameMenu() {
-    gameState = STATES.gameMenu;
+    gameState = STATES.GAMEMENU;
     overlay.style.display = 'flex';
     overlayTitle.innerText = "Pause";
     overlayEl.querySelector('#continueBtn').style.display = '';
@@ -1466,6 +1475,7 @@ function drawTutorial() {
 
         const actions = [
             { label: "ITEM", key: "⎵" },
+            { label: "PAUSE", key: "P" },
             { label: "MENU", key: "M" },
             { label: "BOMB", key: "B" }
         ];
