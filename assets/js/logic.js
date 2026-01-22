@@ -329,7 +329,7 @@ const DEBUG_PLAYER = true;
 const CHEATS_ENABLED = false;
 const DEBUG_WINDOW_ENABLED = true;
 
-let musicMuted = false;
+let musicMuted = true;
 let lastMKeyTime = 0;
 
 
@@ -876,18 +876,17 @@ function tryUse() {
     console.log(`${target.dir} door used (already unlocked)`);
 }
 
-function update() {
-    if (gameState !== STATES.PLAY) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
+function updateRestart() {
     // --- 1. RESTART & UI CHECKS ---
     if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED && keys['KeyR']) restartGame();
 
     // Check for Space Bar interaction (Key Unlock)
     if (keys["Space"]) {
         tryUse();
-    }
+    } if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED && keys['KeyR']) restartGame();
+}
 
+function updateRoomLock() {
     // --- 2. ROOM & LOCK STATUS ---
     const aliveEnemies = enemies.filter(en => !en.isDead);
     const roomLocked = aliveEnemies.length > 0;
@@ -898,6 +897,9 @@ function update() {
         const currentCoord = `${player.roomX}, ${player.roomY}`;
         if (visitedRooms[currentCoord]) visitedRooms[currentCoord].cleared = true;
     }
+}
+
+function updateBombDropping() {
 
     // --- 3. BOMB DROPPING ---
     if (keys['KeyB'] && player.inventory?.bombs > 0) {
@@ -921,7 +923,9 @@ function update() {
             updateUI();
         }
     }
+}
 
+function updateMovementAndDoors(doors, roomLocked) {
     // --- 4. MOVEMENT & DOOR COLLISION ---
     const moveKeys = { "KeyW": [0, -1, 'top'], "KeyS": [0, 1, 'bottom'], "KeyA": [-1, 0, 'left'], "KeyD": [1, 0, 'right'] };
     for (let [key, [dx, dy, dir]] of Object.entries(moveKeys)) {
@@ -947,6 +951,9 @@ function update() {
         }
     }
 
+}
+
+function updateShooting() {
     // --- 5. SHOOTING ---
     const shootingKeys = keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
     if (shootingKeys) {
@@ -969,6 +976,9 @@ function update() {
         }
     }
 
+}
+
+function updateBulletsAndShards() {
     // --- 6. BULLETS & SHARDS ---
     bullets.forEach((b, i) => {
         b.x += b.vx; b.y += b.vy;
@@ -988,7 +998,9 @@ function update() {
         }
         b.life--; if (b.life <= 0) bullets.splice(i, 1);
     });
+}
 
+function updateEnemies() {
     // --- 7. ENEMIES ---
     enemies.forEach((en, ei) => {
         if (en.isDead) { en.deathTimer--; if (en.deathTimer <= 0) enemies.splice(ei, 1); return; }
@@ -1010,6 +1022,9 @@ function update() {
             }
         });
     });
+}
+
+function updateRoomTransitions(doors, roomLocked) {
 
     // --- 8. ROOM TRANSITIONS ---
     if (!roomLocked) {
@@ -1020,19 +1035,55 @@ function update() {
         else if (player.y > canvas.height - t && doors.bottom?.active && !doors.bottom?.locked) changeRoom(0, 1);
     }
 }
+
+
+function update() {
+    if (gameState !== STATES.PLAY) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // Player Movement
+    const roomLocked = enemies.length > 0;
+    const doors = roomData.doors || {};
+
+    updateRestart();
+    updateRoomLock();
+    updateBombDropping();
+    updateMovementAndDoors(doors, roomLocked);
+    updateShooting();
+    updateBulletsAndShards();
+    updateEnemies();
+    updateRoomTransitions(doors, roomLocked);
+}
+
+
 async function draw() {
     await updateUI();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const now = Date.now();
 
+
+    drawShake()
+    drawDoors()
+    drawPlayer()
+    drawBullets()
+    drawBombs()
+    drawEnemies()
+    if (screenShake.power > 0) ctx.restore();
+    drawMinimap();
+    drawTutorial();
+    requestAnimationFrame(() => { update(); draw(); });
+}
+
+
+function drawShake() {
     // 1. --- SHAKE ---
     if (screenShake.power > 0 && now < screenShake.endAt) {
         ctx.save();
         const s = screenShake.power * ((screenShake.endAt - now) / 180);
         ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
     }
+}
 
-    // 2. --- DOORS ---
+function drawDoors() {
     const roomLocked = enemies.filter(en => !en.isDead).length > 0;
     const doors = roomData.doors || {};
     Object.entries(doors).forEach(([dir, door]) => {
@@ -1044,6 +1095,44 @@ async function draw() {
         if (dir === 'left') ctx.fillRect(0, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
         if (dir === 'right') ctx.fillRect(canvas.width - DOOR_THICKNESS, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
     });
+}
+
+
+function drawPlayer() {
+    const now = Date.now();
+    // 4. --- PLAYER ---
+    const isInv = player.invuln || now < (player.invulnUntil || 0);
+    ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : '#5dade2';
+    ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2); ctx.fill();
+
+}
+
+function drawBullets() {
+    // 5. --- BULLETS & ENEMIES ---
+    bullets.forEach(b => {
+        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
+        ctx.fillStyle = b.colour || 'yellow';
+        const s = b.size || 5;
+        ctx.beginPath();
+        if (b.shape === 'triangle') { ctx.moveTo(s, 0); ctx.lineTo(-s, s); ctx.lineTo(-s, -s); ctx.closePath(); }
+        else if (b.shape === 'square') ctx.rect(-s, -s, s * 2, s * 2);
+        else ctx.arc(0, 0, s, 0, Math.PI * 2);
+        ctx.fill(); ctx.restore();
+    });
+
+}
+
+function drawEnemies() {
+    enemies.forEach(en => {
+        ctx.save();
+        if (en.isDead) ctx.globalAlpha = en.deathTimer / 30;
+        ctx.fillStyle = en.hitTimer > 0 ? "white" : (en.color || "#e74c3c");
+        ctx.beginPath(); ctx.arc(en.x, en.y, en.size, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    });
+}
+
+function drawBombs() {
 
     // 3. --- BOMBS (Explosion & Door Logic) ---
     for (let i = bombs.length - 1; i >= 0; i--) {
@@ -1087,36 +1176,9 @@ async function draw() {
             ctx.beginPath(); ctx.arc(b.x, b.y, b.baseR, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
         }
     }
-
-    // 4. --- PLAYER ---
-    const isInv = player.invuln || now < (player.invulnUntil || 0);
-    ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : '#5dade2';
-    ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2); ctx.fill();
-
-    // 5. --- BULLETS & ENEMIES ---
-    bullets.forEach(b => {
-        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
-        ctx.fillStyle = b.colour || 'yellow';
-        const s = b.size || 5;
-        ctx.beginPath();
-        if (b.shape === 'triangle') { ctx.moveTo(s, 0); ctx.lineTo(-s, s); ctx.lineTo(-s, -s); ctx.closePath(); }
-        else if (b.shape === 'square') ctx.rect(-s, -s, s * 2, s * 2);
-        else ctx.arc(0, 0, s, 0, Math.PI * 2);
-        ctx.fill(); ctx.restore();
-    });
-
-    enemies.forEach(en => {
-        ctx.save();
-        if (en.isDead) ctx.globalAlpha = en.deathTimer / 30;
-        ctx.fillStyle = en.hitTimer > 0 ? "white" : (en.color || "#e74c3c");
-        ctx.beginPath(); ctx.arc(en.x, en.y, en.size, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-    });
-
-    if (screenShake.power > 0) ctx.restore();
-    drawMinimap(); drawTutorial();
-    requestAnimationFrame(() => { update(); draw(); });
 }
+
+
 
 function playerHit(en, invuln = false, knockback = false, shakescreen = false) {
     //check if player should be made invulerable
