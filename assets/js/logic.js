@@ -870,11 +870,13 @@ function updateMusicToggle() {
         const now = Date.now();
         // 300ms cooldown so it doesn't toggle every frame
         if (now - lastMusicToggle > 300) {
-            if (audio.music.paused) {
-                audio.music.play();
+            if (introMusic.paused) {
+                introMusic.play();
+                musicMuted = false;
                 console.log("Music Playing");
             } else {
-                audio.music.pause();
+                introMusic.pause();
+                musicMuted = true;
                 console.log("Music Paused");
             }
             lastMusicToggle = now;

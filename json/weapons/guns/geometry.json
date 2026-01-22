@@ -32,7 +32,7 @@
         "curve": 0,
         "spread": 0.5,
         "spreadRate": 0.5,
-        "number": 1,
+        "number": 5,
         "recoil": 1,
         "homing": true,
         "fireRate": 0.1,
