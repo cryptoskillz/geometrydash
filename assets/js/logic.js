@@ -156,14 +156,19 @@ async function updateUI() {
     //console.log(gun);
     if (gun.Bullet?.ammo?.active) {
         if (player.reloading) {
-            ammoEl.innerText = "RELOADING...";
+            ammoEl.innerText = player.ammoMode === 'recharge' ? "RECHARGING..." : "RELOADING...";
             ammoEl.style.color = "red";
         } else {
-            ammoEl.innerText = player.ammo;
-            if (player.ammoMode === 'reload') {
-                ammoEl.innerText += ` / ${player.reserveAmmo}`;
+            if (player.ammo <= 0 && player.ammoMode === 'finite') {
+                ammoEl.innerText = "OUT OF AMMO";
+                ammoEl.style.color = "red";
+            } else {
+                ammoEl.innerText = player.ammo;
+                if (player.ammoMode === 'reload') {
+                    ammoEl.innerText += ` / ${player.reserveAmmo}`;
+                }
+                ammoEl.style.color = player.ammo <= player.maxMag * 0.2 ? "red" : "white";
             }
-            ammoEl.style.color = player.ammo <= player.maxMag * 0.2 ? "red" : "white";
         }
     } else {
         ammoEl.innerText = "--";
@@ -817,7 +822,7 @@ function fireBullet(direction, speed, vx, vy, angle) {
     if (gun.Bullet?.ammo?.active) {
         if (player.reloading) return; // Cannot fire while reloading
         if (player.ammo <= 0) {
-            reloadWeapon();
+            if (player.ammoMode !== 'finite') reloadWeapon();
             return;
         }
         player.ammo--;
@@ -893,6 +898,8 @@ function fireBullet(direction, speed, vx, vy, angle) {
 
 function reloadWeapon() {
     if (player.reloading) return;
+    if (player.ammoMode === 'finite') return; // No reload for finite mode
+
     player.reloading = true;
     log("Reloading...");
 
