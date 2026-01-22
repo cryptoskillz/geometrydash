@@ -798,8 +798,9 @@ function tryUse() {
     if (audioCtx.state === 'suspended') {
         audioCtx.resume();
     }
-    if (!Music.isPlaying) {
-        Music.start();
+    // Handle Audio Context
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
     }
 
     const roomLocked = enemies.length > 0;
@@ -878,11 +879,14 @@ function update() {
 
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
-    // --- 0. MUSIC TOGGLE ---
+    // --- 0. MUSIC TOGGLE (With Safety Check) ---
     if (keys['KeyM'] && Date.now() - (lastMKeyTime || 0) > 300) {
         musicMuted = !musicMuted;
-        if (musicMuted) introMusic.pause();
-        else introMusic.play();
+        // The safety check 'introMusic && introMusic.pause' prevents the error
+        if (introMusic) {
+            if (musicMuted) introMusic.pause();
+            else introMusic.play().catch(e => console.log("Audio play blocked"));
+        }
         lastMKeyTime = Date.now();
     }
 
@@ -916,14 +920,22 @@ function update() {
             const door = doors[dir] || { active: 0, locked: 0 };
             const doorRef = (dir === 'top' || dir === 'bottom') ? (door.x ?? canvas.width / 2) : (door.y ?? canvas.height / 2);
             const playerPos = (dir === 'top' || dir === 'bottom') ? player.x : player.y;
+
+            // Check if player is aligned with the door opening
             const inDoorRange = playerPos > doorRef - DOOR_SIZE && playerPos < doorRef + DOOR_SIZE;
             const canPass = door.active && !door.locked && !roomLocked;
+
             if (dx !== 0) {
                 const limit = dx < 0 ? BOUNDARY : canvas.width - BOUNDARY;
-                if ((dx < 0 ? player.x > limit : player.x < limit) || (inDoorRange && canPass)) player.x += dx * player.speed;
+                // Allow movement if within boundary OR if moving through a valid door
+                if ((dx < 0 ? player.x > limit : player.x < limit) || (inDoorRange && canPass)) {
+                    player.x += dx * player.speed;
+                }
             } else {
                 const limit = dy < 0 ? BOUNDARY : canvas.height - BOUNDARY;
-                if ((dy < 0 ? player.y > limit : player.y < limit) || (inDoorRange && canPass)) player.y += dy * player.speed;
+                if ((dy < 0 ? player.y > limit : player.y < limit) || (inDoorRange && canPass)) {
+                    player.y += dy * player.speed;
+                }
             }
         }
     }
@@ -941,7 +953,6 @@ function update() {
             else if (keys['ArrowRight']) centerAngle = 0;
 
             const count = gun.Bullet?.number || 1;
-            const spread = gun.Bullet?.spreadRate || 0.2;
             const recoilVal = gun.Bullet?.recoil || 0;
 
             player.x -= Math.cos(centerAngle) * (recoilVal * count);
@@ -950,6 +961,7 @@ function update() {
             player.y = Math.max(BOUNDARY, Math.min(canvas.height - BOUNDARY, player.y));
 
             for (let i = 0; i < count; i++) {
+                let spread = gun.Bullet?.spreadRate || 0.2;
                 let finalAngle = centerAngle + (count > 1 ? (i - (count - 1) / 2) * spread : 0);
                 const speed = gun.Bullet?.speed || 7;
                 fireBullet(0, speed, Math.cos(finalAngle) * speed, Math.sin(finalAngle) * speed, finalAngle);
@@ -987,11 +999,12 @@ function update() {
         if (pSettings?.active && Math.random() < (pSettings.frequency || 0.5)) {
             particles.push({ x: b.x, y: b.y, color: b.colour || 'yellow', life: pSettings.life || 0.5, size: (b.size || 5) * (pSettings.sizeMult || 0.5) });
         }
-        b.x += b.vx; b.y += b.vy; b.life--;
+        b.x += b.vx; b.y += b.vy;
+        b.life--;
         if (b.life <= 0) bullets.splice(i, 1);
     });
 
-    // --- 6. ENEMIES (RECONSTRUCTED LOOP) ---
+    // --- 6. ENEMIES ---
     enemies.forEach((en, ei) => {
         if (en.isDead) {
             en.deathTimer--;
@@ -999,7 +1012,6 @@ function update() {
             return;
         }
 
-        // Freeze Logic: Don't move if frozen
         if (!en.freezeUntil || Date.now() > en.freezeUntil) {
             let angle = Math.atan2(player.y - en.y, player.x - en.x);
             en.x += Math.cos(angle) * en.speed;
@@ -1009,27 +1021,19 @@ function update() {
         bullets.forEach((b, bi) => {
             if (Math.hypot(b.x - en.x, b.y - en.y) < en.size) {
                 let damage = b.damage || 1;
-
-                // CRITICAL HIT
                 if (Math.random() < (gun.Bullet?.critChance || 0)) {
                     damage *= (gun.Bullet?.critDamage || 2);
-                    en.hitTimer = 10;
-                    en.lastHitWasCrit = true;
+                    en.hitTimer = 10; en.lastHitWasCrit = true;
                     SFX.shoot(0.1);
                 } else {
-                    en.hitTimer = 4;
-                    en.lastHitWasCrit = false;
+                    en.hitTimer = 4; en.lastHitWasCrit = false;
                 }
-
-                // FREEZE
                 if (Math.random() < (gun.Bullet?.freezeChance || 0)) {
                     en.freezeUntil = Date.now() + (gun.Bullet?.freezeDuration || 1000);
                 }
-
                 en.hp -= damage;
                 SFX.explode(0.08);
                 bullets.splice(bi, 1);
-
                 if (en.hp <= 0) {
                     en.isDead = true;
                     en.deathTimer = en.deathDuration || 30;
@@ -1043,16 +1047,21 @@ function update() {
         }
     });
 
-    // --- 7. TRANSITIONS ---
+    // --- 7. ROOM TRANSITIONS ---
+    // We check if the player has physically touched the edge of the screen
     if (!roomLocked) {
-        if (player.x < 10 && doors.left?.active) changeRoom(-1, 0);
-        if (player.x > canvas.width - 10 && doors.right?.active) changeRoom(1, 0);
-        if (player.y < 10 && doors.top?.active) changeRoom(0, -1);
-        if (player.y > canvas.height - 10 && doors.bottom?.active) changeRoom(0, 1);
+        const threshold = 5;
+        if (player.x < threshold && doors.left?.active) changeRoom(-1, 0);
+        else if (player.x > canvas.width - threshold && doors.right?.active) changeRoom(1, 0);
+        else if (player.y < threshold && doors.top?.active) changeRoom(0, -1);
+        else if (player.y > canvas.height - threshold && doors.bottom?.active) changeRoom(0, 1);
     }
-    if (player.hp <= 0) { introMusic.pause(); gameOver(); }
-}
 
+    if (player.hp <= 0) {
+        if (introMusic) introMusic.pause();
+        gameOver();
+    }
+}
 async function draw() {
     await updateUI();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
