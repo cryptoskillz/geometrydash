@@ -530,7 +530,7 @@ setTimeout(renderDebugForm, 100);
 function spawnEnemies() {
     enemies = [];
     //add the invul timer to the freeze until so they invulnerable for the time in player json
-    const freezeUntil = Date.now() + player.invulTimer;
+    const freezeUntil = Date.now() + (gameData.enterRoomFreezeTime || player.invulTimer || 1000);
 
     // Only apply invulnerability if NOT in start room
     if (player.roomX !== 0 || player.roomY !== 0) {
@@ -551,7 +551,8 @@ function spawnEnemies() {
                     const inst = JSON.parse(JSON.stringify(template));
                     inst.x = Math.random() * (canvas.width - 60) + 30;
                     inst.y = Math.random() * (canvas.height - 60) + 30;
-                    inst.freezeUntil = freezeUntil;
+                    inst.frozen = true;
+                    inst.freezeEnd = freezeUntil;
                     enemies.push(inst);
                 }
             } else {
@@ -568,7 +569,8 @@ function spawnEnemies() {
             const inst = JSON.parse(JSON.stringify(template));
             inst.x = Math.random() * (canvas.width - 60) + 30;
             inst.y = Math.random() * (canvas.height - 60) + 30;
-            inst.freezeUntil = freezeUntil;
+            inst.frozen = true;
+            inst.freezeEnd = freezeUntil;
             enemies.push(inst);
         }
     }
