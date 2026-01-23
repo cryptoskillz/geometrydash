@@ -874,6 +874,21 @@ function fireBullet(direction, speed, vx, vy, angle) {
     if (direction === 0) {
         bullets.push(createBullet(vx, vy));
         if (gun.Bullet?.reverseFire) bullets.push(createBullet(-vx, -vy));
+
+        // MultiDirectional Logic
+        if (gun.Bullet?.multiDirectional?.active) {
+            const md = gun.Bullet.multiDirectional;
+            if (md.fireNorth) bullets.push(createBullet(0, -speed));
+            if (md.fireEast) bullets.push(createBullet(speed, 0));
+            if (md.fireSouth) bullets.push(createBullet(0, speed));
+            if (md.fireWest) bullets.push(createBullet(-speed, 0));
+            if (md.fire360) {
+                for (let i = 0; i < 360; i += 10) {
+                    const rad = i * Math.PI / 180;
+                    bullets.push(createBullet(Math.cos(rad) * speed, Math.sin(rad) * speed));
+                }
+            }
+        }
     }
     else if (direction === 360) {
         for (let i = 0; i < 360; i += 10) {
@@ -1256,7 +1271,10 @@ function updateBulletsAndShards(aliveEnemies) {
                 if (b.x < 0 || b.x > canvas.width) b.vx *= -1;
                 if (b.y < 0 || b.y > canvas.height) b.vy *= -1;
             } else {
-                if (gun.Bullet?.Explode?.active && !b.isShard) spawnShards(b);
+                // Check for wallExplode OR general explode on impact if not a shard
+                if (gun.Bullet?.Explode?.active && !b.isShard) {
+                    if (gun.Bullet.Explode.wallExplode) spawnShards(b);
+                }
                 bullets.splice(i, 1);
                 return; // Use return to skip further processing for this bullet
             }

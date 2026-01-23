@@ -54,7 +54,8 @@
             "shards": 8,
             "size": 2,
             "damage": 0.1,
-            "shardRange": 30
+            "shardRange": 30,
+            "wallExplode": true
         }
     }
 }
