@@ -11,6 +11,7 @@ const statsEl = document.getElementById('stats');
 const perfectEl = document.getElementById('perfect');
 const roomNameEl = document.getElementById('roomName');
 const bombsEl = document.getElementById('bombs');
+const ammoEl = document.getElementById('ammo');
 const mapCanvas = document.getElementById('minimapCanvas');
 const mctx = mapCanvas.getContext('2d');
 const debugSelect = document.getElementById('debug-select');
@@ -62,7 +63,7 @@ let hitsInRoom = 0;
 let perfectStreak = 0;
 let gameData = { perfectGoal: 3 };
 
-const STATES = { START: 0, PLAY: 1, GAMEOVER: 2, GAMEMENU: 3 };
+const STATES = { START: 0, PLAY: 1, GAMEOVER: 2, GAMEMENU: 3, WIN: 4 };
 let gameState = STATES.START;
 
 let visitedRooms = {}; // Track state of each coordinate
@@ -88,6 +89,9 @@ let enemyTemplates = {};
 let bossIntroEndTime = 0;
 let gameLoopStarted = false;
 let keyUsedForRoom = false;
+
+let portal = { active: false, x: 0, y: 0 };
+let isInitializing = false;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -135,6 +139,25 @@ const SFX = {
 };
 
 
+// 2. Global Input Handler
+function handleGlobalInputs() {
+    // Restart
+    if (keys['KeyR']) {
+        if (gameState === STATES.GAMEOVER || gameState === STATES.WIN || gameState === STATES.GAMEMENU) {
+            restartGame();
+            return true;
+        }
+    }
+    // Main Menu
+    if (keys['KeyM']) {
+        if (gameState === STATES.GAMEOVER || gameState === STATES.WIN || gameState === STATES.GAMEMENU) {
+            goToWelcome();
+            return true;
+        }
+    }
+    return false;
+}
+
 async function updateUI() {
     if (player.hp < 0) {
         hpEl.innerText = 0
@@ -150,6 +173,33 @@ async function updateUI() {
         bombsEl.style.color = "white";
     }
     bombsEl.innerText = player.inventory.bombs;
+
+    // Ammo Display
+    //console.log(gun);
+    if (gun.Bullet?.ammo?.active) {
+        if (player.reloading) {
+            ammoEl.innerText = player.ammoMode === 'recharge' ? "RECHARGING..." : "RELOADING...";
+            ammoEl.style.color = "red";
+        } else {
+            if ((player.ammo <= 0 && player.ammoMode === 'finite') ||
+                (player.ammo <= 0 && player.ammoMode === 'reload' && player.reserveAmmo <= 0)) {
+                ammoEl.innerText = "OUT OF AMMO";
+                ammoEl.style.color = "red";
+            } else {
+                ammoEl.innerText = player.ammo;
+                if (player.ammoMode === 'reload') {
+                    ammoEl.innerText += ` / ${player.reserveAmmo}`;
+                }
+                ammoEl.style.color = player.ammo <= player.maxMag * 0.2 ? "red" : "white";
+            }
+        }
+    } else {
+        ammoEl.innerText = "--";
+        ammoEl.style.color = "gray";
+    }
+
+
+
     //update cords only if debug mode is enabled otherwise hide this
     if (DEBUG_WINDOW_ENABLED) {
         roomEl.innerText = `Coords: ${player.roomX},${player.roomY}`;
@@ -296,6 +346,13 @@ function generateLevel(length) {
             }
         }
 
+        // Check if template exists
+        if (!template) {
+            console.error(`Missing template for coord: ${coord}. Start: ${!!roomTemplates["start"]}, Boss: ${!!roomTemplates["boss"]}, BossCoord: ${bossCoord}`);
+            template = roomTemplates["start"]; // Emergency fallback
+            if (!template) return; // Critical failure logic handled by try/catch bubbling
+        }
+
         // Deep copy template
         const roomInstance = JSON.parse(JSON.stringify(template));
         levelMap[coord] = {
@@ -353,6 +410,9 @@ let lastMKeyTime = 0;
 
 // configurations
 async function initGame(isRestart = false) {
+    if (isInitializing) return;
+    isInitializing = true;
+
     if (debugPanel) debugPanel.style.display = DEBUG_WINDOW_ENABLED ? 'flex' : 'none';
     // Attempt to start music immediately
     introMusic.play().catch(() => log("Waiting for interaction to play music..."));
@@ -372,6 +432,7 @@ async function initGame(isRestart = false) {
     if (uiEl) uiEl.style.display = isRestart ? 'block' : 'none';
     bullets = [];
     bombs = [];
+    if (typeof portal !== 'undefined') portal.active = false;
 
     // ... [Previous debug and player reset logic remains the same] ...
     if (DEBUG_WINDOW_ENABLED) {
@@ -441,6 +502,31 @@ async function initGame(isRestart = false) {
         ]);
         bomb = bData;
         gun = gunData;
+        // Initialize Ammo
+        if (gun.Bullet?.ammo?.active) {
+            player.ammoMode = gun.Bullet?.ammo?.type || 'finite'; // 'finite', 'reload', 'recharge'
+            player.maxMag = gun.Bullet?.ammo?.amount || 100; // Clip size
+            // Handle resetTimer being 0 or undefined, treat as 0 if finite, but if reload/recharge usually non-zero.
+            // But if user sets resetTimer to 0, it instant reloads?
+            player.reloadTime = gun.Bullet?.ammo?.resetTimer !== undefined ? gun.Bullet?.ammo?.resetTimer : (gun.Bullet?.ammo?.reload || 1000);
+
+            // Initial State
+            player.ammo = player.maxMag;
+            player.reloading = false;
+
+            // Reserve Logic
+            if (player.ammoMode === 'reload') {
+                // Magazine Mode: maxAmount is total reserve
+                player.reserveAmmo = (gun.Bullet?.ammo?.maxAmount || 0) - player.maxMag;
+                if (player.reserveAmmo < 0) player.reserveAmmo = 0;
+            } else if (player.ammoMode === 'recharge') {
+                // Recharge Mode: Infinite reserve
+                player.reserveAmmo = Infinity;
+            } else {
+                // Finite Mode: No reserve
+                player.reserveAmmo = 0;
+            }
+        }
 
         // 3. Pre-load ALL room templates
         roomTemplates = {};
@@ -494,6 +580,8 @@ async function initGame(isRestart = false) {
             gameLoopStarted = true;
             draw();
         }
+    } finally {
+        isInitializing = false;
     }
 }
 // Initial Start
@@ -573,6 +661,7 @@ function spawnEnemies() {
                     inst.y = Math.random() * (canvas.height - 60) + 30;
                     inst.frozen = true;
                     inst.freezeEnd = freezeUntil;
+                    inst.invulnerable = true; // Make invulnerable during spawn freeze
                     enemies.push(inst);
                 }
             } else {
@@ -591,6 +680,7 @@ function spawnEnemies() {
             inst.y = Math.random() * (canvas.height - 60) + 30;
             inst.frozen = true;
             inst.freezeEnd = freezeUntil;
+            inst.invulnerable = true; // Make invulnerable during spawn freeze
             enemies.push(inst);
         }
     }
@@ -768,6 +858,25 @@ function fireBullet(direction, speed, vx, vy, angle) {
         return;
     }
 
+    // Ammo Check
+    if (gun.Bullet?.ammo?.active) {
+        if (player.reloading) return; // Cannot fire while reloading
+        if (player.ammo <= 0) {
+            if (player.ammoMode === 'finite') return;
+            if (player.ammoMode === 'reload' && player.reserveAmmo <= 0) return;
+
+            reloadWeapon();
+            return;
+        }
+        player.ammo--;
+        // Check if empty AFTER firing
+        if (player.ammo <= 0) {
+            if (player.reserveAmmo > 0 || player.ammoMode === 'recharge') {
+                reloadWeapon();
+            }
+        }
+    }
+
     // Helper to create the base bullet object
     const createBullet = (velX, velY) => {
         // Determine the shape ONCE at creation
@@ -801,6 +910,22 @@ function fireBullet(direction, speed, vx, vy, angle) {
     // 2. Spawning Logic (using else-if to prevent duplicate logic execution)
     if (direction === 0) {
         bullets.push(createBullet(vx, vy));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(-vx, -vy));
+
+        // MultiDirectional Logic
+        if (gun.Bullet?.multiDirectional?.active) {
+            const md = gun.Bullet.multiDirectional;
+            if (md.fireNorth) bullets.push(createBullet(0, -speed));
+            if (md.fireEast) bullets.push(createBullet(speed, 0));
+            if (md.fireSouth) bullets.push(createBullet(0, speed));
+            if (md.fireWest) bullets.push(createBullet(-speed, 0));
+            if (md.fire360) {
+                for (let i = 0; i < 360; i += 10) {
+                    const rad = i * Math.PI / 180;
+                    bullets.push(createBullet(Math.cos(rad) * speed, Math.sin(rad) * speed));
+                }
+            }
+        }
     }
     else if (direction === 360) {
         for (let i = 0; i < 360; i += 10) {
@@ -810,24 +935,73 @@ function fireBullet(direction, speed, vx, vy, angle) {
     }
     else if (direction === 1) { // North
         bullets.push(createBullet(0, -speed));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(0, speed));
     }
     else if (direction === 2) { // East
         bullets.push(createBullet(speed, 0));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(-speed, 0));
     }
     else if (direction === 3) { // South
         bullets.push(createBullet(0, speed));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(0, -speed));
     }
     else if (direction === 4) { // West
         bullets.push(createBullet(-speed, 0));
+        if (gun.Bullet?.reverseFire) bullets.push(createBullet(speed, 0));
     }
 
     bulletsInRoom++;
+    bulletsInRoom++;
+
+    // --- RECOIL ---
+    const recoil = gun.Bullet?.recoil || 0;
+    if (recoil > 0) {
+        if (direction === 0) {
+            // Mouse aiming - approximate recoil? Or just skip? 
+            // For now, let's skip mouse recoil or calculate reverse vector
+            const len = Math.hypot(vx, vy);
+            if (len > 0) {
+                player.x -= (vx / len) * recoil;
+                player.y -= (vy / len) * recoil;
+            }
+        } else if (direction === 1) { // North
+            player.y += recoil;
+        } else if (direction === 2) { // East
+            player.x -= recoil;
+        } else if (direction === 3) { // South
+            player.y -= recoil;
+        } else if (direction === 4) { // West
+            player.x += recoil;
+        }
+
+        // Wall collision check for player after recoil
+        if (player.x < 50) player.x = 50;
+        if (player.x > canvas.width - 50) player.x = canvas.width - 50;
+        if (player.y < 50) player.y = 50;
+        if (player.y > canvas.height - 50) player.y = canvas.height - 50;
+    }
+}
+
+function reloadWeapon() {
+    if (player.reloading) return;
+    if (player.ammoMode === 'finite') return; // No reload for finite mode
+
+    player.reloading = true;
+    player.reloadStart = Date.now();
+    player.reloadDuration = player.reloadTime || 1000;
+
+    log("Reloading...");
+    // Optional: Add sound here
+    // SFX.reload(); 
 }
 
 // update loop
 function update() {
+    // 0. Global Inputs (Restart/Menu from non-play states)
+    if (handleGlobalInputs()) return;
+
     // 1. If already dead, stop all logic
-    if (gameState === STATES.GAMEOVER) return;
+    if (gameState === STATES.GAMEOVER || gameState === STATES.WIN) return;
 
     // 2. TRIGGER GAME OVER
     if (player.hp <= 0) {
@@ -862,14 +1036,36 @@ function update() {
 
     // 3. Combat Logic
     updateShooting();
+    updateReload(); // Add reload state check
     updateBulletsAndShards(aliveEnemies); // Pass enemies for homing check
     updateEnemies(); // Enemy movement + player collision handled inside
 
     // 4. Transitions
     updateRoomTransitions(doors, roomLocked);
+    updatePortal();
 
     // 5. Game Over Check
     if (player.hp < 1) gameState = STATES.GAMEOVER;
+}
+
+function updateReload() {
+    if (player.reloading) {
+        const now = Date.now();
+        if (now - player.reloadStart >= player.reloadDuration) {
+            // Reload Complete
+            if (player.ammoMode === 'recharge') {
+                player.ammo = player.maxMag;
+            } else {
+                const needed = player.maxMag - player.ammo;
+                const take = Math.min(needed, player.reserveAmmo);
+                player.ammo += take;
+                if (player.ammoMode === 'reload') player.reserveAmmo -= take;
+            }
+
+            player.reloading = false;
+            log("Reloaded!");
+        }
+    }
 }
 
 //draw loop
@@ -886,10 +1082,57 @@ async function draw() {
     drawBombs(doors)
     drawEnemies()
     if (screenShake.power > 0) ctx.restore();
+
+    // --- PARTICLES ---
+    if (typeof particles !== 'undefined') {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            ctx.save();
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color || "white";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            p.life -= 0.05; // Decay
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+    }
+
     drawMinimap();
     drawTutorial();
     drawBossIntro();
+    drawPortal();
+    drawDebugLogs();
     requestAnimationFrame(() => { update(); draw(); });
+}
+
+function drawPortal() {
+    if (!portal.active) return;
+    const time = Date.now() / 500;
+
+    ctx.save();
+    ctx.translate(portal.x, portal.y);
+
+    // Outer glow
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "#8e44ad";
+
+    // Portal shape
+    ctx.fillStyle = "#8e44ad";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 30, 50, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Swirl effect
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 20 + Math.sin(time) * 5, 40 + Math.cos(time) * 5, time, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
 }
 
 function updateMusicToggle() {
@@ -972,19 +1215,85 @@ function drawPlayer() {
     ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : '#5dade2';
     ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2); ctx.fill();
 
+    // --- RELOAD / COOLDOWN BAR ---
+    // If reloading, show reload bar (Blue/Cyan)
+    if (player.reloading) {
+        const reloadPct = Math.min((now - player.reloadStart) / player.reloadDuration, 1);
+        const barW = 40;
+        const barH = 5;
+        const barX = player.x - barW / 2;
+        const barY = player.y - player.size - 25; // Slightly higher or same position
+
+        // Background
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(barX, barY, barW, barH);
+
+        // Progress
+        ctx.fillStyle = "#00ffff"; // Cyan for reload
+        ctx.fillRect(barX, barY, barW * reloadPct, barH);
+
+        // Border
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+
+        // Text label (Optional, maybe too small)
+        // ctx.fillStyle = "white";
+        // ctx.font = "10px Arial";
+        // ctx.fillText("RELOAD", barX, barY - 2);
+
+    } else {
+        // --- COOLDOWN BAR ---
+        const fireDelay = (gun.Bullet?.fireRate || 0.3) * 1000;
+        const timeSinceShot = now - (player.lastShot || 0);
+        const pct = Math.min(timeSinceShot / fireDelay, 1);
+
+        if (pct < 1 && gun.Bullet?.fireRate > 4) { // Only draw if reloading AND long cooldown
+            const barW = 40;
+            const barH = 5;
+            const barX = player.x - barW / 2;
+            const barY = player.y - player.size - 15;
+
+            // Background
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(barX, barY, barW, barH);
+
+            // Progress
+            ctx.fillStyle = "orange";
+            ctx.fillRect(barX, barY, barW * pct, barH);
+
+            // Border
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX, barY, barW, barH);
+        }
+    }
 }
 
 function drawBulletsAndShards() {
     // 5. --- BULLETS & ENEMIES ---
     bullets.forEach(b => {
-        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
+        ctx.save(); ctx.translate(b.x, b.y);
+
+        // Rotation: Velocity + Spin
+        let rot = Math.atan2(b.vy, b.vx);
+        if (b.animated) rot += b.spinAngle || 0;
+        ctx.rotate(rot);
+
         ctx.fillStyle = b.colour || 'yellow';
+        ctx.strokeStyle = b.colour || 'yellow';
+        ctx.lineWidth = 2;
+
         const s = b.size || 5;
         ctx.beginPath();
         if (b.shape === 'triangle') { ctx.moveTo(s, 0); ctx.lineTo(-s, s); ctx.lineTo(-s, -s); ctx.closePath(); }
         else if (b.shape === 'square') ctx.rect(-s, -s, s * 2, s * 2);
         else ctx.arc(0, 0, s, 0, Math.PI * 2);
-        ctx.fill(); ctx.restore();
+
+        if (b.filled) ctx.fill();
+        else ctx.stroke();
+
+        ctx.restore();
     });
 }
 
@@ -1032,10 +1341,34 @@ function updateBulletsAndShards(aliveEnemies) {
             const currMag = Math.hypot(b.vx, b.vy);
             b.vx = (b.vx / currMag) * speed;
             b.vy = (b.vy / currMag) * speed;
+        } else if (b.curve) {
+            // --- GENERIC CURVE ---
+            const currentAngle = Math.atan2(b.vy, b.vx);
+            const newAngle = currentAngle + b.curve;
+            const speed = Math.hypot(b.vx, b.vy);
+            b.vx = Math.cos(newAngle) * speed;
+            b.vy = Math.sin(newAngle) * speed;
         }
 
         b.x += b.vx;
         b.y += b.vy;
+
+        if (b.animated) {
+            if (b.spinAngle === undefined) b.spinAngle = 0;
+            b.spinAngle += 0.2;
+        }
+
+        // --- PARTICLES ---
+        if (gun.Bullet?.particles?.active && Math.random() < (gun.Bullet.particles.frequency || 0.5)) {
+            particles.push({
+                x: b.x,
+                y: b.y,
+                life: 1.0,
+                maxLife: gun.Bullet.particles.life || 0.5,
+                size: (b.size || 5) * (gun.Bullet.particles.sizeMult || 0.5),
+                color: b.colour || "yellow"
+            });
+        }
 
         // --- WALL COLLISION ---
         if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
@@ -1043,7 +1376,10 @@ function updateBulletsAndShards(aliveEnemies) {
                 if (b.x < 0 || b.x > canvas.width) b.vx *= -1;
                 if (b.y < 0 || b.y > canvas.height) b.vy *= -1;
             } else {
-                if (gun.Bullet?.Explode?.active && !b.isShard) spawnShards(b);
+                // Check for wallExplode OR general explode on impact if not a shard
+                if (gun.Bullet?.Explode?.active && !b.isShard) {
+                    if (gun.Bullet.Explode.wallExplode) spawnShards(b);
+                }
                 bullets.splice(i, 1);
                 return; // Use return to skip further processing for this bullet
             }
@@ -1079,7 +1415,10 @@ function updateShooting() {
     if (shootingKeys) {
         const fireDelay = (gun.Bullet?.fireRate ?? 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
-            SFX.shoot(0.05);
+            // Check if we can play audio (have ammo and not reloading)
+            const hasAmmo = !gun.Bullet?.ammo?.active || (!player.reloading && player.ammo > 0);
+            if (hasAmmo && !gun.Bullet?.NoBullets) SFX.shoot(0.05);
+
             let centerAngle = 0;
             if (gun.frontLocked) centerAngle = Math.atan2(player.lastMoveY || 0, player.lastMoveX || 1);
             else {
@@ -1192,12 +1531,13 @@ function updateUse() {
 
 function updateRestart() {
     // --- 1. RESTART & UI CHECKS ---
+    // Moved to handleGlobalInputs to cover all states
     if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED && keys['KeyR']) restartGame();
 
     // Check for Space Bar interaction (Key Unlock)
     if (keys["Space"]) {
         updateUse();
-    } if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED && keys['KeyR']) restartGame();
+    }
 }
 
 
@@ -1218,6 +1558,7 @@ function updateEnemies() {
             en.y += Math.sin(ang) * en.speed;
         } else if (now > en.freezeEnd) {
             en.frozen = false;
+            en.invulnerable = false; // Clear invulnerability when they wake up
         }
 
         // 3. Player Collision
@@ -1228,6 +1569,8 @@ function updateEnemies() {
 
         // 4. BULLET COLLISION (Fixed)
         bullets.forEach((b, bi) => {
+            if (en.invulnerable) return; // Skip collision if invulnerable
+
             const dist = Math.hypot(b.x - en.x, b.y - en.y);
             // Check if bullet overlaps enemy radius
             if (dist < en.size + (b.size || 5)) {
@@ -1267,10 +1610,40 @@ function updateEnemies() {
                 if (en.hp <= 0) {
                     en.isDead = true;
                     en.deathTimer = 30;
+                    log(`Enemy died: ${en.type}`); // DEBUG LOG
+
+                    // Check if Boss
+                    if (en.type === 'boss') {
+                        log("BOSS DEFEATED! Waiting for room clear to spawn portal.");
+                        SFX.explode(0.5); // Big Boom
+                    }
                 }
             }
         });
     });
+
+    // SPAWN PORTAL IF BOSS IS DEAD AND NO ENEMIES LEFT
+    const currentCoord = `${player.roomX},${player.roomY}`;
+    if (currentCoord === bossCoord && enemies.length === 0 && !portal.active) {
+        // Check if boss was actually defeated (simple check: if room is cleared/enemies empty in boss room)
+        // Since enemies are cleared on death, length 0 means we won.
+        portal.active = true;
+        portal.x = canvas.width / 2;
+        portal.y = canvas.height / 2;
+        log("Room Clear! Spawning Portal.");
+    }
+}
+
+function updatePortal() {
+    if (!portal.active) return;
+
+    const dist = Math.hypot(player.x - portal.x, player.y - portal.y);
+    if (dist < 30) {
+        // WIN GAME
+        gameState = STATES.WIN;
+        updateUI();
+        gameOver();
+    }
 }
 
 function drawEnemies() {
@@ -1479,10 +1852,21 @@ function updateMovementAndDoors(doors, roomLocked) {
 }
 
 function gameOver() {
-    gameState = STATES.GAMEOVER;
+    // Determine state if not already set (default to GAMEOVER if just called independently)
+    if (gameState !== STATES.WIN) gameState = STATES.GAMEOVER;
+
     overlayEl.style.display = 'flex';
     statsEl.innerText = "Rooms cleared: " + (Math.abs(player.roomX) + Math.abs(player.roomY));
-    document.querySelector('#overlay h1').innerText = "Game Over";
+
+    const h1 = document.querySelector('#overlay h1');
+    if (gameState === STATES.WIN) {
+        h1.innerText = "VICTORY!";
+        h1.style.color = "#f1c40f"; // Gold
+    } else {
+        h1.innerText = "Game Over";
+        h1.style.color = "red";
+    }
+
     overlayEl.querySelector('#continueBtn').style.display = 'none';
 }
 
@@ -1639,23 +2023,9 @@ function drawMinimap() {
         }
     }
 
-    // Inside draw()
-    if (typeof particles !== 'undefined') {
-        particles.forEach(p => {
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        ctx.globalAlpha = 1.0;
-    }
 
 
     mctx.restore();
-
-    drawBossIntro();
-    drawDebugLogs();
 }
 
 function drawDebugLogs() {

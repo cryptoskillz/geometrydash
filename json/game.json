@@ -2,5 +2,5 @@
     "perfectGoal": 5,
     "NoRooms": 11,
     "music": false,
-    "enterRoomFreezeTime": 2000
+    "enterRoomFreezeTime": 1000
 }

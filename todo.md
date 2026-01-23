@@ -1,35 +1,30 @@
 bugs
-    add back all bullet tyoes stupid ai keeps removng it
-    guradian intro music
-    debug logging
-    explode seems over powered
-    fixed front locked
-    homing missles should start at the side of the key that was pressed
-    if you get hit perfect bonus will reset 
-    add the enemy knockback modifier to the player
-    get invulTime from player file
-    move bomb to player hit
+    if music has been toggled off it shouldnt turn back on on restart / going back to main menu
+    dotn show portal until there are no enemies left in boos room
     room count at the end is off (maybe same room type in generation)
- add a muzzle flash or a small particle effect that triggers whenever fireBullet is called?
-when homing is on with number of bullets it is only firing 1.
-
-items folder
-    store lcation etc in json and the draw cords
-
 
 logic
-    when bomb hits you you shoudl go white with invul, the same as happens when you get shot
     reload gun / bomb when they pick up a new item
-    add a debug log so we can clean up console
-    get the drawr cordes for bomnbs, player, items, guns and bombs from the json files
+    if you get hit perfect bonus will reset 
+    show gun name in the UI
 
 bombs
-    bombs can get be dropped, thrown and kicked with items you pick as well as default settings
-    bombs are in the invetroy and can be picked up, when you press the space bar they can be dropped normal bombs can blow open doors and secret doors (in walls etc)golden bombs can blow open red doors with enemies still in the room 
+    move the doors to a object
+    add a countdown timer to bombs
+    add a fuse to bombs
+    make the bombs not go through walls
+    make the bombs not go through enemies 
+    make the bombs not go through other player 
+    make the bombs not go through other bombs
+    make bombs destroy the bullets
+    make bombs pick up / dropable with space bar
+    make bombs throwable with the space bar 
+    thrown and kicked with items you pick as well as default settings
+    bombs are in the invetroy and can be picked up, when you press the space bar they 
     add collision to bombs
-    add canShoot to bombs
     add remoteControl to bombs
-   
+
+level 1
 
 start room
     if its first time it should just say game complete and unlock door and take you back to the menu
@@ -41,16 +36,16 @@ player
     iron man mode (ooe hit dead, all modifiers reset)
     if speed is over 2 x starting speed show a blur effect
     if you stay in a room for too long show a ghost demon
-    animaton when you die
     draw the weapon in the player draw
+    add different players to the menu
+    show gun items on the player
+
 
 
 bullets  
-    added ammo, if it is active it should count count
    if a bullet hits you it will cause no damage but disapear
    there will be a mr glass item where your own bullets hurt you 
    bullet co sine
-   fix the curve attr
 
 
 
@@ -69,7 +64,6 @@ key binding
     i = inventory
     m = shows full map
     s = stats
-    p = perfect
     
 
 next up 
@@ -82,6 +76,7 @@ mini map
     item will show boss
     wds
     whole mini map should be shown always (is this true we have a button which will show the full map)
+    make rooms go green if you follow the golden path as a later level will be random rooms that get harder and harder everytime you go off the golden path and enemies respawn in rooms.
 
 debug window 
     CHEATS_ENABLED
