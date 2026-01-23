@@ -1292,7 +1292,7 @@ function updateShooting() {
     if (shootingKeys) {
         const fireDelay = (gun.Bullet?.fireRate ?? 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
-            SFX.shoot(0.05);
+            if (!gun.Bullet?.NoBullets) SFX.shoot(0.05);
             let centerAngle = 0;
             if (gun.frontLocked) centerAngle = Math.atan2(player.lastMoveY || 0, player.lastMoveX || 1);
             else {
