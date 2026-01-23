@@ -1,4 +1,5 @@
 bugs
+    filled bullets are not working
     animated bullets are not working
     show portal when you beat the boss
     show the game won screen when you go through the portal
