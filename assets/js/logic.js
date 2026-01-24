@@ -1389,12 +1389,22 @@ function updateBulletsAndShards(aliveEnemies) {
         let hitBomb = false;
         for (let j = 0; j < bombs.length; j++) {
             const bomb = bombs[j]; // Renamed 'b' to 'bomb' to avoid conflict with 'bullet'
-            if (bomb.canShoot && !bomb.exploding) {
-                const distToBomb = Math.hypot(bomb.x - b.x, bomb.y - b.y);
-                if (distToBomb < (bomb.baseR || 15) + b.size) { // Approximate collision with bomb body
+            // Collision check for ANY bomb (solid or shootable)
+            const distToBomb = Math.hypot(bomb.x - b.x, bomb.y - b.y);
+            const collisionRadius = (bomb.baseR || 15) + b.size;
+
+            if (distToBomb < collisionRadius && !bomb.exploding) {
+                if (bomb.canShoot) {
+                    // Detonate
                     bomb.exploding = true;
                     bomb.explosionStartAt = Date.now();
                     SFX.explode(0.3);
+                    bullets.splice(i, 1);
+                    hitBomb = true;
+                    break;
+                } else if (bomb.solid) {
+                    // Solid but not shootable = block bullet (destroy bullet)
+                    // Optional: Spawn particles/sparks?
                     bullets.splice(i, 1);
                     hitBomb = true;
                     break;
@@ -1554,8 +1564,23 @@ function updateEnemies() {
         // 2. Frozen/Movement Logic
         if (!en.frozen) {
             let ang = Math.atan2(player.y - en.y, player.x - en.x);
-            en.x += Math.cos(ang) * en.speed;
-            en.y += Math.sin(ang) * en.speed;
+            let nextX = en.x + Math.cos(ang) * en.speed;
+            let nextY = en.y + Math.sin(ang) * en.speed;
+
+            // Simple check against solid bombs
+            let blocked = false;
+            bombs.forEach(b => {
+                if (b.solid && !b.exploding) {
+                    if (Math.hypot(nextX - b.x, nextY - b.y) < en.size + (b.baseR || 15)) {
+                        blocked = true;
+                    }
+                }
+            });
+
+            if (!blocked) {
+                en.x = nextX;
+                en.y = nextY;
+            }
         } else if (now > en.freezeEnd) {
             en.frozen = false;
             en.invulnerable = false; // Clear invulnerability when they wake up
@@ -1816,8 +1841,15 @@ function updateBombDropping() {
 
             player.inventory.bombs--;
             player.lastBombTime = now;
+
+            // Drop behind the player to avoid trapping
+            // Default to 0 offset if no movement yet
+            const dropDist = 45;
+            const dropX = player.x - ((player.lastMoveX || 0) * dropDist);
+            const dropY = player.y - ((player.lastMoveY || 0) * dropDist);
+
             bombs.push({
-                x: player.x, y: player.y,
+                x: dropX, y: dropY,
                 explodeAt: now + bomb.timer,
                 // Handle nested explosion properties with fallbacks
                 explosionDuration: bomb.explosion?.explosionDuration ?? bomb.explosionDuration,
@@ -1829,6 +1861,7 @@ function updateBombDropping() {
                 // Base properties
                 damage: bomb.damage,
                 colour: bomb.colour,
+                solid: bomb.solid, // Added solid property
 
                 // Handle nested door properties
                 openLockedDoors: bomb.doors?.openLockedDoors ?? bomb.openLockedDoors,
@@ -1869,10 +1902,42 @@ function updateMovementAndDoors(doors, roomLocked) {
 
             if (dx !== 0) {
                 const limit = dx < 0 ? BOUNDARY : canvas.width - BOUNDARY;
-                if ((dx < 0 ? player.x > limit : player.x < limit) || (inDoorRange && canPass)) player.x += dx * player.speed;
+                const nextX = player.x + dx * player.speed;
+                let collided = false;
+
+                // Bomb Collision (Horizontal)
+                bombs.forEach(b => {
+                    if (b.solid && !b.exploding) {
+                        const dist = Math.hypot(nextX - b.x, player.y - b.y);
+                        if (dist < player.size + (b.baseR || 15)) collided = true;
+                    }
+                });
+
+                if (!collided && ((dx < 0 ? player.x > limit : player.x < limit) || (inDoorRange && canPass))) {
+                    player.x = nextX;
+                } else if (collided) {
+                    player.x -= dx * 5; // Knockback
+                    player.x = Math.max(BOUNDARY + player.size, Math.min(canvas.width - BOUNDARY - player.size, player.x));
+                }
             } else {
                 const limit = dy < 0 ? BOUNDARY : canvas.height - BOUNDARY;
-                if ((dy < 0 ? player.y > limit : player.y < limit) || (inDoorRange && canPass)) player.y += dy * player.speed;
+                const nextY = player.y + dy * player.speed;
+                let collided = false;
+
+                // Bomb Collision (Vertical)
+                bombs.forEach(b => {
+                    if (b.solid && !b.exploding) {
+                        const dist = Math.hypot(player.x - b.x, nextY - b.y);
+                        if (dist < player.size + (b.baseR || 15)) collided = true;
+                    }
+                });
+
+                if (!collided && ((dy < 0 ? player.y > limit : player.y < limit) || (inDoorRange && canPass))) {
+                    player.y = nextY;
+                } else if (collided) {
+                    player.y -= dy * 5; // Knockback
+                    player.y = Math.max(BOUNDARY + player.size, Math.min(canvas.height - BOUNDARY - player.size, player.y));
+                }
             }
         }
     }

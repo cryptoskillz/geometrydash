@@ -1,14 +1,16 @@
 {
-    "bombType": "golden",
+    "name": "golden",
+    "description": "The Most powerful or all the bombs",
     "size": 30,
     "colour": "#ffff00",
     "range": 70,
     "damage": 2,
     "fireRate": 0.1,
-    "canShoot": false,
-    "timer": 3000,
+    "canShoot": true,
+    "timer": 10000,
     "maxDrop": 3,
     "solid": true,
+    "moveable": true,
     "remoteDenoate": {
         "active": true,
         "key": "space"

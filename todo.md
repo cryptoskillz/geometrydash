@@ -1,7 +1,7 @@
 bugs
     if music has been toggled off it shouldnt turn back on on restart / going back to main menu
     room count at the end is off (maybe same room type in generation)
-
+the enemies get stuck they should work their way around obstacles
 
 next up 
     bombs
@@ -29,7 +29,6 @@ logic
     show gun name in the UI
 
 bombs
-    move the doors to a object
     add a countdown timer to bombs
     add a fuse to bombs
     make the bombs not go through walls

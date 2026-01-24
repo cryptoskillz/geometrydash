@@ -114,7 +114,8 @@ Defines weapon behavior, bullet patterns, and special effects.
 
 ### `json/weapons/bombs/*.json` (e.g., `golden.json`)
 Defines bomb properties, explosion effects, and interactions.
-- `bombType`: Unique identifier (e.g., "golden").
+- `name`: Unique identifier (e.g., "golden").
+- `description`: Description of the bomb.
 - `size`: Visual size of the bomb sprite.
 - `colour`: Hex color code for the bomb.
 - `damage`: Damage dealt to enemies.
