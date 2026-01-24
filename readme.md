@@ -124,6 +124,11 @@ Defines bomb properties, explosion effects, and interactions.
 - `canShoot`: If `true`, the bomb can be shot by bullets.
 - `maxDrop`: Maximum number of bombs that can be dropped.
 - `solid`: If `true`, the bomb is solid vs bullets.
+- `moveable`: If `true`, the bomb can be moved.
+- `physics`:
+    - `friction`: Friction of the bomb.
+    - `mass`: Mass of the bomb.
+    - `restitution`: Restitution of the bomb.
 - `explosion`:
     - `radius`: Blast radius in pixels.
     - `explosionDuration`: Duration of the explosion hitbox/visual.
