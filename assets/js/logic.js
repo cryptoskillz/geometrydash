@@ -1766,6 +1766,18 @@ function drawBombs(doors) {
                 b.didDamage = true;
                 enemies.forEach(en => { if (Math.hypot(b.x - en.x, b.y - en.y) < b.maxR) en.hp -= b.damage; });
 
+                // CHAIN REACTIONS
+                bombs.forEach(otherBomb => {
+                    if (otherBomb !== b && !otherBomb.exploding) {
+                        const dist = Math.hypot(b.x - otherBomb.x, b.y - otherBomb.y);
+                        // Trigger if within explosion radius (plus a small buffer for ease)
+                        if (dist < b.maxR) {
+                            otherBomb.exploding = true;
+                            otherBomb.explosionStartAt = Date.now() + 100; // slight delay for visual ripple
+                        }
+                    }
+                });
+
                 if (b.canDamagePlayer) {
                     const distToPlayer = Math.hypot(b.x - player.x, b.y - player.y);
                     if (distToPlayer < b.maxR) {

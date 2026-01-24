@@ -7,7 +7,7 @@
     "fireRate": 0.1,
     "canShoot": true,
     "timer": 3000,
-    "maxDrop": 100,
+    "maxDrop": 3,
     "solid": true,
     "explosion": {
         "radius": 100,
