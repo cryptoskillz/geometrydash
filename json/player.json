@@ -1,7 +1,12 @@
 {
+    "name": "Player 1",
+    "Description": "The runt of the litter",
     "hp": 10,
     "speed": 10,
     "size": 20,
+    "physics": {
+        "strength": 45
+    },
     "luck": 0,
     "roomX": 0,
     "roomY": 0,

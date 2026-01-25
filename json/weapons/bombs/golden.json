@@ -40,6 +40,6 @@
         "active": true,
         "type": "kick",
         "distance": 100,
-        "explodeOnImpact": false
+        "explodeOnImpact": true
     }
 }

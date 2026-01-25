@@ -1553,7 +1553,7 @@ function updateBombInteraction() {
     if (closestB) {
         // Calculate kick angle (from player to bomb)
         const angle = Math.atan2(closestB.y - player.y, closestB.x - player.x);
-        const force = 15; // Kick strength (could be configurable)
+        const force = player.physics?.strength || 15; // Kick strength based on player stats
 
         // Apply velocity (physics must be enabled on bomb)
         closestB.vx = Math.cos(angle) * force;

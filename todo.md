@@ -6,8 +6,7 @@ if you renet a room with enemies it should not spawn new ones
 combine move/kick maybe it may complicate things. hve to test it.
 
 next up 
-    bombs*
-    player updates
+    player + mini map updates
     enemies
     debug window
     items
@@ -31,7 +30,6 @@ logic
     show gun name in the UI
 
 bombs
-    thrown and kicked with items you pick as well as default settings
 
 level 1
 
