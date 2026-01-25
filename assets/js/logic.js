@@ -1451,42 +1451,31 @@ function updateShooting() {
     }
 }
 
-
-
 function updateRemoteDetonation() {
     let detonated = false;
 
-    // DEBUG: Diagnose why space isn't working
-    if (keys["Space"]) {
-        if (bombs.length === 0) {
-            // log("Space pressed, no bombs.");
-        }
-        bombs.forEach((b, i) => {
-            if (!b.remoteDenoate) {
-                log(`Bomb ${i} MISSING remote data!`);
-            } else if (!b.remoteDenoate.active) {
-                log(`Bomb ${i} remote inactive.`);
-            }
-        });
-    }
-
-    bombs.forEach(b => {
+    for (let i = 0; i < bombs.length; i++) {
+        const b = bombs[i];
         if (!b.exploding && b.remoteDenoate?.active) {
             const keyName = b.remoteDenoate.key || "space";
 
             let isPressed = false;
             if (keyName.toLowerCase() === "space" && keys["Space"]) isPressed = true;
             else if (keys[keyName]) isPressed = true;
-            log("is pressed: " + isPressed + " | key name: " + keyName + " | keys: " + keys["Space"])
-            console.log("is pressed: " + isPressed + " | key name: " + keyName + " | keys: " + keys["Space"])
+
             if (isPressed) {
-                log("Detonation Triggered!");
                 b.exploding = true;
                 b.explosionStartAt = Date.now();
                 detonated = true;
+
+                // Respect detonateAll setting (default to true/undefined behavior acts as true)
+                // If false, only detonate one per press
+                if (b.remoteDenoate.detonateAll === false) {
+                    break;
+                }
             }
         }
-    });
+    }
 
     if (detonated) {
         SFX.explode(0.3);

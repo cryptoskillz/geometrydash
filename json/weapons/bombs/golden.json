@@ -1,6 +1,6 @@
 {
     "name": "golden",
-    "description": "The Most powerful or all the bombs",
+    "description": "The Most powerful of all the bombs",
     "size": 30,
     "colour": "#ffff00",
     "range": 70,
@@ -9,6 +9,7 @@
     "canShoot": false,
     "timer": {
         "active": false,
+        "show": true,
         "time": 3000
     },
     "maxDrop": 100,
