@@ -318,16 +318,26 @@ function generateLevel(length) {
     goldenPathFailed = false;
     bossCoord = path[path.length - 1];
 
-    // 2. Add Side Rooms
+    // 2. Add Branches (Dead Ends)
     let fullMapCoords = [...path];
     path.forEach(coord => {
         if (coord === bossCoord || coord === "0,0") return;
-        if (Math.random() > 0.5) { // 50% chance to try adding a side room from a golden path room
-            const [rx, ry] = coord.split(',').map(Number);
-            let d = dirs[Math.floor(Math.random() * dirs.length)];
-            let sideCoord = `${rx + d.dx},${ry + d.dy}`;
-            if (!fullMapCoords.includes(sideCoord)) {
-                fullMapCoords.push(sideCoord);
+
+        // 50% chance to start a branch from this node
+        if (Math.random() > 0.5) {
+            const branchLength = Math.floor(Math.random() * 3) + 1; // 1 to 3 rooms deep
+            let bx = parseInt(coord.split(',')[0]);
+            let by = parseInt(coord.split(',')[1]);
+
+            for (let b = 0; b < branchLength; b++) {
+                // Find valid moves from current branch tip
+                let possible = dirs.filter(d => !fullMapCoords.includes(`${bx + d.dx},${by + d.dy}`));
+                if (possible.length === 0) break; // Stuck, stop branching
+
+                let move = possible[Math.floor(Math.random() * possible.length)];
+                bx += move.dx;
+                by += move.dy;
+                fullMapCoords.push(`${bx},${by}`);
             }
         }
     });
@@ -2448,7 +2458,10 @@ function drawBossIntro() {
 
 // Expose to window for testing
 if (typeof window !== 'undefined') {
-    window.player = player;
-    window.bombs = bombs;
-    window.enemies = enemies;
+    Object.defineProperty(window, 'player', { get: () => player });
+    Object.defineProperty(window, 'bombs', { get: () => bombs });
+    Object.defineProperty(window, 'enemies', { get: () => enemies });
+    Object.defineProperty(window, 'levelMap', { get: () => levelMap });
+    Object.defineProperty(window, 'goldenPath', { get: () => goldenPath });
+    Object.defineProperty(window, 'visitedRooms', { get: () => visitedRooms });
 }
