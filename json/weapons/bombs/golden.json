@@ -6,7 +6,7 @@
     "range": 70,
     "damage": 2,
     "fireRate": 0.1,
-    "canShoot": false,
+    "canShoot": true,
     "timer": {
         "active": true,
         "show": true,
@@ -24,7 +24,7 @@
         "radius": 100,
         "explosionDuration": 1000,
         "explosionColour": "#ff2a00",
-        "canDamagePlayer": true
+        "canDamagePlayer": false
     },
     "doors": {
         "openLockedDoors": true,

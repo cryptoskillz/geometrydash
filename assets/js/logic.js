@@ -1912,7 +1912,19 @@ function drawBombs(doors) {
 
             if (!b.didDamage) {
                 b.didDamage = true;
-                enemies.forEach(en => { if (Math.hypot(b.x - en.x, b.y - en.y) < b.maxR) en.hp -= b.damage; });
+                enemies.forEach(en => {
+                    if (Math.hypot(b.x - en.x, b.y - en.y) < b.maxR) {
+                        en.hp -= b.damage;
+                        en.hitTimer = 10; // Visual flash
+                        // Death Logic
+                        if (en.hp <= 0 && !en.isDead) {
+                            en.isDead = true;
+                            en.deathTimer = 30; // Matches bullet logic
+                            log(`Enemy killed by bomb! Type: ${en.type}`);
+                            if (en.type === 'boss') SFX.explode(0.5);
+                        }
+                    }
+                });
 
                 // CHAIN REACTIONS
                 bombs.forEach(otherBomb => {
