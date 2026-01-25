@@ -1695,20 +1695,48 @@ function updateBombsPhysics() {
             if (b.y < BOUNDARY + r) { b.y = BOUNDARY + r; b.vy *= res; }
             if (b.y > canvas.height - BOUNDARY - r) { b.y = canvas.height - BOUNDARY - r; b.vy *= res; }
 
-            // Explode on Impact (Enemies Only)
-            if (b.canInteract?.explodeOnImpact) {
+            // Bomb vs Enemy Collision (Explode OR Bounce)
+            if (b.canInteract?.explodeOnImpact || Math.abs(b.vx) > 0.5 || Math.abs(b.vy) > 0.5) {
                 for (const en of enemies) {
                     if (en.isDead) continue;
                     const dist = Math.hypot(b.x - en.x, b.y - en.y);
                     if (dist < r + en.size) {
-                        b.exploding = true;
-                        b.explosionStartAt = Date.now();
-                        b.vx = 0; b.vy = 0; // Stop moving
-                        break; // One explosion is enough
+                        if (b.canInteract?.explodeOnImpact) {
+                            // Boom
+                            b.exploding = true;
+                            b.explosionStartAt = Date.now();
+                            b.vx = 0; b.vy = 0;
+                            break;
+                        } else {
+                            // Bounce
+                            const dx = b.x - en.x;
+                            const dy = b.y - en.y;
+                            const len = Math.hypot(dx, dy);
+                            // Avoid divide by zero
+                            if (len > 0) {
+                                const nx = dx / len;
+                                const ny = dy / len;
+
+                                // Reflect velocity: v' = v - 2 * (v . n) * n
+                                const dot = b.vx * nx + b.vy * ny;
+                                b.vx -= 2 * dot * nx;
+                                b.vy -= 2 * dot * ny;
+
+                                // Push out to avoid sticking
+                                b.x += nx * 5;
+                                b.y += ny * 5;
+
+                                // Friction/Dampening
+                                b.vx *= 0.8;
+                                b.vy *= 0.8;
+                            }
+                        }
                     }
                 }
             }
+
         }
+
     });
 }
 
