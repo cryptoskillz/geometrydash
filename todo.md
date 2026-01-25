@@ -2,8 +2,8 @@ bugs
     if music has been toggled off it shouldnt turn back on on restart / going back to main menu
     room count at the end is off (maybe same room type in generation)
 the enemies get stuck they should work their way around obstacles
-if you renet a room with enemies it should not spawn new ones
-combine move/kick maybe it may complicate things. hve to test it.
+if you renter a room with enemies it should not spawn new ones
+    portal shows in other room when you back track
 
 next up 
     player + mini map updates
@@ -47,7 +47,6 @@ player
     if speed is over 2 x starting speed show a blur effect
     if you stay in a room for too long show a ghost demon
     draw the weapon in the player draw
-    add different players to the menu
     show gun items on the player 
         gemoetry gun shows triangle, square etc
         peashooter shows peashooter

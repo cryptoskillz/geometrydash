@@ -1122,6 +1122,8 @@ function fireBullet(direction, speed, vx, vy, angle) {
             size: gun.Bullet?.size || 5,
             curve: gun.Bullet?.curve || 0,
             homing: gun.Bullet?.homing,
+            canDamagePlayer: gun.Bullet?.canDamagePlayer || false,
+            hasLeftPlayer: false, // Start as false, set to true once it exits player radius
             shape: bulletShape, // This is now a fixed shape (triangle, square, etc.)
             animated: gun.Bullet?.geometry?.animated || false,
             filled: gun.Bullet?.geometry?.filled !== undefined ? gun.Bullet.geometry.filled : true,
@@ -1271,9 +1273,6 @@ function update() {
     // 4. Transitions
     updateRoomTransitions(doors, roomLocked);
     updatePortal();
-
-    // 5. Game Over Check
-    if (player.hp < 1) gameState = STATES.GAMEOVER;
 }
 
 function updateReload() {
@@ -1440,8 +1439,27 @@ function drawPlayer() {
     const now = Date.now();
     // 4. --- PLAYER ---
     const isInv = player.invuln || now < (player.invulnUntil || 0);
-    ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : '#5dade2';
-    ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : (player.color || '#5dade2');
+
+    ctx.beginPath();
+    if (player.shape === 'square') {
+        // Draw Square centered
+        ctx.fillRect(player.x - player.size, player.y - player.size, player.size * 2, player.size * 2);
+    } else if (player.shape === 'triangle') {
+        // Draw Triangle centered
+        // Top point: (x, y - size)
+        // Bottom Right: (x + size, y + size)
+        // Bottom Left: (x - size, y + size)
+        ctx.moveTo(player.x, player.y - player.size);
+        ctx.lineTo(player.x + player.size, player.y + player.size);
+        ctx.lineTo(player.x - player.size, player.y + player.size);
+        ctx.closePath();
+        ctx.fill();
+    } else {
+        // Default Circle
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // --- RELOAD / COOLDOWN BAR ---
     // If reloading, show reload bar (Blue/Cyan)
@@ -1546,6 +1564,39 @@ function spawnShards(b) {
 
 function updateBulletsAndShards(aliveEnemies) {
     bullets.forEach((b, i) => {
+        // --- PLAYER COLLISION (Friendly Fire) ---
+        const distToPlayer = Math.hypot(player.x - b.x, b.y - player.y);
+        const collisionThreshold = player.size + b.size;
+
+        if (!b.hasLeftPlayer) {
+            // Check if it has exited the player for the first time
+            if (distToPlayer > collisionThreshold) {
+                b.hasLeftPlayer = true;
+            }
+        } else {
+            // Only check collision if it has safely left the player once
+            if (distToPlayer < collisionThreshold) {
+                // Hit Player
+                if (b.canDamagePlayer) {
+                    if (!player.invuln && Date.now() > (player.invulnUntil || 0)) {
+                        player.hp -= (b.damage || 1);
+                        SFX.playerHit();
+                        // Trigger I-Frames
+                        player.invulnUntil = Date.now() + (player.invulTimer || 1000);
+                        updateUI();
+
+                        // Remove bullet
+                        bullets.splice(i, 1);
+                        return;
+                    }
+                } else {
+                    // Harmless collision - destroy bullet
+                    bullets.splice(i, 1);
+                    return;
+                }
+            }
+        }
+
         // --- HOMING LOGIC ---
         if (b.homing && aliveEnemies && aliveEnemies.length > 0) {
             // Find closest enemy

@@ -1,7 +1,8 @@
 {
     "name": "Player 2",
     "Description": "hes a real square",
-    "locked": true,
+    "color": "#e74c3c",
+    "locked": false,
     "shape": "square",
     "hp": 10,
     "speed": 10,
