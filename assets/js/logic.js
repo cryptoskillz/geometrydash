@@ -105,6 +105,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const SFX = {
     // A quick high-to-low "pew"
     shoot: (vol = 0.05) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'square'; // Classic NES sound
@@ -118,6 +119,7 @@ const SFX = {
 
     // A low-frequency crunch for hits/explosions
     explode: (vol = 0.1) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sawtooth';
@@ -130,6 +132,7 @@ const SFX = {
     },
 
     playerHit: (vol = 0.2) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'triangle';
@@ -146,6 +149,7 @@ const SFX = {
 
     // Dry fire click
     click: (vol = 0.1) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
@@ -161,6 +165,7 @@ const SFX = {
 
     // Spooky wail for Ghost
     ghost: (vol = 0.3) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
@@ -1524,6 +1529,9 @@ function drawPortal() {
 }
 
 function updateMusicToggle() {
+    // If music is disabled in config, do not allow toggling
+    if (!gameData.music) return;
+
     if (keys['Digit0']) {
         const now = Date.now();
         // 300ms cooldown so it doesn't toggle every frame

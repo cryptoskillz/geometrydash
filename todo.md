@@ -1,9 +1,7 @@
 bugs
     if music has been toggled off it shouldnt turn back on on restart / going back to main menu
     room count at the end is off (maybe same room type in generation)
-the enemies get stuck they should work their way around obstacles
-if you renter a room with enemies it should not spawn new ones
-    use music in game.json to control music
+    the enemies get stuck they should work their way around obstacles
 
 
 
@@ -65,6 +63,8 @@ enemies
     add enemy hit and enemy death sound   from json
     boss hit boss death   from json
     death shake  from json
+    maybe if ghost is x rooms away we just spawn him in the new room
+
 
 
 key binding
