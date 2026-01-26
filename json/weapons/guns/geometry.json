@@ -29,7 +29,7 @@
         "canDamagePlayer": false,
         "speed": 5,
         "size": 15,
-        "damage": 1,
+        "damage": 10,
         "range": 140,
         "curve": 0,
         "spreadRate": 1,
