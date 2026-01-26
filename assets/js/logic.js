@@ -522,22 +522,9 @@ async function initGame(isRestart = false) {
 
     if (debugPanel) debugPanel.style.display = DEBUG_WINDOW_ENABLED ? 'flex' : 'none';
 
-    // Attempt to start music immediately
-    // Set muted to FALSE because we ARE trying to play
-    musicMuted = false;
-    introMusic.play().catch(() => {
-        log("Waiting for interaction to play music...");
-        // If failed, we are effectively muted until interaction
-    });
+    // MOVED: Music start logic is now handled AFTER game.json is loaded to respect "music": false setting.
 
-    // One-time listener to start music on first click/key if blocked by browser
-    const startAudio = () => {
-        if (!musicMuted) introMusic.play();
-        window.removeEventListener('keydown', startAudio);
-        window.removeEventListener('mousedown', startAudio);
-    };
-    window.addEventListener('keydown', startAudio);
-    window.addEventListener('mousedown', startAudio);
+    gameState = isRestart ? STATES.PLAY : STATES.START;
 
     gameState = isRestart ? STATES.PLAY : STATES.START;
     overlayEl.style.display = 'none';

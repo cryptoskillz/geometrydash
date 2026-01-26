@@ -2,6 +2,7 @@
     "perfectGoal": 5,
     "NoRooms": 11,
     "music": false,
+    "soundEffects": true,
     "enterRoomFreezeTime": 1000,
     "ghost": {
         "spawn": true,
