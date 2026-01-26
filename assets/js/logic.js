@@ -2352,7 +2352,28 @@ function updateGhost() {
 function drawEnemies() {
     enemies.forEach(en => {
         ctx.save();
-        if (en.isDead) ctx.globalAlpha = en.deathTimer / 30;
+
+        // GHOST EFFECTS
+        let bounceY = 0;
+        let sizeMod = 0;
+
+        if (en.type === 'ghost') {
+            // Ectoplasmic Wobble
+            const time = Date.now() / 200;
+            bounceY = Math.sin(time) * 5; // Float up and down
+            sizeMod = Math.cos(time) * 2; // Pulse size slightly
+
+            // Translucency (Base 0.6, fade if dying)
+            const baseAlpha = 0.6;
+            ctx.globalAlpha = en.isDead ? (en.deathTimer / 30) * baseAlpha : baseAlpha;
+
+            // Ghostly Glow/Shadow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = en.color || "red";
+        } else {
+            // Standard Death Fade
+            if (en.isDead) ctx.globalAlpha = en.deathTimer / 30;
+        }
 
         // Visual Feedback: White for hit, Blue for frozen, Red for normal
         if (en.hitTimer > 0) {
@@ -2365,7 +2386,7 @@ function drawEnemies() {
         }
 
         ctx.beginPath();
-        ctx.arc(en.x, en.y, en.size, 0, Math.PI * 2);
+        ctx.arc(en.x, en.y + bounceY, en.size + sizeMod, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     });
