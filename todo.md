@@ -6,10 +6,9 @@ bugs
 
 
 next up 
-    player + mini map updates
-    enemies
-    debug window
     items
+    debug window
+    enemies
     rooms
     levels
 
