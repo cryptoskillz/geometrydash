@@ -8,7 +8,12 @@
     "speed": 10,
     "size": 20,
     "physics": {
-        "strength": 45
+        "strength": 45,
+        "mass": 10,
+        "drag": 0.1,
+        "friction": 0.1,
+        "elasticity": 0.1,
+        "bounciness": 0.1
     },
     "luck": 0,
     "roomX": 0,

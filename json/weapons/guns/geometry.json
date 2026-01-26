@@ -33,7 +33,7 @@
         "range": 140,
         "curve": 0,
         "spreadRate": 1,
-        "number": 5,
+        "number": 1,
         "recoil": 2,
         "homing": true,
         "fireRate": 0.1,
@@ -47,11 +47,11 @@
         "freezeChance": 0.15,
         "freezeDuration": 2000,
         "multiDirectional": {
-            "active": true,
-            "fireNorth": false,
-            "fireEast": false,
-            "fireSouth": false,
-            "fireWest": false,
+            "active": false,
+            "fireNorth": true,
+            "fireEast": true,
+            "fireSouth": true,
+            "fireWest": true,
             "fire360": true
         },
         "Explode": {

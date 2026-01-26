@@ -1808,6 +1808,17 @@ function updateShooting() {
     // --- 5. SHOOTING ---
     const shootingKeys = keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
     if (shootingKeys) {
+
+        // STATIONARY AIMING LOGIC
+        // If not moving (no WASD), aim in the direction of the arrow key
+        const isMoving = keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'];
+        if (!isMoving) {
+            if (keys['ArrowUp']) { player.lastMoveX = 0; player.lastMoveY = -1; }
+            else if (keys['ArrowDown']) { player.lastMoveX = 0; player.lastMoveY = 1; }
+            else if (keys['ArrowLeft']) { player.lastMoveX = -1; player.lastMoveY = 0; }
+            else if (keys['ArrowRight']) { player.lastMoveX = 1; player.lastMoveY = 0; }
+        }
+
         const fireDelay = (gun.Bullet?.fireRate ?? 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
             // Check if we can play audio (have ammo and not reloading)
