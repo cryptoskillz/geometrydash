@@ -46,6 +46,8 @@ let player = {
     inventory: { keys: 0 },
     size: 20
 };
+let availablePlayers = [];
+let selectedPlayerIndex = 0;
 let bullets = [];
 let particles = [];
 let enemies = [];
@@ -82,22 +84,28 @@ let roomData = {
 let roomManifest = { rooms: [] };
 let roomStartTime = Date.now();
 let goldenPath = [];
+let goldenPathIndex = 0; // Tracks progress along the path
+let goldenPathFailed = false; // Tracks if player deviated
 let roomTemplates = {};
 let levelMap = {}; // Pre-generated level structure
 let bossCoord = "";
 let enemyTemplates = {};
 let bossIntroEndTime = 0;
+let bossKilled = false; // Track if boss is dead for difficulty spike
 let gameLoopStarted = false;
 let keyUsedForRoom = false;
 
 let portal = { active: false, x: 0, y: 0 };
 let isInitializing = false;
+let ghostSpawned = false;
+let ghostEntry = null;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 const SFX = {
     // A quick high-to-low "pew"
     shoot: (vol = 0.05) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'square'; // Classic NES sound
@@ -111,6 +119,7 @@ const SFX = {
 
     // A low-frequency crunch for hits/explosions
     explode: (vol = 0.1) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sawtooth';
@@ -123,6 +132,7 @@ const SFX = {
     },
 
     playerHit: (vol = 0.2) => {
+        if (gameData.soundEffects === false) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'triangle';
@@ -135,6 +145,41 @@ const SFX = {
 
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    },
+
+    // Dry fire click
+    click: (vol = 0.1) => {
+        if (gameData.soundEffects === false) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+    },
+
+    // Spooky wail for Ghost
+    ghost: (vol = 0.3) => {
+        if (gameData.soundEffects === false) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        // Eerie wail: 150Hz sliding up to 400Hz
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 1.5);
+
+        // Fade in/out
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.2);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
+
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 1.5);
     }
 };
 
@@ -155,15 +200,58 @@ function handleGlobalInputs() {
             return true;
         }
     }
+
+    // Player Selection (Only in Menu)
+    const now = Date.now();
+    if (gameState === STATES.START || gameState === STATES.GAMEMENU) {
+        if (keys['ArrowRight']) {
+            if (now - lastInputTime > 200) {
+                selectedPlayerIndex = (selectedPlayerIndex + 1) % availablePlayers.length;
+                updateWelcomeScreen();
+                lastInputTime = now;
+            }
+        }
+        if (keys['ArrowLeft']) {
+            if (now - lastInputTime > 200) {
+                selectedPlayerIndex = (selectedPlayerIndex - 1 + availablePlayers.length) % availablePlayers.length;
+                updateWelcomeScreen();
+                lastInputTime = now;
+            }
+        }
+    }
+
     return false;
 }
 
+let lastInputTime = 0;
+
+function updateWelcomeScreen() {
+    const p = availablePlayers[selectedPlayerIndex];
+    if (!p) return;
+
+    // Update Welcome UI dynamically
+    let html = `<h1>rogue demo</h1>
+        <div id="player-select-ui" style="margin: 20px; padding: 10px; border: 2px solid #555;">
+            <h2 style="color: ${p.locked ? 'gray' : '#0ff'}">${p.name} ${p.locked ? '(LOCKED)' : ''}</h2>
+            <p>${p.Description || "No description"}</p>
+            <p style="font-size: 0.8em; color: #aaa;">Speed: ${p.speed} | HP: ${p.hp}</p>
+            <div style="margin-top: 10px; font-size: 1.2em;">
+                <span>&lt;</span> 
+                <span style="margin: 0 20px;">${selectedPlayerIndex + 1} / ${availablePlayers.length}</span> 
+                <span>&gt;</span>
+            </div>
+        </div>
+        <p>press 0 to toggle music<br>${p.locked ? '<span style="color:red; font-size:1.5em; font-weight:bold;">LOCKED</span>' : 'press any key to start'}</p>`;
+
+    welcomeEl.innerHTML = html;
+}
+
 async function updateUI() {
-    if (player.hp < 0) {
-        hpEl.innerText = 0
+    if (player.hp < 1) {
+        hpEl.innerText = 0;
     }
     else {
-        hpEl.innerText = player.hp;
+        hpEl.innerText = Math.floor(player.hp);
     }
     keysEl.innerText = player.inventory.keys;
     //check if bomb type is golden and if so set the count colour to gold 
@@ -312,18 +400,30 @@ function generateLevel(length) {
         path.push(`${cx},${cy}`);
     }
     goldenPath = path;
+    goldenPathIndex = 0;
+    goldenPathFailed = false;
     bossCoord = path[path.length - 1];
 
-    // 2. Add Side Rooms
+    // 2. Add Branches (Dead Ends)
     let fullMapCoords = [...path];
     path.forEach(coord => {
         if (coord === bossCoord || coord === "0,0") return;
-        if (Math.random() > 0.5) { // 50% chance to try adding a side room from a golden path room
-            const [rx, ry] = coord.split(',').map(Number);
-            let d = dirs[Math.floor(Math.random() * dirs.length)];
-            let sideCoord = `${rx + d.dx},${ry + d.dy}`;
-            if (!fullMapCoords.includes(sideCoord)) {
-                fullMapCoords.push(sideCoord);
+
+        // 50% chance to start a branch from this node
+        if (Math.random() > 0.5) {
+            const branchLength = Math.floor(Math.random() * 3) + 1; // 1 to 3 rooms deep
+            let bx = parseInt(coord.split(',')[0]);
+            let by = parseInt(coord.split(',')[1]);
+
+            for (let b = 0; b < branchLength; b++) {
+                // Find valid moves from current branch tip
+                let possible = dirs.filter(d => !fullMapCoords.includes(`${bx + d.dx},${by + d.dy}`));
+                if (possible.length === 0) break; // Stuck, stop branching
+
+                let move = possible[Math.floor(Math.random() * possible.length)];
+                bx += move.dx;
+                by += move.dy;
+                fullMapCoords.push(`${bx},${by}`);
             }
         }
     });
@@ -403,7 +503,7 @@ const DEBUG_PLAYER = true;
 const CHEATS_ENABLED = false;
 const DEBUG_WINDOW_ENABLED = true;
 
-let musicMuted = true;
+let musicMuted = false;
 let lastMKeyTime = 0;
 
 
@@ -413,18 +513,23 @@ async function initGame(isRestart = false) {
     if (isInitializing) return;
     isInitializing = true;
 
-    if (debugPanel) debugPanel.style.display = DEBUG_WINDOW_ENABLED ? 'flex' : 'none';
-    // Attempt to start music immediately
-    introMusic.play().catch(() => log("Waiting for interaction to play music..."));
+    // KILL ZOMBIE AUDIO (Fix for duplicate music glitch)
+    // If a legacy window.introMusic exists and is playing, stop it.
+    if (window.introMusic && typeof window.introMusic.pause === 'function') {
+        window.introMusic.pause();
+        window.introMusic = null;
+    }
+    // Also pause the global one just in case we are restarting
+    if (introMusic && !introMusic.paused) {
+        // Don't pause here if we want seamless loop, but given the bugs, let's ensure clean state
+        // introMusic.pause(); 
+    }
 
-    // One-time listener to start music on first click/key if blocked by browser
-    const startAudio = () => {
-        if (!musicMuted) introMusic.play();
-        window.removeEventListener('keydown', startAudio);
-        window.removeEventListener('mousedown', startAudio);
-    };
-    window.addEventListener('keydown', startAudio);
-    window.addEventListener('mousedown', startAudio);
+    if (debugPanel) debugPanel.style.display = DEBUG_WINDOW_ENABLED ? 'flex' : 'none';
+
+    // MOVED: Music start logic is now handled AFTER game.json is loaded to respect "music": false setting.
+
+    gameState = isRestart ? STATES.PLAY : STATES.START;
 
     gameState = isRestart ? STATES.PLAY : STATES.START;
     overlayEl.style.display = 'none';
@@ -453,55 +558,72 @@ async function initGame(isRestart = false) {
     perfectStreak = 0;
     perfectEl.style.display = 'none';
     roomStartTime = Date.now();
+    ghostSpawned = false; // Reset Ghost
     visitedRooms = {};
     levelMap = {};
 
     try {
         // 1. Load basic configs
-        const [pData, gData, mData] = await Promise.all([
-            fetch('/json/player.json?t=' + Date.now()).then(res => res.json()),
+        const [manData, gData, mData] = await Promise.all([
+            fetch('/json/players/manifest.json?t=' + Date.now()).then(res => res.json()),
             fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 })),
             fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] }))
         ]);
 
         gameData = gData;
         roomManifest = mData;
+
+        // Load all players
+        availablePlayers = [];
+        if (manData && manData.players) {
+            const playerPromises = manData.players.map(p =>
+                fetch(`/json/players/${p.file}?t=` + Date.now())
+                    .then(res => res.json())
+                    .then(data => ({ ...data, file: p.file })) // Keep file ref if needed
+            );
+            availablePlayers = await Promise.all(playerPromises);
+        }
+
+        // Default to first player
+        if (availablePlayers.length > 0) {
+            player = JSON.parse(JSON.stringify(availablePlayers[0]));
+        } else {
+            console.error("No players found!");
+            player = { hp: 3, speed: 4, inventory: { keys: 0 }, gunType: 'geometry', bombType: 'normal' }; // Fallback
+        }
+
+        // Load player specific assets
+        const [gunData, bombData] = await Promise.all([
+            fetch(`/json/weapons/guns/${player.gunType}.json?t=` + Date.now()).then(res => res.json()),
+            fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json())
+        ]);
+        gun = gunData;
+        bomb = bombData;
+
         if (gameData.music) {
-
             // --- 1. INSTANT AUDIO SETUP ---
-            if (!window.introMusic) {
-                window.introMusic = new Audio('/assets/music/tron.mp3');
-                window.introMusic.loop = true;
-                window.introMusic.volume = 0.4;
-            }
+            // Ensure global audio is ready
+            introMusic.loop = true;
+            introMusic.volume = 0.4;
 
-            // This attempts to play immediately. 
+            // This attempts to play immediately.
             // If the browser blocks it, the 'keydown' listener below will catch it.
-            window.introMusic.play().catch(() => {
+            introMusic.play().catch(() => {
                 log("Autoplay blocked: Waiting for first user interaction to start music.");
             });
 
             // Fallback: Start music on the very first key press or click if autoplay failed
             const startAudio = () => {
-                if (window.introMusic.paused) window.introMusic.play();
+                if (introMusic.paused && !musicMuted) introMusic.play();
                 window.removeEventListener('keydown', startAudio);
                 window.removeEventListener('mousedown', startAudio);
             };
             window.addEventListener('keydown', startAudio);
             window.addEventListener('mousedown', startAudio);
-
         }
 
-        if (pData.inventory === undefined) pData.inventory = { keys: 0 };
-        Object.assign(player, pData);
-
-        // 2. load the bomb and gun data
-        const [bData, gunData] = await Promise.all([
-            fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json()),
-            fetch(`/json/weapons/guns/${player.gunType}.json?t=` + Date.now()).then(res => res.json()),
-        ]);
-        bomb = bData;
-        gun = gunData;
+        // Init Menu UI
+        updateWelcomeScreen();
         // Initialize Ammo
         if (gun.Bullet?.ammo?.active) {
             player.ammoMode = gun.Bullet?.ammo?.type || 'finite'; // 'finite', 'reload', 'recharge'
@@ -591,16 +713,68 @@ initGame();
 window.addEventListener('keydown', e => {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
     if (gameState === STATES.START) {
-        gameState = STATES.PLAY;
-        welcomeEl.style.display = 'none';
-        uiEl.style.display = 'block';
-
-        // If starting primarily in Boss Room (Debug Mode), reset intro timer
-        if (roomData.isBoss) {
-            bossIntroEndTime = Date.now() + 2000;
+        // Allow Menu Navigation keys to pass through to handleGlobalInputs
+        if (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'KeyM') {
+            log("Keydown Menu Key:", e.code);
+            keys[e.code] = true;
+            return;
         }
 
-        spawnEnemies();
+        // Check Lock
+        const p = availablePlayers[selectedPlayerIndex];
+
+        if (p && p.locked) {
+            log("Player Locked - Cannot Start");
+            return;
+        }
+
+        // Apply Selected Player Stats
+        if (p) {
+            // Apply stats but keep runtime properties like x/y if needed (though start resets them)
+            // Actually initGame reset player.x/y already.
+            const defaults = { x: 300, y: 200, roomX: 0, roomY: 0 };
+            player = { ...defaults, ...JSON.parse(JSON.stringify(p)) };
+            if (!player.inventory) player.inventory = { keys: 0, bombs: 0 };
+        }
+
+        // Async Load Assets then Start
+        (async () => {
+            try {
+                const [gData, bData] = await Promise.all([
+                    fetch(`/json/weapons/guns/${player.gunType}.json?t=` + Date.now()).then(res => res.json()),
+                    fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json())
+                ]);
+                gun = gData;
+                bomb = bData;
+
+                // Initialize Ammo for new gun
+                if (gun.Bullet?.ammo?.active) {
+                    player.ammoMode = gun.Bullet?.ammo?.type || 'finite';
+                    player.maxMag = gun.Bullet?.ammo?.amount || 100;
+                    player.reloadTime = gun.Bullet?.ammo?.resetTimer !== undefined ? gun.Bullet?.ammo?.resetTimer : (gun.Bullet?.ammo?.reload || 1000);
+                    player.ammo = player.maxMag;
+                    player.reloading = false;
+                    player.reserveAmmo = (player.ammoMode === 'reload') ? ((gun.Bullet?.ammo?.maxAmount || 0) - player.maxMag) : (player.ammoMode === 'recharge' ? Infinity : 0);
+                    if (player.reserveAmmo < 0) player.reserveAmmo = 0;
+                }
+
+                // Start Game
+                gameState = STATES.PLAY;
+                welcomeEl.style.display = 'none';
+                uiEl.style.display = 'block';
+
+                // If starting primarily in Boss Room (Debug Mode), reset intro timer
+                if (roomData.isBoss) {
+                    bossIntroEndTime = Date.now() + 2000;
+                }
+
+                spawnEnemies();
+                renderDebugForm();
+                updateUI();
+            } catch (err) {
+                console.error("Error starting game assets:", err);
+            }
+        })();
         return;
     }
     keys[e.code] = true;
@@ -645,6 +819,29 @@ function spawnEnemies() {
         player.invulnUntil = freezeUntil;
     }
 
+    // CHECK HAUNTED STATUS
+    // If room is haunted, skip normal enemies and spawn Ghost immediately
+    const currentCoord = `${player.roomX},${player.roomY}`;
+    if (levelMap[currentCoord] && levelMap[currentCoord].haunted) {
+        log("The room is Haunted! The Ghost returns...");
+
+        // Ensure ghostSpawned is true so we don't spawn another one later via timer
+        ghostSpawned = true;
+
+        const template = enemyTemplates["ghost"] || { hp: 2000, speed: 1.2, size: 50, type: "ghost" };
+        const inst = JSON.parse(JSON.stringify(template));
+
+        // Standard random placement or center
+        inst.x = Math.random() * (canvas.width - 60) + 30;
+        inst.y = Math.random() * (canvas.height - 60) + 30;
+        inst.frozen = false; // Active immediately
+        inst.invulnerable = false;
+
+        enemies.push(inst);
+        SFX.ghost();
+        return; // Skip normal spawns
+    }
+
     // Skip if explicitly set to 0 enemies
     if (roomData.enemyCount === 0) return;
 
@@ -661,7 +858,14 @@ function spawnEnemies() {
                     inst.y = Math.random() * (canvas.height - 60) + 30;
                     inst.frozen = true;
                     inst.freezeEnd = freezeUntil;
-                    inst.invulnerable = true; // Make invulnerable during spawn freeze
+                    inst.invulnerable = true;
+
+                    if (bossKilled) {
+                        inst.hp = (inst.hp || 1) * 2;
+                        inst.speed = (inst.speed || 1) * 2;
+                        inst.damage = (inst.damage || 1) * 2;
+                    }
+
                     enemies.push(inst);
                 }
             } else {
@@ -670,9 +874,14 @@ function spawnEnemies() {
         });
     } else {
         // Fallback: Random Grunts
+        // FILTER: Don't spawn special enemies (Boss, Ghost) as randoms
+        const validKeys = Object.keys(enemyTemplates).filter(k => !enemyTemplates[k].special);
+        const randomType = validKeys.length > 0 ? validKeys[Math.floor(Math.random() * validKeys.length)] : "grunt";
+
         let count = 3 + Math.floor(Math.random() * 3);
         if (gameData.difficulty) count += gameData.difficulty;
-        const template = enemyTemplates["grunt"] || { hp: 2, speed: 1, size: 25 };
+
+        const template = enemyTemplates[randomType] || { hp: 2, speed: 1, size: 25 };
 
         for (let i = 0; i < count; i++) {
             const inst = JSON.parse(JSON.stringify(template));
@@ -680,7 +889,17 @@ function spawnEnemies() {
             inst.y = Math.random() * (canvas.height - 60) + 30;
             inst.frozen = true;
             inst.freezeEnd = freezeUntil;
-            inst.invulnerable = true; // Make invulnerable during spawn freeze
+            inst.invulnerable = true;
+
+            // DIFFICULTY SPIKE: If Boss is Dead, 2x Stats
+            if (bossKilled) {
+                inst.hp = (inst.hp || 1) * 2;
+                inst.speed = (inst.speed || 1) * 2;
+                inst.damage = (inst.damage || 1) * 2;
+                // Optional: visual indicator?
+                inst.color = "red"; // Make them look angry? or just keep same.
+            }
+
             enemies.push(inst);
         }
     }
@@ -698,20 +917,23 @@ function spawnPlayer(dx, dy, data) {
 
     const door = (data.doors && data.doors[requiredDoor]) || { x: (data.width || 800) / 2, y: (data.height || 600) / 2 };
 
+    // Use a safe offset > the door trigger threshold (t=50)
+    const SAFE_OFFSET = 70; // Must be > 50
+
     if (dx === 1) {
-        player.x = BOUNDARY + 10;
+        player.x = BOUNDARY + SAFE_OFFSET;
         player.y = door.y !== undefined ? door.y : (data.height || 600) / 2;
     }
     if (dx === -1) {
-        player.x = (data.width || 800) - BOUNDARY - 10;
+        player.x = (data.width || 800) - BOUNDARY - SAFE_OFFSET;
         player.y = door.y !== undefined ? door.y : (data.height || 600) / 2;
     }
     if (dy === 1) {
-        player.y = BOUNDARY + 10;
+        player.y = BOUNDARY + SAFE_OFFSET;
         player.x = door.x !== undefined ? door.x : (data.width || 800) / 2;
     }
     if (dy === -1) {
-        player.y = (data.height || 600) - BOUNDARY - 10;
+        player.y = (data.height || 600) - BOUNDARY - SAFE_OFFSET;
         player.x = door.x !== undefined ? door.x : (data.width || 800) / 2;
     }
 }
@@ -742,8 +964,55 @@ function changeRoom(dx, dy) {
     const nextCoord = `${player.roomX},${player.roomY}`;
     roomEl.innerText = nextCoord;
 
+    // --- GOLDEN PATH LOGIC ---
+    if (nextCoord === "0,0") {
+        // Reset if back at start
+        goldenPathIndex = 0;
+        goldenPathFailed = false;
+        log("Returned to Start. Golden Path Reset.");
+    } else if (!goldenPathFailed) {
+        // Check if this is the next step in the path
+        // path[0] is "0,0". path[1] is the first real step.
+        // We want to be at path[goldenPathIndex + 1]
+        const expectedCoord = goldenPath[goldenPathIndex + 1];
+
+        if (nextCoord === expectedCoord) {
+            goldenPathIndex++;
+            log("Golden Path Progress:", goldenPathIndex);
+        } else if (goldenPath.includes(nextCoord) && goldenPath.indexOf(nextCoord) <= goldenPathIndex) {
+            // Just backtracking along the known path, do nothing
+        } else {
+            // Deviated!
+            goldenPathFailed = true;
+            log("Golden Path FAILED. Return to start to reset.");
+        }
+    }
+
     bullets = []; // Clear bullets on room entry
     bombs = []; // Clear bombs on room entry
+
+    // Check if Ghost should follow
+    const ghostConfig = gameData.ghost || { spawn: true, roomGhostTimer: 10000, roomFollow: false };
+    const activeGhost = enemies.find(e => e.type === 'ghost' && !e.isDead);
+    const shouldFollow = ghostSpawned && ghostConfig.roomFollow && activeGhost;
+
+    // Calculate Travel Time relative to the door we are exiting
+    let travelTime = 0;
+    if (shouldFollow) {
+        // Determine exit door coordinates (where player is going)
+        let doorX = player.x, doorY = player.y;
+        if (dx === 1) { doorX = canvas.width; doorY = canvas.height / 2; } // Right
+        else if (dx === -1) { doorX = 0; doorY = canvas.height / 2; } // Left
+        else if (dy === 1) { doorX = canvas.width / 2; doorY = canvas.height; } // Bottom
+        else if (dy === -1) { doorX = canvas.width / 2; doorY = 0; } // Top
+
+        const dist = Math.hypot(activeGhost.x - doorX, activeGhost.y - doorY);
+        // Speed ~1.2px/frame @ 60fps ~ 0.072px/ms -> ms = dist / 0.072 = dist * 13.8
+        travelTime = dist * 14;
+        log(`Ghost chasing! Distance: ${Math.round(dist)}, Travel Delay: ${Math.round(travelTime)}ms`);
+    }
+
+    ghostSpawned = false; // Reset Ghost flag (will respawn via timer hack if following)
     bulletsInRoom = 0;
     hitsInRoom = 0;
     perfectEl.style.display = 'none';
@@ -765,6 +1034,39 @@ function changeRoom(dx, dy) {
         if (roomData.isBoss) freezeDelay = 2000;
 
         roomStartTime = Date.now() + freezeDelay; // Start timer after freeze
+        log(`Room Start Time Reset: ${roomStartTime} (Delay: ${freezeDelay})`);
+
+        // GHOST FOLLOW LOGIC
+        // If ghost was chasing and follow is on, fast-forward the timer so he appears immediately
+        if (shouldFollow && !(player.roomX === 0 && player.roomY === 0) && !roomData.isBoss) {
+            log("The Ghost follows you...");
+            // Trigger time = desired spawn time
+            // roomStartTime = Now - (ConfigTime - TravelTime)
+            // Example: Config=10s, Travel=2s. We want spawn in 2s.
+            // Timer checks: (Now - Start) > 10s.
+            // (Now - Start) should start at 8s.
+            // Start = Now - 8s = Now - (10s - 2s).
+            // We add 100ms buffer to ensure it triggers after the frame update
+            // Actually, if we want it to spawn AFTER travel time, we set the accumulator to (Target - Travel).
+
+            const timeAlreadyElapsed = ghostConfig.roomGhostTimer - travelTime;
+            // Clamp so we don't wait forever if travel is huge (max delay 3x timer?) or negative?
+            // If travelTime > ghostTimer, timeAlreadyElapsed is negative, so we wait longer than usual. Correct.
+
+            roomStartTime = Date.now() - timeAlreadyElapsed;
+
+            // Set Ghost Entry Point (The door we just came through)
+            // Player is currently AT the door (spawnPlayer just ran)
+            ghostEntry = {
+                x: player.x,
+                y: player.y,
+                vx: dx * 2, // Move in the same direction player entered
+                vy: dy * 2
+            };
+        } else {
+            ghostEntry = null;
+        }
+
         keyUsedForRoom = keyWasUsedForThisRoom; // Apply key usage penalty to next room
 
         // Immediate Room Bonus if key used
@@ -793,6 +1095,29 @@ function changeRoom(dx, dy) {
         }
         if (roomData.isBoss && !nextEntry.cleared) {
             bossIntroEndTime = Date.now() + 2000;
+        }
+
+        // --- GOLDEN PATH BONUS ---
+        if (roomData.isBoss && !goldenPathFailed && !nextEntry.goldenBonusAwarded) {
+            nextEntry.goldenBonusAwarded = true;
+            log("GOLDEN PATH BONUS AWARDED!");
+
+            perfectEl.innerText = "GOLDEN PATH BONUS!";
+            perfectEl.style.color = "gold";
+            perfectEl.style.display = 'block';
+            perfectEl.style.animation = 'none';
+            perfectEl.offsetHeight; /* trigger reflow */
+            perfectEl.style.animation = null;
+
+            // Reward
+            player.inventory.bombs += 10;
+            player.inventory.keys += 3;
+            player.hp = Math.min(player.hp + 2, 10); // Heal
+
+            setTimeout(() => {
+                perfectEl.style.display = 'none';
+                perfectEl.style.color = '#e74c3c'; // Reset
+            }, 4000);
         }
 
         if (!nextEntry.cleared) {
@@ -901,8 +1226,15 @@ async function dropBomb() {
 }
 
 function fireBullet(direction, speed, vx, vy, angle) {
-    // 1. Safety check
+    // 1. Safety check / No Bullets Mode
     if (gun.Bullet?.NoBullets) {
+        // "if no bullets and you press fire you should get a broken gun sound"
+        // Rate limit the click sound slightly so it's not a buzz
+        const now = Date.now();
+        if (now - (player.lastClick || 0) > 200) {
+            SFX.click(); // Assuming SFX.click exists, otherwise I'll need to add it or use a fallback
+            player.lastClick = now;
+        }
         return;
     }
 
@@ -936,9 +1268,15 @@ function fireBullet(direction, speed, vx, vy, angle) {
             bulletShape = possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
         }
 
+        // Calculate Spawn Offset (Barrel Tip)
+        const barrelLength = player.size + 10;
+        const angle = Math.atan2(velY, velX);
+        const startX = player.x + Math.cos(angle) * barrelLength;
+        const startY = player.y + Math.sin(angle) * barrelLength;
+
         return {
-            x: player.x,
-            y: player.y,
+            x: startX,
+            y: startY,
             vx: velX,
             vy: velY,
             life: gun.Bullet?.range || 60,
@@ -946,6 +1284,8 @@ function fireBullet(direction, speed, vx, vy, angle) {
             size: gun.Bullet?.size || 5,
             curve: gun.Bullet?.curve || 0,
             homing: gun.Bullet?.homing,
+            canDamagePlayer: gun.Bullet?.canDamagePlayer || false,
+            hasLeftPlayer: false, // Start as false, set to true once it exits player radius
             shape: bulletShape, // This is now a fixed shape (triangle, square, etc.)
             animated: gun.Bullet?.geometry?.animated || false,
             filled: gun.Bullet?.geometry?.filled !== undefined ? gun.Bullet.geometry.filled : true,
@@ -1048,6 +1388,9 @@ function update() {
     // 0. Global Inputs (Restart/Menu from non-play states)
     if (handleGlobalInputs()) return;
 
+    // Music Toggle (Global) - Allow toggling in Start, Play, etc.
+    updateMusicToggle();
+
     // 1. If already dead, stop all logic
     if (gameState === STATES.GAMEOVER || gameState === STATES.WIN) return;
 
@@ -1063,13 +1406,15 @@ function update() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
     //const now = Date.now();
-    const aliveEnemies = enemies.filter(en => !en.isDead);
-    const roomLocked = aliveEnemies.length > 0;
+    // const aliveEnemies = enemies.filter(en => !en.isDead);
+    // const roomLocked = aliveEnemies.length > 0;
+    const roomLocked = isRoomLocked();
+    const aliveEnemies = enemies.filter(en => !en.isDead); // Keep for homing logic
     const doors = roomData.doors || {};
 
     // 1. Inputs & Music
     updateRestart();
-    updateMusicToggle(); // <--- Added this
+    // updateMusicToggle(); // Moved up
     updateRemoteDetonation(); // Remote Bombs - Check BEFORE Use consumes space
     updateBombInteraction(); // Kick/Interact with Bombs
     if (keys["Space"]) updateUse();
@@ -1094,10 +1439,12 @@ function update() {
 
     // 4. Transitions
     updateRoomTransitions(doors, roomLocked);
-    updatePortal();
 
-    // 5. Game Over Check
-    if (player.hp < 1) gameState = STATES.GAMEOVER;
+    // Shield Regen
+    updateShield();
+
+    updatePortal();
+    updateGhost(); // Check for ghost spawn
 }
 
 function updateReload() {
@@ -1123,7 +1470,7 @@ function updateReload() {
 //draw loop
 async function draw() {
     const aliveEnemies = enemies.filter(en => !en.isDead);
-    const roomLocked = aliveEnemies.length > 0;
+    const roomLocked = isRoomLocked();
     const doors = roomData.doors || {};
     await updateUI();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1161,7 +1508,9 @@ async function draw() {
 }
 
 function drawPortal() {
-    if (!portal.active) return;
+    // Only draw if active AND in the boss room
+    const currentCoord = `${player.roomX},${player.roomY}`;
+    if (!portal.active || currentCoord !== bossCoord) return;
     const time = Date.now() / 500;
 
     ctx.save();
@@ -1188,7 +1537,10 @@ function drawPortal() {
 }
 
 function updateMusicToggle() {
-    if (keys['KeyM']) {
+    // If music is disabled in config, do not allow toggling
+    if (!gameData.music) return;
+
+    if (keys['Digit0']) {
         const now = Date.now();
         // 300ms cooldown so it doesn't toggle every frame
         if (now - lastMusicToggle > 300) {
@@ -1210,18 +1562,68 @@ function updateRoomTransitions(doors, roomLocked) {
 
     // --- 8. ROOM TRANSITIONS ---
     // --- 8. ROOM TRANSITIONS ---
-    const t = 15;
+    // Increased threshold to account for larger player sizes (Triangle=20)
+    const t = 50;
+
+    // Debug Door Triggers
+    if (player.x < t + 10 && doors.left?.active) {
+        // log(`Left Door Check: X=${Math.round(player.x)} < ${t}? Locked=${doors.left.locked}, RoomLocked=${roomLocked}`);
+    }
+
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
-    if (player.x < t && doors.left?.active && !doors.left?.locked && (!roomLocked || doors.left?.forcedOpen)) changeRoom(-1, 0);
-    else if (player.x > canvas.width - t && doors.right?.active && !doors.right?.locked && (!roomLocked || doors.right?.forcedOpen)) changeRoom(1, 0);
-    else if (player.y < t && doors.top?.active && !doors.top?.locked && (!roomLocked || doors.top?.forcedOpen)) changeRoom(0, -1);
-    else if (player.y > canvas.height - t && doors.bottom?.active && !doors.bottom?.locked && (!roomLocked || doors.bottom?.forcedOpen)) changeRoom(0, 1);
+    if (player.x < t && doors.left?.active) {
+        if (!doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
+        else log("Left Door Blocked: Locked or Room Locked");
+    }
+    else if (player.x > canvas.width - t && doors.right?.active) {
+        if (!doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
+        else log("Right Door Blocked: Locked or Room Locked");
+    }
+    else if (player.y < t && doors.top?.active) {
+        if (!doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
+        else log("Top Door Blocked: Locked or Room Locked");
+    }
+    else if (player.y > canvas.height - t && doors.bottom?.active) {
+        if (!doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
+        else log("Bottom Door Blocked: Locked or Room Locked");
+    }
+}
+
+function isRoomLocked() {
+    const aliveEnemies = enemies.filter(en => !en.isDead);
+    let isLocked = false;
+    const nonGhostEnemies = aliveEnemies.filter(en => en.type !== 'ghost');
+
+    if (nonGhostEnemies.length > 0) {
+        // Normal enemies always lock
+        isLocked = true;
+    } else if (aliveEnemies.length > 0) {
+        // Only ghosts remain
+        const ghostConfig = gameData.ghost || { spawn: true, roomGhostTimer: 10000 };
+        const now = Date.now();
+        const elapsed = now - roomStartTime;
+        const limit = ghostConfig.roomGhostTimer * 2;
+
+        // Debug once per second (approx) to avoid spam
+        if (Math.random() < 0.01) {
+            // log(`Ghost Lock Check: Elapsed ${Math.round(elapsed)} vs Limit ${limit}`);
+        }
+
+        // Lock if time > 2x ghost timer
+        if (elapsed > limit) {
+            isLocked = true;
+            if (Math.random() < 0.05) {
+                log(`LOCKED! Elapsed: ${Math.round(elapsed)} > Limit: ${limit}`);
+                log(`Diagnostics: Now=${now}, Start=${roomStartTime}, ConfigTimer=${ghostConfig.roomGhostTimer}`);
+            }
+        }
+    }
+    return isLocked;
 }
 
 function updateRoomLock() {
     // --- 2. ROOM & LOCK STATUS ---
-    const aliveEnemies = enemies.filter(en => !en.isDead);
-    const roomLocked = aliveEnemies.length > 0;
+    const roomLocked = isRoomLocked();
     const doors = roomData.doors || {};
 
     if (!roomLocked && !roomData.cleared) {
@@ -1242,7 +1644,7 @@ function drawShake() {
 }
 
 function drawDoors() {
-    const roomLocked = enemies.filter(en => !en.isDead).length > 0;
+    const roomLocked = isRoomLocked();
     const doors = roomData.doors || {};
     Object.entries(doors).forEach(([dir, door]) => {
         if (!door.active || door.hidden) return;
@@ -1263,9 +1665,110 @@ function drawDoors() {
 function drawPlayer() {
     const now = Date.now();
     // 4. --- PLAYER ---
+
+    // Gun Rendering (Barrels)
+    if (!gun.Bullet?.NoBullets) {
+        // Helper to draw a single barrel at a given angle
+        const drawBarrel = (angle, color = "#555") => {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.fillRect(0, -4, player.size + 10, 8); // Extend 10px beyond center
+            ctx.restore();
+        };
+
+        // 1. Main Barrel (Based on movement)
+        let aimAngle = 0;
+        if (player.lastMoveX || player.lastMoveY) {
+            aimAngle = Math.atan2(player.lastMoveY, player.lastMoveX);
+        }
+        drawBarrel(aimAngle);
+
+        // 2. Reverse Fire
+        if (gun.Bullet?.reverseFire) {
+            drawBarrel(aimAngle + Math.PI);
+        }
+
+        // 3. Multi-Directional
+        if (gun.Bullet?.multiDirectional?.active) {
+            const md = gun.Bullet.multiDirectional;
+            if (md.fireNorth) drawBarrel(-Math.PI / 2);
+            if (md.fireEast) drawBarrel(0);
+            if (md.fireSouth) drawBarrel(Math.PI / 2);
+            if (md.fireWest) drawBarrel(Math.PI);
+
+            // 360 Mode
+            if (md.fire360) {
+                for (let i = 0; i < 8; i++) {
+                    drawBarrel(i * (Math.PI / 4));
+                }
+            }
+        }
+    }
+
     const isInv = player.invuln || now < (player.invulnUntil || 0);
-    ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : '#5dade2';
-    ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = isInv ? 'rgba(255,255,255,0.7)' : (player.color || '#5dade2');
+
+    ctx.beginPath();
+    if (player.shape === 'square') {
+        // Draw Square centered
+        ctx.fillRect(player.x - player.size, player.y - player.size, player.size * 2, player.size * 2);
+    } else if (player.shape === 'triangle') {
+        // Draw Triangle centered
+        ctx.moveTo(player.x, player.y - player.size);
+        ctx.lineTo(player.x + player.size, player.y + player.size);
+        ctx.lineTo(player.x - player.size, player.y + player.size);
+        ctx.closePath();
+        ctx.fill();
+    } else {
+        // Default Circle
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // --- SHIELD RENDERING ---
+    if (player.shield?.active && player.shield.hp > 0) {
+        ctx.save();
+        ctx.beginPath();
+        // Outer ring
+        ctx.arc(player.x, player.y, player.size + 8, 0, Math.PI * 2);
+        ctx.strokeStyle = player.shield.colour || "blue";
+        ctx.lineWidth = 3;
+
+        // Opacity based on HP health
+        ctx.globalAlpha = 0.4 + (0.6 * (player.shield.hp / player.shield.maxHp));
+        ctx.stroke();
+
+        // Inner fill (faint)
+        ctx.fillStyle = player.shield.colour || "blue";
+        ctx.globalAlpha = 0.1;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- SHIELD BAR (Above Reload/Cooldown) ---
+    // Hide bar if shield is broken (hp <= 0)
+    if (player.shield?.active && player.shield.hp > 0) {
+        const barW = 40;
+        const barH = 5;
+        const barX = player.x - barW / 2;
+        const barY = player.y - player.size - 30; // Above the reload/cooldown bar
+
+        // Background
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(barX, barY, barW, barH);
+
+        // Progress (HP)
+        const shieldPct = Math.max(0, Math.min(player.shield.hp / player.shield.maxHp, 1));
+        ctx.fillStyle = player.shield.colour || "blue"; // Use shield color
+        ctx.fillRect(barX, barY, barW * shieldPct, barH);
+
+        // Border
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+    }
 
     // --- RELOAD / COOLDOWN BAR ---
     // If reloading, show reload bar (Blue/Cyan)
@@ -1363,6 +1866,8 @@ function spawnShards(b) {
             size: ex.size,
             isShard: true,
             colour: b.colour,
+            canDamagePlayer: b.canDamagePlayer || false,
+            hasLeftPlayer: true, // Shards hurt immediately (no safety buffer)
             shape: 'circle' // Shards are usually simple circles
         });
     }
@@ -1370,6 +1875,34 @@ function spawnShards(b) {
 
 function updateBulletsAndShards(aliveEnemies) {
     bullets.forEach((b, i) => {
+        // --- PLAYER COLLISION (Friendly Fire) ---
+        const distToPlayer = Math.hypot(player.x - b.x, b.y - player.y);
+        const collisionThreshold = player.size + b.size;
+
+        if (!b.hasLeftPlayer) {
+            // Check if it has exited the player for the first time
+            if (distToPlayer > collisionThreshold) {
+                b.hasLeftPlayer = true;
+            }
+        } else {
+            // Only check collision if it has safely left the player once
+            if (distToPlayer < collisionThreshold) {
+                // Hit Player
+                if (b.canDamagePlayer) {
+                    if (!player.invuln && Date.now() > (player.invulnUntil || 0)) {
+                        takeDamage(b.damage || 1);
+                        // Remove bullet
+                        bullets.splice(i, 1);
+                        return;
+                    }
+                } else {
+                    // Harmless collision - destroy bullet
+                    bullets.splice(i, 1);
+                    return;
+                }
+            }
+        }
+
         // --- HOMING LOGIC ---
         if (b.homing && aliveEnemies && aliveEnemies.length > 0) {
             // Find closest enemy
@@ -1475,6 +2008,17 @@ function updateShooting() {
     // --- 5. SHOOTING ---
     const shootingKeys = keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
     if (shootingKeys) {
+
+        // STATIONARY AIMING LOGIC
+        // If not moving (no WASD), aim in the direction of the arrow key
+        const isMoving = keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'];
+        if (!isMoving) {
+            if (keys['ArrowUp']) { player.lastMoveX = 0; player.lastMoveY = -1; }
+            else if (keys['ArrowDown']) { player.lastMoveX = 0; player.lastMoveY = 1; }
+            else if (keys['ArrowLeft']) { player.lastMoveX = -1; player.lastMoveY = 0; }
+            else if (keys['ArrowRight']) { player.lastMoveX = 1; player.lastMoveY = 0; }
+        }
+
         const fireDelay = (gun.Bullet?.fireRate ?? 0.3) * 1000;
         if (Date.now() - (player.lastShot || 0) > fireDelay) {
             // Check if we can play audio (have ammo and not reloading)
@@ -1587,7 +2131,7 @@ function updateUse() {
         audioCtx.resume();
     }
 
-    const roomLocked = enemies.length > 0;
+    const roomLocked = isRoomLocked();
     const doors = roomData.doors || {};
     if (roomLocked) return; // keep your existing rule: can't unlock while enemies alive
 
@@ -1703,6 +2247,14 @@ function updateBombsPhysics() {
                     if (dist < r + en.size) {
                         if (b.canInteract?.explodeOnImpact) {
                             // Boom
+                            bullets = [];
+                            bombs = [];
+                            particles = [];
+                            roomStartTime = Date.now();
+                            ghostSpawned = false; // Reset Ghost Timer
+
+                            // Check if visited before
+                            const coord = `${player.roomX},${player.roomY}`;
                             b.exploding = true;
                             b.explosionStartAt = Date.now();
                             b.vx = 0; b.vy = 0;
@@ -1807,7 +2359,8 @@ function updateEnemies() {
 
                 // CRIT & DAMAGE
                 let finalDamage = b.damage || 1;
-                if (Math.random() < (gun.Bullet?.critChance || 0)) {
+                // Ghost Immunity to Crits
+                if (en.type !== 'ghost' && Math.random() < (gun.Bullet?.critChance || 0)) {
                     finalDamage *= (gun.Bullet?.critDamage || 2);
                 }
                 en.hp -= finalDamage;
@@ -1815,7 +2368,8 @@ function updateEnemies() {
                 SFX.explode(0.08);
 
                 // FREEZE MECHANIC
-                if (Math.random() < (gun.Bullet?.freezeChance || 0)) {
+                // Ghost Immunity to Freeze
+                if (en.type !== 'ghost' && Math.random() < (gun.Bullet?.freezeChance || 0)) {
                     en.frozen = true;
                     en.freezeEnd = now + (gun.Bullet?.freezeDuration || 1000);
                 }
@@ -1841,19 +2395,45 @@ function updateEnemies() {
 
                     // Check if Boss
                     if (en.type === 'boss') {
-                        log("BOSS DEFEATED! Waiting for room clear to spawn portal.");
+                        log("BOSS DEFEATED! The Curse Strengthens... Resetting Rooms!");
                         SFX.explode(0.5); // Big Boom
+
+                        // BOSS KILLED LOGIC
+                        bossKilled = true;
+
+                        // Reset all visited rooms (except current boss room) to force respawns
+                        // Reset all visited rooms (except current boss room) to force respawns
+                        Object.keys(visitedRooms).forEach(key => {
+                            if (key !== `${player.roomX},${player.roomY}`) {
+                                // 1. Do NOT delete visitedRooms. This keeps the minimap visible (Fog of War cleared).
+                                // delete visitedRooms[key]; 
+
+                                // 2. Mark as uncleared so enemies respawn
+                                if (levelMap[key]) {
+                                    levelMap[key].cleared = false;
+
+                                    // 3. FORCE DOORS OPEN so the player isn't locked in
+                                    if (levelMap[key].roomData && levelMap[key].roomData.doors) {
+                                        Object.values(levelMap[key].roomData.doors).forEach(d => {
+                                            d.forcedOpen = true;
+                                        });
+                                    }
+                                }
+                            }
+                        });
                     }
+
+                    // Optional: Visual cue?
+                    // maybe shake screen or flash red
                 }
             }
         });
     });
 
     // SPAWN PORTAL IF BOSS IS DEAD AND NO ENEMIES LEFT
+    // Only spawn portal in the BOSS ROOM
     const currentCoord = `${player.roomX},${player.roomY}`;
-    if (currentCoord === bossCoord && enemies.length === 0 && !portal.active) {
-        // Check if boss was actually defeated (simple check: if room is cleared/enemies empty in boss room)
-        // Since enemies are cleared on death, length 0 means we won.
+    if (bossKilled && currentCoord === bossCoord && enemies.length === 0 && !portal.active) {
         portal.active = true;
         portal.x = canvas.width / 2;
         portal.y = canvas.height / 2;
@@ -1863,6 +2443,9 @@ function updateEnemies() {
 
 function updatePortal() {
     if (!portal.active) return;
+    const currentCoord = `${player.roomX},${player.roomY}`;
+    // Only interact if in Boss Room (should match draw logic)
+    if (currentCoord !== bossCoord) return;
 
     const dist = Math.hypot(player.x - portal.x, player.y - portal.y);
     if (dist < 30) {
@@ -1873,10 +2456,152 @@ function updatePortal() {
     }
 }
 
+function updateGhost() {
+    // Check if Ghost should spawn
+    const now = Date.now();
+    // Use config from gameData, default if missing
+    const ghostConfig = gameData.ghost || { spawn: true, roomGhostTimer: 10000 };
+
+    // Only spawn if:
+    // 1. Config enabled
+    // 2. Not already spawned in this room
+    // 3. Time exceeded
+    if (ghostConfig.spawn && !ghostSpawned && (now - roomStartTime > ghostConfig.roomGhostTimer)) {
+        if (player.roomX === 0 && player.roomY === 0) return; // No ghost in start room
+
+        log("THE GHOST APPEARS!");
+        ghostSpawned = true;
+
+        // Mark room as Haunted (Persistent)
+        const currentCoord = `${player.roomX},${player.roomY}`;
+        if (levelMap[currentCoord]) {
+            levelMap[currentCoord].haunted = true;
+        }
+
+        // Spawn Ghost
+        const template = enemyTemplates["ghost"] || {
+            hp: 2000, speed: 1.2, damage: 1000, size: 50, color: "rgba(231, 76, 60, 0.8)", type: "ghost"
+        };
+
+        const inst = JSON.parse(JSON.stringify(template));
+
+        // Spawn Location
+        if (ghostEntry) {
+            // Spawn at the door the player entered
+            inst.x = ghostEntry.x;
+            inst.y = ghostEntry.y;
+            // Give it some momentum into the room
+            inst.vx = ghostEntry.vx || 0;
+            inst.vy = ghostEntry.vy || 0;
+            ghostEntry = null; // Consume
+        } else {
+            // Default: Spawn away from player
+            // Simple: Opposite corner or random edge
+            if (Math.random() > 0.5) {
+                inst.x = player.x > canvas.width / 2 ? 50 : canvas.width - 50;
+                inst.y = Math.random() * canvas.height;
+            } else {
+                inst.x = Math.random() * canvas.width;
+                inst.y = player.y > canvas.height / 2 ? 50 : canvas.height - 50;
+            }
+        }
+
+        inst.frozen = false; // active immediately
+        inst.invulnerable = false; // Ghost is killable? Or maybe super tanky (high HP in json)
+
+        // Ghost specific: pass through walls? (Needs logic update in updateEnemies if so)
+        // For now, standard movement
+
+        enemies.push(inst);
+        SFX.ghost(); // Spooky sound!
+    }
+}
+
+// --- DAMAGE & SHIELD LOGIC ---
+function takeDamage(amount) {
+    // 1. Check Shield
+    if (player.shield?.active && player.shield.hp > 0) {
+        player.shield.hp -= amount;
+        SFX.click(0.5); // Shield hit sound (reuse click or new sound)
+
+        // Overflow damage?
+        if (player.shield.hp < 0) {
+            // Optional: Surplus damage hits player?
+            // For now, let's say shield break absorbs the full blow but breaks
+            player.shield.hp = 0;
+            SFX.explode(0.2); // Shield break sound
+        }
+
+        // Reset Regen Timer
+        player.shield.lastHit = Date.now();
+        return; // Damage absorbed
+    }
+
+    // 2. Health Damage
+    player.hp -= amount;
+    SFX.playerHit();
+
+    // Trigger I-Frames
+    player.invulnUntil = Date.now() + (player.invulTimer || 1000);
+    updateUI();
+}
+
+function updateShield() {
+    if (!player.shield?.active) return;
+
+    // Debug only occasionally
+    if (Math.random() < 0.005) {
+        // log(`Shield Debug: Active=${player.shield.active}, HP=${player.shield.hp}/${player.shield.maxHp}, RegenActive=${player.shield.regenActive}, TimeSinceHit=${Math.round(now - (player.shield.lastHit || 0))}`);
+    }
+
+    if (!player.shield.regenActive) return;
+
+    const now = Date.now();
+    const regenDelay = player.shield.regenTimer || 1000;
+    const lastHit = player.shield.lastHit || 0;
+    const timeSinceHit = now - lastHit;
+
+    // Only regen if we haven't been hit recently AND HP is not full
+    if (timeSinceHit > 2000) {
+        if (player.shield.hp < player.shield.maxHp) {
+            // Regen tick
+            if (!player.shield.lastRegen || now - player.shield.lastRegen > regenDelay) {
+                player.shield.hp = Math.min(player.shield.hp + (player.shield.regen || 1), player.shield.maxHp);
+                player.shield.lastRegen = now;
+                // log(`Shield Regen Tick: +${player.shield.regen || 1} -> ${player.shield.hp}`);
+            }
+        }
+    } else {
+        // if (Math.random() < 0.01) log(`Shield Regen Paused: Hit ${Math.round(timeSinceHit)}ms ago`);
+    }
+}
+
 function drawEnemies() {
+
     enemies.forEach(en => {
         ctx.save();
-        if (en.isDead) ctx.globalAlpha = en.deathTimer / 30;
+
+        // GHOST EFFECTS
+        let bounceY = 0;
+        let sizeMod = 0;
+
+        if (en.type === 'ghost') {
+            // Ectoplasmic Wobble
+            const time = Date.now() / 200;
+            bounceY = Math.sin(time) * 5; // Float up and down
+            sizeMod = Math.cos(time) * 2; // Pulse size slightly
+
+            // Translucency (Base 0.6, fade if dying)
+            const baseAlpha = 0.6;
+            ctx.globalAlpha = en.isDead ? (en.deathTimer / 30) * baseAlpha : baseAlpha;
+
+            // Ghostly Glow/Shadow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = en.color || "red";
+        } else {
+            // Standard Death Fade
+            if (en.isDead) ctx.globalAlpha = en.deathTimer / 30;
+        }
 
         // Visual Feedback: White for hit, Blue for frozen, Red for normal
         if (en.hitTimer > 0) {
@@ -1889,7 +2614,7 @@ function drawEnemies() {
         }
 
         ctx.beginPath();
-        ctx.arc(en.x, en.y, en.size, 0, Math.PI * 2);
+        ctx.arc(en.x, en.y + bounceY, en.size + sizeMod, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     });
@@ -1897,26 +2622,14 @@ function drawEnemies() {
 function playerHit(en, invuln = false, knockback = false, shakescreen = false) {
     if (invuln) {
         const now = Date.now();
-        const isInvuln = player.invuln || now < (player.invulnUntil || 0);
-
-        if (!isInvuln) {
-            player.hp -= en.damage || 1;
-            player.invulnUntil = now + 1000;
-            SFX.playerHit(0.2);
-            log(`Player hit! HP: ${player.hp}, Damage: ${en.damage || 1}`);
-
-            // If the player dies from this hit, the next update() call will catch it
-            if (typeof updateUI === "function") updateUI();
-
-            // Check for game over immediately after taking damage
-            if (player.hp <= 0) {
-                log("Player HP <= 0, triggering game over");
-                player.hp = 0;
-                gameOver();
-            }
-        }
+        if (player.invuln || now < (player.invulnUntil || 0)) return;
+        // invul timer set inside takeDamage now
     }
 
+    // Damage
+    takeDamage(en.damage || 1);
+
+    // Knockback
     if (knockback) {
         let dx = player.x - en.x;
         let dy = player.y - en.y;
@@ -2250,7 +2963,6 @@ function drawTutorial() {
         const actions = [
             { label: "ITEM", key: "⎵" },
             { label: "PAUSE", key: "P" },
-            { label: "MENU", key: "M" },
             { label: "BOMB", key: "B" }
         ];
 
@@ -2304,6 +3016,19 @@ function drawMinimap() {
             // Special Colors
             if (rx === 0 && ry === 0) color = "#f1c40f"; // Yellow for Start
             if (visitedRooms[coord].roomData.isBoss) color = "#c0392b"; // Dark Red for Boss
+
+            // --- GOLDEN PATH VISUALS ---
+            if (!goldenPathFailed && goldenPath.includes(coord)) {
+                // If this room is part of the path we have successfully traversed so far
+                // We show it as Gold to indicate "Methodical Progress"
+                // goldenPathIndex is the index of the *current* room we are in (or highest reached)
+                // Actually, goldenPathIndex is incremented when we enter a new correct room
+                // So if we are at index 2, rooms at index 0, 1, 2 of goldenPath should be gold
+                const pathIdx = goldenPath.indexOf(coord);
+                if (pathIdx <= goldenPathIndex && pathIdx !== -1) {
+                    color = "#ffd700"; // Gold
+                }
+            }
 
             mctx.fillStyle = isCurrent ? "#fff" : color;
             mctx.fillRect(dx - roomSize / 2, dy - roomSize / 2, roomSize, roomSize);
@@ -2379,4 +3104,16 @@ function drawBossIntro() {
 
         ctx.restore();
     }
+}
+
+
+// Expose to window for testing
+if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'player', { get: () => player });
+    Object.defineProperty(window, 'bombs', { get: () => bombs });
+    Object.defineProperty(window, 'enemies', { get: () => enemies });
+    Object.defineProperty(window, 'levelMap', { get: () => levelMap });
+    Object.defineProperty(window, 'goldenPath', { get: () => goldenPath });
+    Object.defineProperty(window, 'visitedRooms', { get: () => visitedRooms });
+    Object.defineProperty(window, 'debugLogs', { get: () => debugLogs });
 }

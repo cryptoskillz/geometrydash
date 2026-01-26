@@ -1,0 +1,16 @@
+{
+    "players": [
+        {
+            "name": "Circle",
+            "file": "circle.json"
+        },
+        {
+            "name": "Square",
+            "file": "square.json"
+        },
+        {
+            "name": "Triangle",
+            "file": "triangle.json"
+        }
+    ]
+}

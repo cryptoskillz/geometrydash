@@ -1,11 +1,29 @@
 {
     "name": "Player 1",
     "Description": "The runt of the litter",
+    "color": "#5dade2",
+    "locked": false,
+    "shape": "circle",
     "hp": 10,
     "speed": 10,
     "size": 20,
     "physics": {
-        "strength": 45
+        "strength": 45,
+        "mass": 10,
+        "drag": 0.1,
+        "friction": 0.1,
+        "elasticity": 0.1,
+        "bounciness": 0.1
+    },
+    "shield": {
+        "active": true,
+        "colour": "blue",
+        "hp": 10,
+        "maxHp": 10,
+        "regenActive": false,
+        "regen": 1,
+        "regenTimer": 100,
+        "regenColour": "white"
     },
     "luck": 0,
     "roomX": 0,

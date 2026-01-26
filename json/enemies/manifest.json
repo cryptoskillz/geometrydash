@@ -3,6 +3,7 @@
         "grunt",
         "speedy",
         "tank",
-        "boss"
+        "boss",
+        "ghost"
     ]
 }

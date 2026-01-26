@@ -10,5 +10,6 @@
     "description": "Slow and heavily armored.",
     "hitColor": "#ffffff",
     "deathType": "fadeaway",
-    "deathDuration": 30
+    "deathDuration": 30,
+    "special": false
 }

@@ -1,27 +1,25 @@
 bugs
     if music has been toggled off it shouldnt turn back on on restart / going back to main menu
     room count at the end is off (maybe same room type in generation)
-the enemies get stuck they should work their way around obstacles
-if you renet a room with enemies it should not spawn new ones
-combine move/kick maybe it may complicate things. hve to test it.
+    the enemies get stuck they should work their way around obstacles
+
+
 
 next up 
-    player + mini map updates
-    enemies
-    debug window
     items
+    debug window
+    enemies
     rooms
     levels
 
-    enemies become twice as hard if you kill the boss and back track
-    restart / continue / main menu should have hot keys on the main menu
 
 levels
     level 1 is a basic intro
-    level 2 is golcen path maze
+    level 2 is golcen path maze (it will say room name followed by dejavu)
     level 3 is harder level one
     level 4 is crazy rooms
     level 5 is boss rush
+    level 6 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
 
 
 logic
@@ -31,6 +29,8 @@ logic
 
 bombs
     add an explode on enemy / anything 
+    if you are not moving the bomb should drop in front of you if you are moving it should follow you
+
 level 1
 
 start room
@@ -40,21 +40,18 @@ start room
     each time you finish the game you will unlock more stuff
 
 player 
+    triangle should rotate to be the point the way you are moving
     iron man mode (ooe hit dead, all modifiers reset) (require save first)
     if speed is over 2 x starting speed show a blur effect
-    if you stay in a room for too long show a ghost demon
-    draw the weapon in the player draw
-    add different players to the menu
-    show gun items on the player 
-        gemoetry gun shows triangle, square etc
-        peashooter shows peashooter
-        gun for each direction you fire
-   if a bullet hits you it will cause no damage but disapear
-   there will be a mr glass item where your own bullets hurt you 
-   bullet co sine
+    gemoetry gun shows triangle, square etc
+    peashooter shows peashooter
+    
 
 
 bullets  
+    cosine gun
+    if no bullets and you press fire you should get a broken gun sound
+
 
 
 enemies
@@ -65,6 +62,8 @@ enemies
     add enemy hit and enemy death sound   from json
     boss hit boss death   from json
     death shake  from json
+    maybe if ghost is x rooms away we just spawn him in the new room
+
 
 
 key binding

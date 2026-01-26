@@ -11,5 +11,6 @@
     "description": "The big bad.",
     "hitColor": "#ffffff",
     "deathType": "fadeaway",
-    "deathDuration": 30
+    "deathDuration": 30,
+    "special": true
 }

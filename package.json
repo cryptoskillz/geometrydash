@@ -1,0 +1,15 @@
+{
+  "name": "rouge_demo_1",
+  "version": "1.0.0",
+  "description": "A web-based roguelike dungeon crawler built with JavaScript. Explore procedurally generated rooms, defeat enemies, collect items, and battle bosses!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.0"
+  }
+}

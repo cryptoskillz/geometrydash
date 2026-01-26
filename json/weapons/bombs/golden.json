@@ -8,7 +8,7 @@
     "fireRate": 0.1,
     "canShoot": true,
     "timer": {
-        "active": false,
+        "active": true,
         "show": true,
         "time": 3000
     },
