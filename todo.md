@@ -43,7 +43,6 @@ start room
     each time you finish the game you will unlock more stuff
 
 player 
-    if you are not moving the peashooter should move to the arrow key pressed
     iron man mode (ooe hit dead, all modifiers reset) (require save first)
     if speed is over 2 x starting speed show a blur effect
     if you stay in a room for too long show a ghost demon

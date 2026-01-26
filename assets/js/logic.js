@@ -1401,7 +1401,9 @@ async function draw() {
 }
 
 function drawPortal() {
-    if (!portal.active) return;
+    // Only draw if active AND in the boss room
+    const currentCoord = `${player.roomX},${player.roomY}`;
+    if (!portal.active || currentCoord !== bossCoord) return;
     const time = Date.now() / 500;
 
     ctx.save();
@@ -2225,6 +2227,9 @@ function updateEnemies() {
 
 function updatePortal() {
     if (!portal.active) return;
+    const currentCoord = `${player.roomX},${player.roomY}`;
+    // Only interact if in Boss Room (should match draw logic)
+    if (currentCoord !== bossCoord) return;
 
     const dist = Math.hypot(player.x - portal.x, player.y - portal.y);
     if (dist < 30) {
