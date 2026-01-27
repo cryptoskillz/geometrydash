@@ -2668,22 +2668,21 @@ function playerHit(en, checkInvuln = true, applyKnockback = false, shakescreen =
 
     // 1. DAMAGE CHECK (Invulnerability)
     // If checkInvuln is true (default), we verify I-frames
+    // 1. DAMAGE CHECK (Invulnerability)
+    let applyDamage = true;
     if (checkInvuln) {
         const now = Date.now();
         const until = player.invulnUntil || 0;
-        const diff = until - now;
-
-        // Check I-Frames
         if (now < until) {
-            // log(`Invuln Active! Rem: ${diff}ms`);
-            return; // No damage taken
-        } else {
-            // log(`Hit Allowed. Invuln Expired by ${-diff}ms`);
+            applyDamage = false;
+            // log("Invuln Active - Damage Blocked");
         }
     }
 
-    // Apply Damage
-    takeDamage(en.damage || 1);
+    // Apply Damage if applicable
+    if (applyDamage) {
+        takeDamage(en.damage || 1);
+    }
 
     // 2. PHYSICS CHECK (Solidity)
     // Only apply knockback if explicitly requested (usually on collision)
@@ -2694,7 +2693,8 @@ function playerHit(en, checkInvuln = true, applyKnockback = false, shakescreen =
     // Default solid to true if undefined
     const isSolid = (player.solid !== undefined) ? player.solid : true;
 
-    // log(`Collision Check: Solid=${isSolid}, Apply=${applyKnockback}`);
+    // DEBUG: Verify Solidity
+    // log(`Hit Physics: PlayerSolid=${player.solid}, IsSolid=${isSolid}, Apply=${applyKnockback}`);
 
     if (applyKnockback && isSolid) {
         let dx = player.x - en.x;
