@@ -1,0 +1,7 @@
+{
+    "name": "homing",
+    "location": "weapons/modifiers/bullets/homing.json",
+    "type": "modifier",
+    "starter": false,
+    "rarity": "uncommon"
+}

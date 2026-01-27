@@ -1,0 +1,13 @@
+{
+    "name": "red",
+    "drawType": "arc",
+    "playerDraw": "arc",
+    "location": "weapons/bombs/red.json",
+    "type": "bomb",
+    "starter": false,
+    "modifier": {
+        "active": false,
+        "modify": ""
+    },
+    "rarity": "uncommon"
+}

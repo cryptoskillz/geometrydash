@@ -1,0 +1,7 @@
+{
+    "name": "Health",
+    "location": "weapons/modifiers/player/addhealth.json",
+    "type": "modifier",
+    "starter": false,
+    "rarity": "uncommon"
+}
