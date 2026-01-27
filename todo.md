@@ -8,6 +8,8 @@ bugs
     when you reenter the guardian room it shows the intro 
     ghost time should not start until the enemies are dead
     reload gun when you enter a new room should not reset
+    if you are not moving the bomb should drop in front of you if you are moving it should follow you
+    if an enemy hits you do they take damage?
 
 
 next up 
@@ -54,7 +56,7 @@ logic
 
 bombs
     add an explode on enemy / anything 
-    if you are not moving the bomb should drop in front of you if you are moving it should follow you
+
 
 level 1
 
