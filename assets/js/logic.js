@@ -3318,8 +3318,58 @@ function updateItems() {
         const item = groundItems[i];
         if (`${item.roomX},${item.roomY}` !== currentCoord) continue;
 
+        // --- PHYSICS ---
+        // Lazy Init
+        if (item.vx === undefined) {
+            item.vx = 0; item.vy = 0;
+            item.friction = 0.9;
+            item.solid = true;
+            item.moveable = true;
+            item.size = item.size || 15;
+        }
+
+        // Apply Velocity
+        if (Math.abs(item.vx) > 0.01) item.x += item.vx;
+        if (Math.abs(item.vy) > 0.01) item.y += item.vy;
+
+        // Friction
+        item.vx *= (item.friction || 0.9);
+        item.vy *= (item.friction || 0.9);
+
+        // Wall Collision (Simple Bounds)
+        const margin = item.size || 15;
+        if (item.x < margin) { item.x = margin; item.vx *= -0.5; }
+        if (item.x > canvas.width - margin) { item.x = canvas.width - margin; item.vx *= -0.5; }
+        if (item.y < margin) { item.y = margin; item.vy *= -0.5; }
+        if (item.y > canvas.height - margin) { item.y = canvas.height - margin; item.vy *= -0.5; }
+
+        // Player Collision (Push)
+        if (item.solid && item.moveable) {
+            const dx = item.x - player.x;
+            const dy = item.y - player.y;
+            const dist = Math.hypot(dx, dy);
+            const minDist = (player.size || 20) + (item.size || 15); // Touching
+
+            if (dist < minDist) {
+                // Push away
+                const angle = Math.atan2(dy, dx);
+                const pushForce = 2; // How hard player pushes
+                item.vx += Math.cos(angle) * pushForce;
+                item.vy += Math.sin(angle) * pushForce;
+
+                // Prevent overlap (Slide)
+                const overlap = minDist - dist;
+                item.x += Math.cos(angle) * overlap;
+                item.y += Math.sin(angle) * overlap;
+            }
+        }
+
+        // Pickup Logic
         const dist = Math.hypot(player.x - item.x, player.y - item.y);
-        if (dist < 40) {
+        // Reduce pickup range slightly so you have to be close, 
+        // but not INSIDE it if it's solid. 
+        // 40 is lenient.
+        if (dist < 50) {
             if (keys['Space']) {
                 keys['Space'] = false; // Consume input
                 pickupItem(item, i);
@@ -3345,6 +3395,12 @@ async function pickupItem(item, index) {
                 groundItems.push({
                     x: player.x, y: player.y,
                     roomX: player.roomX, roomY: player.roomY,
+                    vx: (Math.random() - 0.5) * 5, // Random pop
+                    vy: (Math.random() - 0.5) * 5,
+                    friction: 0.9,
+                    solid: true,
+                    moveable: true,
+                    size: 15,
                     floatOffset: Math.random() * 100,
                     data: {
                         name: "gun_" + oldName,
@@ -3381,6 +3437,12 @@ async function pickupItem(item, index) {
                 groundItems.push({
                     x: player.x, y: player.y,
                     roomX: player.roomX, roomY: player.roomY,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    friction: 0.9,
+                    solid: true,
+                    moveable: true,
+                    size: 15,
                     floatOffset: Math.random() * 100,
                     data: {
                         name: "bomb_" + oldName,
