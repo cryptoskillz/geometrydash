@@ -9,6 +9,11 @@ bugs
     ghost time should not start until the enemies are dead
     reload gun when you enter a new room should not reset
     if an enemy hits you do they take damage?
+    room tweaking
+    rooom bonus item drop
+    speedy item drop
+    perfect item drop
+    
 
 
 next up 
@@ -22,12 +27,7 @@ items
     shield+
     speed+
     luck+
-    gemotery cannon
-    red bombs
-    golden bombs
-    bomb+
     randomstat+
-    homing bullets
     piercing bullets
     bullet damage player
     shoot bombs

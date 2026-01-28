@@ -6,7 +6,7 @@
     "location": "weapons/bombs/normal.json",
     "type": "bomb",
     "starter": true,
-    "consumed": false,
+    "consumed": true,
     "modifier": {
         "active": false,
         "modify": ""

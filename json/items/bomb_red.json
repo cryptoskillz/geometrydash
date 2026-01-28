@@ -6,7 +6,7 @@
     "location": "weapons/bombs/red.json",
     "type": "bomb",
     "starter": false,
-    "consumed": false,
+    "consumed": true,
     "modifier": {
         "active": false,
         "modify": ""
