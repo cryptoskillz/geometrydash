@@ -2,6 +2,7 @@
     "items": [
         "gun_peashooter",
         "gun_geometry",
+        "gun_shotgun",
         "bomb_normal",
         "bomb_golden",
         "bomb_red",

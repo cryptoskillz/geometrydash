@@ -1,6 +1,7 @@
 {
     "guns": [
         "peashooter",
-        "geometry"
+        "geometry",
+        "shotgun"
     ]
 }
