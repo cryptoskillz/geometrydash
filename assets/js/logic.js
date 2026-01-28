@@ -1235,12 +1235,35 @@ async function dropBomb() {
     const gap = 6;
     const backDist = player.size + baseR + gap;
 
+    // Detect Movement (Simple Key Check)
+    const isMoving = (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'] ||
+        keys['ArrowUp'] || keys['ArrowLeft'] || keys['ArrowDown'] || keys['ArrowRight']);
+
     // Default to 1 (Down) if no movement yet
     const lastX = (player.lastMoveX === undefined && player.lastMoveY === undefined) ? 0 : (player.lastMoveX || 0);
     const lastY = (player.lastMoveX === undefined && player.lastMoveY === undefined) ? 1 : (player.lastMoveY || 0);
 
-    const dropX = player.x - (lastX * backDist);
-    const dropY = player.y - (lastY * backDist);
+    let dropX, dropY, dropVx = 0, dropVy = 0;
+
+    if (isMoving) {
+        // MOVING: Drop Behind and Add Velocity (Follow/Trail)
+        // Check if user meant "Follow" = "Move WITH me" or "Trail BEHIND me".
+        // "Trail Behind" is cleaner for safety. "Move with me" is chaos.
+        // Let's implement "Trail Behind" with slight inertia.
+        dropX = player.x - (lastX * backDist);
+        dropY = player.y - (lastY * backDist);
+
+        // Add a bit of player velocity to the bomb so it "drifts"
+        // Assuming player speed is roughly 4 (default).
+        // Let's give it 50% of movement text direction.
+        dropVx = lastX * 2;
+        dropVy = lastY * 2;
+    } else {
+        // STATIONARY: Drop IN FRONT (Pushable)
+        // Offset + (Front)
+        dropX = player.x + (lastX * backDist);
+        dropY = player.y + (lastY * backDist);
+    }
 
     // Check if drop position overlaps with an existing bomb
     let canDrop = true;
@@ -1284,7 +1307,7 @@ async function dropBomb() {
             solid: bomb.solid,
             moveable: bomb.moveable,
             physics: bomb.physics,
-            vx: 0, vy: 0,
+            vx: dropVx, vy: dropVy, // Use calculated velocity
 
             // Doors
             openLockedDoors: bomb.doors?.openLockedDoors ?? bomb.openLockedDoors,
