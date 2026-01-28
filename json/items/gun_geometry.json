@@ -4,7 +4,7 @@
     "location": "weapons/guns/geometry.json",
     "type": "gun",
     "starter": false,
-    "consumed": false,
+    "consumed": true,
     "modifier": {
         "active": false,
         "modify": ""

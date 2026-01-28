@@ -19,7 +19,6 @@ next up
     levels
 
 items
-    hp+
     shield+
     speed+
     luck+

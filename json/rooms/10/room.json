@@ -1,6 +1,24 @@
 {
     "name": "Room 10",
     "speedGoal": 5,
+    "item": {
+        "common": {
+            "count": 1,
+            "dropChance": 0
+        },
+        "uncommon": {
+            "count": 1,
+            "dropChance": 1
+        },
+        "rare": {
+            "count": 1,
+            "dropChance": 0
+        },
+        "legendary": {
+            "count": 1,
+            "dropChance": 0
+        }
+    },
     "doors": {
         "top": {
             "locked": 1,

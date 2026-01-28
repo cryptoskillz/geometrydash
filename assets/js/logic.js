@@ -506,6 +506,7 @@ const DEBUG_START_BOSS = false; // TOGGLE THIS FOR DEBUGGING
 const DEBUG_PLAYER = true;
 const CHEATS_ENABLED = false;
 const DEBUG_WINDOW_ENABLED = true;
+const DEBUG_SPAWN_ALL_ITEMS = false;
 
 let musicMuted = false;
 let lastMKeyTime = 0;
@@ -589,6 +590,7 @@ async function initGame(isRestart = false) {
                 })
             );
             const allItems = await Promise.all(itemPromises);
+            window.allItemTemplates = allItems; // Expose for room drops
 
             // ENHANCE: Fetch color from target config
             await Promise.all(allItems.map(async (item) => {
@@ -610,8 +612,9 @@ async function initGame(isRestart = false) {
             }));
 
             // Filter starters
-            // User: "starter: false" means it spawns in the room. "starter: true" means player already has it.
-            const starters = allItems.filter(i => i && i.starter === false);
+            // Legacy: Previously spawned all 'starter:false' items.
+            // NOW: Only spawn if DEBUG flag is set.
+            const starters = DEBUG_SPAWN_ALL_ITEMS ? allItems : [];
             log(`Found ${allItems.length} total items. Spawning ${starters.length} floor items.`);
 
             // Spawn them in a row
@@ -1759,7 +1762,64 @@ function updateRoomLock() {
         roomData.cleared = true;
         const currentCoord = `${player.roomX}, ${player.roomY}`;
         if (visitedRooms[currentCoord]) visitedRooms[currentCoord].cleared = true;
+
+        // Trigger Room Rewards
+        if (roomData.item) {
+            spawnRoomRewards(roomData.item);
+        }
     }
+}
+
+function spawnRoomRewards(dropConfig) {
+    if (!window.allItemTemplates) return;
+
+    // Iterate rarities (uncommon, common, rare, legendary)
+    Object.keys(dropConfig).forEach(rarity => {
+        const conf = dropConfig[rarity];
+        if (!conf) return;
+
+        // Roll for drop
+        if (Math.random() < (conf.dropChance || 0)) {
+            // Find items of this rarity
+            // Ensure we handle case sensitivity if needed, usually lowercase.
+            const candidates = window.allItemTemplates.filter(i => (i.rarity || 'common').toLowerCase() === rarity.toLowerCase());
+
+            if (candidates.length > 0) {
+                const count = conf.count || 1;
+                log(`Room Clear Reward: Dropping ${count} ${rarity} items!`);
+
+                for (let i = 0; i < count; i++) {
+                    const item = candidates[Math.floor(Math.random() * candidates.length)];
+
+                    // Drop Logic (Clamp to Safe Zone)
+                    const marginX = canvas.width * 0.2;
+                    const marginY = canvas.height * 0.2;
+                    const safeW = canvas.width - (marginX * 2);
+                    const safeH = canvas.height - (marginY * 2);
+
+                    const dropX = marginX + Math.random() * safeW;
+                    const dropY = marginY + Math.random() * safeH;
+
+                    groundItems.push({
+                        x: dropX,
+                        y: dropY,
+                        data: item,
+                        roomX: player.roomX,
+                        roomY: player.roomY,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: (Math.random() - 0.5) * 5,
+                        friction: 0.9,
+                        solid: true,
+                        moveable: true,
+                        size: 15,
+                        floatOffset: Math.random() * 100
+                    });
+                }
+            } else {
+                // log(`No candidates found for rarity: ${rarity}`);
+            }
+        }
+    });
 }
 
 function drawShake() {
