@@ -53,9 +53,11 @@ let particles = [];
 let enemies = [];
 let bombs = [];
 let keys = {};
+let groundItems = []; // Items sitting on the floor
 
 let bomb = {}
 let gun = {}
+let activeModifiers = []; // Store active modifier configs
 let bombsInRoom = 0;
 let screenShake = { power: 0, endAt: 0 };
 
@@ -254,6 +256,7 @@ async function updateUI() {
     else {
         hpEl.innerText = Math.floor(player.hp);
     }
+    hpEl.innerText += ` / ${player.maxHp}`;
     keysEl.innerText = player.inventory.keys;
     //check if bomb type is golden and if so set the count colour to gold 
     if (player.bombType === "golden") {
@@ -502,7 +505,13 @@ const DOOR_THICKNESS = 15;
 const DEBUG_START_BOSS = false; // TOGGLE THIS FOR DEBUGGING
 const DEBUG_PLAYER = true;
 const CHEATS_ENABLED = false;
-const DEBUG_WINDOW_ENABLED = true;
+const DEBUG_WINDOW_ENABLED = false;
+const DEBUG_SPAWN_ALL_ITEMS = false; // Master Switch (Overrides others if true)
+const DEBUG_SPAWN_GUNS = false;
+const DEBUG_SPAWN_BOMBS = false;
+const DEBUG_SPAWN_INVENTORY = false;
+const DEBUG_SPAWN_MODS_PLAYER = false;
+const DEBUG_SPAWN_MODS_BULLET = false;
 
 let musicMuted = false;
 let lastMKeyTime = 0;
@@ -565,14 +574,115 @@ async function initGame(isRestart = false) {
 
     try {
         // 1. Load basic configs
-        const [manData, gData, mData] = await Promise.all([
+        const [manData, gData, mData, itemMan] = await Promise.all([
             fetch('/json/players/manifest.json?t=' + Date.now()).then(res => res.json()),
             fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 })),
-            fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] }))
+            fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] })),
+            fetch('json/items/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ items: [] }))
         ]);
 
         gameData = gData;
         roomManifest = mData;
+
+        // LOAD STARTING ITEMS
+        groundItems = [];
+        if (itemMan && itemMan.items) {
+            log("Loading Items Manifest:", itemMan.items.length);
+            const itemPromises = itemMan.items.map(i =>
+                fetch(`json/items/${i}.json?t=` + Date.now()).then(r => r.json()).catch(e => {
+                    console.error("Failed to load item:", i, e);
+                    return null;
+                })
+            );
+            const allItems = await Promise.all(itemPromises);
+            window.allItemTemplates = allItems; // Expose for room drops
+
+            // ENHANCE: Fetch color from target config
+            await Promise.all(allItems.map(async (item) => {
+                if (!item || !item.location) return;
+                try {
+                    const res = await fetch(`json/${item.location}?t=` + Date.now());
+                    const config = await res.json();
+
+                    // Check Top Level (Bombs/Modifiers) OR Bullet Level (Guns)
+                    const color = config.colour || config.color ||
+                        (config.Bullet && (config.Bullet.colour || config.Bullet.color));
+
+                    if (color) {
+                        item.colour = color;
+                    }
+                } catch (e) {
+                    // console.warn("Could not load config for color:", item.name);
+                }
+            }));
+
+            // Filter starters
+            // Legacy: Previously spawned all 'starter:false' items.
+            // NOW: Only spawn if DEBUG flag is set.
+            // Filter starters
+            // Legacy: Previously spawned all 'starter:false' items.
+            // NOW: Spawn based on granular DEBUG flags.
+            const starters = allItems.filter(i => {
+                if (!i) return false;
+
+                // 1. Explicitly enabled by ALL flag
+                if (DEBUG_SPAWN_ALL_ITEMS) return true;
+
+                // 2. Category Checks
+                const isGun = i.type === 'gun';
+                const isBomb = i.type === 'bomb';
+                const isMod = i.type === 'modifier';
+                const loc = (i.location || "").toLowerCase();
+
+                // Inventory (Keys/Bombs/Consumables) - often identified by path or lack of "modifier" type?
+                // Actually user defines them as type="modifier" usually. 
+                // Let's look for "inventory" in path.
+                const isInventory = isMod && loc.includes('inventory');
+
+                // Player Mods (Stats, Shields)
+                const isPlayerMod = isMod && loc.includes('modifiers/player') && !isInventory;
+
+                // Bullet Mods (Homing, FireRate, etc)
+                const isBulletMod = isMod && loc.includes('modifiers/bullets');
+
+                if (DEBUG_SPAWN_GUNS && isGun) return true;
+                if (DEBUG_SPAWN_BOMBS && isBomb) return true;
+                if (DEBUG_SPAWN_INVENTORY && isInventory) return true;
+                if (DEBUG_SPAWN_MODS_PLAYER && isPlayerMod) return true;
+                if (DEBUG_SPAWN_MODS_BULLET && isBulletMod) return true;
+
+                return false;
+            });
+            log(`Found ${allItems.length} total items. Spawning ${starters.length} floor items.`);
+
+            // Spawn them in a row
+            // Spawn them in a grid within safe margins
+            const marginX = canvas.width * 0.2;
+            const marginY = canvas.height * 0.2;
+            const safeW = canvas.width - (marginX * 2);
+            const itemSpacing = 80;
+            const cols = Math.floor(safeW / itemSpacing);
+
+            starters.forEach((item, idx) => {
+                const c = idx % cols;
+                const r = Math.floor(idx / cols);
+
+                groundItems.push({
+                    x: marginX + (c * itemSpacing) + (itemSpacing / 2),
+                    y: marginY + (r * itemSpacing) + (itemSpacing / 2),
+                    data: item,
+                    roomX: 0,
+                    roomY: 0,
+                    // Add physics properties immediately
+                    vx: 0, vy: 0,
+                    solid: true, moveable: true, friction: 0.9, size: 15,
+                    floatOffset: Math.random() * 100
+                });
+            });
+            log(`Spawned ${starters.length} starter items.`);
+        } else {
+            log("No item manifest found!");
+        }
 
         // Load all players
         availablePlayers = [];
@@ -735,6 +845,7 @@ window.addEventListener('keydown', e => {
             // Actually initGame reset player.x/y already.
             const defaults = { x: 300, y: 200, roomX: 0, roomY: 0 };
             player = { ...defaults, ...JSON.parse(JSON.stringify(p)) };
+            if (!player.maxHp) player.maxHp = player.hp || 3;
             if (!player.inventory) player.inventory = { keys: 0, bombs: 0 };
         }
 
@@ -1165,12 +1276,35 @@ async function dropBomb() {
     const gap = 6;
     const backDist = player.size + baseR + gap;
 
+    // Detect Movement (Simple Key Check)
+    const isMoving = (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'] ||
+        keys['ArrowUp'] || keys['ArrowLeft'] || keys['ArrowDown'] || keys['ArrowRight']);
+
     // Default to 1 (Down) if no movement yet
     const lastX = (player.lastMoveX === undefined && player.lastMoveY === undefined) ? 0 : (player.lastMoveX || 0);
     const lastY = (player.lastMoveX === undefined && player.lastMoveY === undefined) ? 1 : (player.lastMoveY || 0);
 
-    const dropX = player.x - (lastX * backDist);
-    const dropY = player.y - (lastY * backDist);
+    let dropX, dropY, dropVx = 0, dropVy = 0;
+
+    if (isMoving) {
+        // MOVING: Drop Behind and Add Velocity (Follow/Trail)
+        // Check if user meant "Follow" = "Move WITH me" or "Trail BEHIND me".
+        // "Trail Behind" is cleaner for safety. "Move with me" is chaos.
+        // Let's implement "Trail Behind" with slight inertia.
+        dropX = player.x - (lastX * backDist);
+        dropY = player.y - (lastY * backDist);
+
+        // Add a bit of player velocity to the bomb so it "drifts"
+        // Assuming player speed is roughly 4 (default).
+        // Let's give it 50% of movement text direction.
+        dropVx = lastX * 2;
+        dropVy = lastY * 2;
+    } else {
+        // STATIONARY: Drop IN FRONT (Pushable)
+        // Offset + (Front)
+        dropX = player.x + (lastX * backDist);
+        dropY = player.y + (lastY * backDist);
+    }
 
     // Check if drop position overlaps with an existing bomb
     let canDrop = true;
@@ -1214,7 +1348,7 @@ async function dropBomb() {
             solid: bomb.solid,
             moveable: bomb.moveable,
             physics: bomb.physics,
-            vx: 0, vy: 0,
+            vx: dropVx, vy: dropVy, // Use calculated velocity
 
             // Doors
             openLockedDoors: bomb.doors?.openLockedDoors ?? bomb.openLockedDoors,
@@ -1418,6 +1552,10 @@ function update() {
     if (gameState !== STATES.PLAY) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
+    updateItems(); // Check for item pickups
+
+    //const now = Date.now(); // Check for item pickups
+
     //const now = Date.now();
     // const aliveEnemies = enemies.filter(en => !en.isDead);
     // const roomLocked = aliveEnemies.length > 0;
@@ -1498,6 +1636,7 @@ async function draw() {
     drawPlayer()
     drawBulletsAndShards()
     drawBombs(doors)
+    drawItems() // Draw ground items
     drawEnemies()
     if (screenShake.power > 0) ctx.restore();
 
@@ -1589,22 +1728,34 @@ function updateRoomTransitions(doors, roomLocked) {
         // log(`Left Door Check: X=${Math.round(player.x)} < ${t}? Locked=${doors.left.locked}, RoomLocked=${roomLocked}`);
     }
 
+    // Constraint for center alignment
+    // Only allow transition if player is roughly in front of the door
+    const doorW = 50; // Half-width tolerance (Total 100px)
+
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
     if (player.x < t && doors.left?.active) {
-        if (!doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
-        else log("Left Door Blocked: Locked or Room Locked");
+        if (Math.abs(player.y - canvas.height / 2) < doorW) {
+            if (!doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
+            else log("Left Door Blocked: Locked or Room Locked");
+        }
     }
     else if (player.x > canvas.width - t && doors.right?.active) {
-        if (!doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
-        else log("Right Door Blocked: Locked or Room Locked");
+        if (Math.abs(player.y - canvas.height / 2) < doorW) {
+            if (!doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
+            else log("Right Door Blocked: Locked or Room Locked");
+        }
     }
     else if (player.y < t && doors.top?.active) {
-        if (!doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
-        else log("Top Door Blocked: Locked or Room Locked");
+        if (Math.abs(player.x - canvas.width / 2) < doorW) {
+            if (!doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
+            else log("Top Door Blocked: Locked or Room Locked");
+        }
     }
     else if (player.y > canvas.height - t && doors.bottom?.active) {
-        if (!doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
-        else log("Bottom Door Blocked: Locked or Room Locked");
+        if (Math.abs(player.x - canvas.width / 2) < doorW) {
+            if (!doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
+            else log("Bottom Door Blocked: Locked or Room Locked");
+        }
     }
 }
 
@@ -1649,7 +1800,80 @@ function updateRoomLock() {
         roomData.cleared = true;
         const currentCoord = `${player.roomX}, ${player.roomY}`;
         if (visitedRooms[currentCoord]) visitedRooms[currentCoord].cleared = true;
+
+        // Trigger Room Rewards
+        if (roomData.item) {
+            spawnRoomRewards(roomData.item);
+        }
     }
+}
+
+function spawnRoomRewards(dropConfig) {
+    if (!window.allItemTemplates) return;
+
+    // Iterate rarities (uncommon, common, rare, legendary)
+    Object.keys(dropConfig).forEach(rarity => {
+        const conf = dropConfig[rarity];
+        if (!conf) return;
+
+        // Roll for drop
+        if (Math.random() < (conf.dropChance || 0)) {
+            // Find items of this rarity
+            // Ensure we handle case sensitivity if needed, usually lowercase.
+            // Exclude STARTER items (starter: true) from loot pool
+            const candidates = window.allItemTemplates.filter(i => (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() && i.starter === false);
+
+            if (candidates.length > 0) {
+                const count = conf.count || 1;
+                log(`Room Clear Reward: Dropping ${count} ${rarity} items!`);
+
+                for (let i = 0; i < count; i++) {
+                    const item = candidates[Math.floor(Math.random() * candidates.length)];
+
+                    // Drop Logic (Clamp to Safe Zone & Prevent Overlap)
+                    const marginX = canvas.width * 0.2;
+                    const marginY = canvas.height * 0.2;
+                    const safeW = canvas.width - (marginX * 2);
+                    const safeH = canvas.height - (marginY * 2);
+
+                    let dropX, dropY;
+                    let valid = false;
+                    const minDist = 40; // Avoid overlapping items
+
+                    for (let attempt = 0; attempt < 10; attempt++) {
+                        dropX = marginX + Math.random() * safeW;
+                        dropY = marginY + Math.random() * safeH;
+
+                        // Check collision with existing items in this room
+                        const overlap = groundItems.some(existing => {
+                            if (existing.roomX !== player.roomX || existing.roomY !== player.roomY) return false;
+                            const dx = dropX - existing.x;
+                            const dy = dropY - existing.y;
+                            return Math.hypot(dx, dy) < minDist;
+                        });
+
+                        if (!overlap) {
+                            valid = true;
+                            break;
+                        }
+                    }
+
+                    groundItems.push({
+                        x: dropX, y: dropY,
+                        data: item,
+                        roomX: player.roomX, roomY: player.roomY,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: (Math.random() - 0.5) * 5,
+                        friction: 0.9,
+                        solid: true, moveable: true, size: 15,
+                        floatOffset: Math.random() * 100
+                    });
+                }
+            } else {
+                // log(`No candidates found for rarity: ${rarity}`);
+            }
+        }
+    });
 }
 
 function drawShake() {
@@ -3185,4 +3409,386 @@ if (typeof window !== 'undefined') {
     Object.defineProperty(window, 'goldenPath', { get: () => goldenPath });
     Object.defineProperty(window, 'visitedRooms', { get: () => visitedRooms });
     Object.defineProperty(window, 'debugLogs', { get: () => debugLogs });
+}
+// --- ITEM LOGIC ---
+
+function drawItems() {
+    const currentCoord = `${player.roomX},${player.roomY}`;
+
+    groundItems.forEach(item => {
+        // Only draw if in the same room
+        if (`${item.roomX},${item.roomY}` !== currentCoord) return;
+
+        ctx.save();
+        ctx.translate(item.x, item.y + (Math.sin((Date.now() / 200) + (item.floatOffset || 0)) * 5)); // Float effect
+
+        // Draw Glow
+        const rarityColor = item.data.rarity === 'legendary' ? 'gold' :
+            (item.data.rarity === 'uncommon' ? '#3498db' : 'white');
+
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = item.data.colour || item.data.color || rarityColor;
+
+        // Draw Icon (Circle for now, maybe use rarity color)
+        ctx.fillStyle = ctx.shadowColor;
+        ctx.beginPath();
+
+        if (item.data.type === 'gun') {
+            // Square
+            ctx.rect(-10, -10, 20, 20);
+        } else if (item.data.type === 'modifier') {
+            // Triangle
+            ctx.moveTo(0, -15);
+            ctx.lineTo(15, 10);
+            ctx.lineTo(-15, 10);
+            ctx.closePath();
+        } else {
+            // Bomb / Default (Circle)
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+        }
+        ctx.fill();
+
+        // Draw Text
+        ctx.fillStyle = "white";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+
+        // Clean name (remove 'gun_' prefix for display)
+        let name = item.data.name || "Item";
+        if (name.startsWith("gun_")) name = name.replace("gun_", "");
+        if (name.startsWith("bomb_")) name = name.replace("bomb_", "");
+
+        ctx.fillText(name.toUpperCase(), 0, -25);
+
+        // Interact Prompt
+        const dist = Math.hypot(player.x - item.x, player.y - item.y);
+        if (dist < 40) {
+            ctx.fillStyle = "#f1c40f"; // Gold
+            ctx.font = "bold 12px monospace";
+            ctx.fillText("SPACE", 0, 30);
+        }
+
+        ctx.restore();
+    });
+}
+
+function updateItems() {
+    const currentCoord = `${player.roomX},${player.roomY}`;
+
+    // Check for pickup
+    // Iterate reverse to safe splice
+    for (let i = groundItems.length - 1; i >= 0; i--) {
+        const item = groundItems[i];
+        if (`${item.roomX},${item.roomY}` !== currentCoord) continue;
+
+        // --- PHYSICS ---
+        // Lazy Init
+        if (item.vx === undefined) {
+            item.vx = 0; item.vy = 0;
+            item.friction = 0.9;
+            item.solid = true;
+            item.moveable = true;
+            item.size = item.size || 15;
+        }
+
+        // Apply Velocity
+        if (Math.abs(item.vx) > 0.01) item.x += item.vx;
+        if (Math.abs(item.vy) > 0.01) item.y += item.vy;
+
+        // Friction
+        item.vx *= (item.friction || 0.9);
+        item.vy *= (item.friction || 0.9);
+
+        // Wall Collision (Simple Bounds)
+        const margin = item.size || 15;
+        if (item.x < margin) { item.x = margin; item.vx *= -0.5; }
+        if (item.x > canvas.width - margin) { item.x = canvas.width - margin; item.vx *= -0.5; }
+        if (item.y < margin) { item.y = margin; item.vy *= -0.5; }
+        if (item.y > canvas.height - margin) { item.y = canvas.height - margin; item.vy *= -0.5; }
+
+        // Player Collision (Push)
+        if (item.solid && item.moveable) {
+            const dx = item.x - player.x;
+            const dy = item.y - player.y;
+            const dist = Math.hypot(dx, dy);
+            const minDist = (player.size || 20) + (item.size || 15); // Touching
+
+            if (dist < minDist) {
+                // Push away
+                const angle = Math.atan2(dy, dx);
+                const pushForce = 2; // How hard player pushes
+                item.vx += Math.cos(angle) * pushForce;
+                item.vy += Math.sin(angle) * pushForce;
+
+                // Prevent overlap (Slide)
+                const overlap = minDist - dist;
+                item.x += Math.cos(angle) * overlap;
+                item.y += Math.sin(angle) * overlap;
+            }
+        }
+
+        // Pickup Logic
+        const dist = Math.hypot(player.x - item.x, player.y - item.y);
+        // Reduce pickup range slightly so you have to be close, 
+        // but not INSIDE it if it's solid. 
+        // 40 is lenient.
+        if (dist < 50) {
+            if (keys['Space']) {
+                keys['Space'] = false; // Consume input
+                pickupItem(item, i);
+            }
+        }
+    }
+}
+
+async function pickupItem(item, index) {
+    const type = item.data.type; // gun or bomb
+    const location = item.data.location; // e.g. weapons/guns/peashooter.json
+
+    log(`Picking up ${item.data.name}...`);
+
+    try {
+        const res = await fetch(`json/${location}?t=${Date.now()}`);
+        const config = await res.json();
+
+        if (type === 'gun') {
+            // Drop Helper
+            const oldName = player.gunType;
+            if (oldName) {
+                // CLAMP DROP POSITION (20% margin)
+                const marginX = canvas.width * 0.2;
+                const marginY = canvas.height * 0.2;
+                let dropX = player.x;
+                let dropY = player.y;
+
+                if (dropX < marginX) dropX = marginX;
+                if (dropX > canvas.width - marginX) dropX = canvas.width - marginX;
+                if (dropY < marginY) dropY = marginY;
+                if (dropY > canvas.height - marginY) dropY = canvas.height - marginY;
+
+                groundItems.push({
+                    x: dropX, y: dropY,
+                    roomX: player.roomX, roomY: player.roomY,
+                    vx: (Math.random() - 0.5) * 5, // Random pop
+                    vy: (Math.random() - 0.5) * 5,
+                    friction: 0.9,
+                    solid: true,
+                    moveable: true,
+                    size: 15,
+                    floatOffset: Math.random() * 100,
+                    data: {
+                        name: "gun_" + oldName,
+                        type: "gun",
+                        location: `weapons/guns/${oldName}.json`,
+                        rarity: "common",
+                        starter: false,
+                        colour: (gun.Bullet && (gun.Bullet.colour || gun.Bullet.color)) || gun.colour || gun.color
+                    }
+                });
+            }
+
+            gun = config;
+
+            // RE-APPLY ACTIVE MODIFIERS
+            if (activeModifiers.length > 0) {
+                log(`Re-applying ${activeModifiers.length} modifiers...`);
+                activeModifiers.forEach(modConfig => {
+                    applyModifierToGun(gun, modConfig);
+                });
+            }
+
+            if (location.includes("/")) {
+                const parts = location.split('/');
+                const filename = parts[parts.length - 1].replace(".json", "");
+                player.gunType = filename;
+            }
+            log(`Equipped Gun: ${config.name}`);
+        }
+        else if (type === 'bomb') {
+            // Drop Helper
+            const oldName = player.bombType;
+            if (oldName) {
+                // CLAMP DROP POSITION (20% margin)
+                const marginX = canvas.width * 0.2;
+                const marginY = canvas.height * 0.2;
+                let dropX = player.x;
+                let dropY = player.y;
+
+                if (dropX < marginX) dropX = marginX;
+                if (dropX > canvas.width - marginX) dropX = canvas.width - marginX;
+                if (dropY < marginY) dropY = marginY;
+                if (dropY > canvas.height - marginY) dropY = canvas.height - marginY;
+
+                groundItems.push({
+                    x: dropX, y: dropY,
+                    roomX: player.roomX, roomY: player.roomY,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    friction: 0.9,
+                    solid: true,
+                    moveable: true,
+                    size: 15,
+                    floatOffset: Math.random() * 100,
+                    data: {
+                        name: "bomb_" + oldName,
+                        type: "bomb",
+                        location: `weapons/bombs/${oldName}.json`,
+                        rarity: "common",
+                        starter: false,
+                        colour: bomb.colour || bomb.color
+                    }
+                });
+            }
+
+            bomb = config;
+            if (location.includes("/")) {
+                const parts = location.split('/');
+                const filename = parts[parts.length - 1].replace(".json", "");
+                player.bombType = filename;
+            }
+            log(`Equipped Bomb: ${config.name}`);
+        }
+        else if (type === 'modifier') {
+            // APPLY MODIFIER
+            const target = config.modify;
+            const mods = config.modifiers;
+            let appliedStatMod = false;
+
+            // 1. Handle Inventory / Consumables (Global, Instant)
+            if (mods.bombs !== undefined) {
+                const val = parseFloat(mods.bombs);
+                if (!isNaN(val)) {
+                    player.inventory.bombs = (player.inventory.bombs || 0) + val;
+                    log(`Ammo: ${val > 0 ? '+' : ''}${val} Bomb(s)`);
+                }
+            }
+            if (mods.keys !== undefined) {
+                const val = parseFloat(mods.keys);
+                if (!isNaN(val)) {
+                    player.inventory.keys = (player.inventory.keys || 0) + val;
+                    log(`Keys: ${val > 0 ? '+' : ''}${val}`);
+                }
+            }
+            if (mods.hp !== undefined) {
+                const val = parseFloat(mods.hp);
+                const maxHp = player.maxHp || 3;
+                if (!isNaN(val)) {
+                    // Prevent pickup if healing and already full
+                    if (val > 0 && player.hp >= maxHp) {
+                        log("Health Full!");
+                        return; // Cancel pickup (item stays on ground)
+                    }
+                    player.hp = Math.min(player.hp + val, maxHp);
+                    log(`HP: ${val > 0 ? '+' : ''}${val} (Max: ${maxHp})`);
+                }
+            }
+            if (mods.maxHp !== undefined) {
+                const val = parseFloat(mods.maxHp);
+                if (!isNaN(val)) {
+                    player.maxHp = (player.maxHp || 3) + val;
+                    // Optional: Heal by the amount increased? Or just add empty container?
+                    // Typically 'Heart Container' heals you fully or adds empty container.
+                    // Let's heal the amount added so you feel the effect immediately.
+                    player.hp += val;
+                    log(`Max HP Increased! +${val}`);
+                }
+            }
+            // SHIELD MODIFIERS
+            if (mods["shield.active"] !== undefined) {
+                if (!player.shield) player.shield = { active: false, hp: 0, maxHp: 5 };
+                player.shield.active = !!mods["shield.active"];
+                if (player.shield.active && player.shield.hp <= 0) player.shield.hp = player.shield.maxHp; // Restore HP on activation
+                log("Shield Activated!");
+            }
+            if (mods["shield.regenActive"] !== undefined) {
+                if (!player.shield) player.shield = { active: false, hp: 0, maxHp: 5 };
+                player.shield.regenActive = !!mods["shield.regenActive"];
+                log("Shield Regen Enabled!");
+            }
+
+            // 2. Handle Persistent Stat Modifiers (Gun/Bomb Configs)
+            // Filter out inventory keys from stat application if needed, 
+            // but for now, assuming modifiers are either consumable OR stat mods.
+            // If verify keys commonly used for stats... 
+
+            if (target === 'gun') {
+                // Check if there are actual gun stats (excluding inventory keys)
+                const hasGunStats = Object.keys(mods).some(k => !['bombs', 'keys', 'hp', 'maxHp'].includes(k));
+
+                if (hasGunStats) {
+                    activeModifiers.push(config);
+                    applyModifierToGun(gun, config);
+                    appliedStatMod = true;
+                }
+            }
+
+            log(`Applied Modifier: ${config.name || "Unknown"}`);
+        }
+
+        // Remove from floor 
+        // (Optional: Drop CURRENT item? For now, just destroy old)
+        // Check if item should be consumed (Default: true)
+        if (item.data.consumed !== false) {
+            groundItems.splice(index, 1);
+        }
+        SFX.click(0.5); // Pickup sound
+
+    } catch (e) {
+        console.error("Failed to load weapon config", e);
+        log("Error equipping item");
+    }
+}
+
+function applyModifierToGun(gunObj, modConfig) {
+    const mods = modConfig.modifiers;
+    for (const key in mods) {
+        let val = mods[key];
+        let isRelative = false;
+
+        // Check for relative modifiers (String starting with + or -)
+        if (typeof val === 'string') {
+            if (val.startsWith('+') || val.startsWith('-')) {
+                isRelative = true;
+            }
+        }
+
+        // Type conversion
+        if (val === "true") val = true;
+        else if (val === "false") val = false;
+        else if (!isNaN(val)) val = parseFloat(val);
+
+        // Helper to apply
+        const applyTo = (obj, prop, value, relative) => {
+            if (obj[prop] !== undefined) {
+                // log(`Applying ${prop} to ${JSON.stringify(obj)}. Rel: ${relative}, Val: ${value}, Old: ${obj[prop]}`);
+                if (relative && typeof obj[prop] === 'number' && typeof value === 'number') {
+                    let old = obj[prop];
+                    obj[prop] += value;
+                    // Prevent negative stats where inappropriate (heuristic)
+                    if (obj[prop] < 0 && prop !== 'startX' && prop !== 'startY') obj[prop] = 0.05; // Cap fireRate at 0.05 (20/sec)
+                    log(`Adjusted ${prop}: ${old} -> ${obj[prop]}`);
+                } else {
+                    obj[prop] = value;
+                    log(`Set ${prop}: ${value}`);
+                }
+                return true;
+            }
+            return false;
+        };
+
+        // Check Gun Root
+        if (applyTo(gunObj, key, val, isRelative)) continue;
+
+        // Check Bullet
+        if (gunObj.Bullet) {
+            applyTo(gunObj.Bullet, key, val, isRelative);
+        }
+
+        // Handle special deep keys if flat (e.g. homing)
+        if (key === 'homing') {
+            // Ensure homing exists or force it
+            if (!gunObj.Bullet) gunObj.Bullet = {};
+            gunObj.Bullet.homing = val;
+        }
+    }
 }

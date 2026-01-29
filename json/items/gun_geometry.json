@@ -1,5 +1,13 @@
 {
-    "name": "gun_geometry",
-    "location": "weapons/guns/gun_geometry.json",
-    "type": "gun"
+    "name": "geometry gun",
+    "description": "Maths is fun",
+    "location": "weapons/guns/geometry.json",
+    "type": "gun",
+    "starter": false,
+    "consumed": true,
+    "modifier": {
+        "active": false,
+        "modify": ""
+    },
+    "rarity": "uncommon"
 }

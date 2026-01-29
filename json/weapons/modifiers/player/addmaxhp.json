@@ -1,0 +1,7 @@
+{
+    "modify": "player",
+    "colour": "#000000",
+    "modifiers": {
+        "maxHp": "+1"
+    }
+}

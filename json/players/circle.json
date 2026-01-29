@@ -5,6 +5,7 @@
     "locked": false,
     "shape": "circle",
     "hp": 10,
+    "maxHp": 10,
     "speed": 10,
     "size": 20,
     "physics": {
@@ -16,7 +17,7 @@
         "bounciness": 0.1
     },
     "shield": {
-        "active": true,
+        "active": false,
         "colour": "blue",
         "hp": 10,
         "maxHp": 10,
@@ -39,10 +40,10 @@
     "speedTotalCount": 0,
     "perfectCount": 0,
     "perfectTotalCount": 0,
-    "bombType": "golden",
-    "gunType": "geometry",
+    "bombType": "normal",
+    "gunType": "peashooter",
     "inventory": {
-        "keys": 5,
-        "bombs": 115
+        "keys": 1,
+        "bombs": 1
     }
 }

@@ -1,6 +1,24 @@
 {
     "name": "The Beginning",
     "speedGoal": 5,
+    "item": {
+        "common": {
+            "count": 0,
+            "dropChance": 0
+        },
+        "uncommon": {
+            "count": 0,
+            "dropChance": 0
+        },
+        "rare": {
+            "count": 0,
+            "dropChance": 0
+        },
+        "legendary": {
+            "count": 0,
+            "dropChance": 0
+        }
+    },
     "doors": {
         "top": {
             "locked": 0,

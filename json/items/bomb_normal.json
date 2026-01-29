@@ -1,7 +1,15 @@
 {
-    "name": "normal",
+    "name": "normal bomb",
+    "description": "the Basic bomb",
     "drawType": "arc",
     "playerDraw": "arc",
     "location": "weapons/bombs/normal.json",
-    "type": "bomb"
+    "type": "bomb",
+    "starter": true,
+    "consumed": true,
+    "modifier": {
+        "active": false,
+        "modify": ""
+    },
+    "rarity": "common"
 }

@@ -1,0 +1,13 @@
+{
+    "name": "Shotgun",
+    "description": "the shotgun",
+    "location": "weapons/guns/shotgun.json",
+    "type": "gun",
+    "starter": false,
+    "consumed": true,
+    "modifier": {
+        "active": false,
+        "modify": ""
+    },
+    "rarity": "common"
+}

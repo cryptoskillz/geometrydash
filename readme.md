@@ -72,6 +72,20 @@ Player starting stats.
 - `size`: Player size in pixels.
 - `physics`:
     - `strength`: strength of the player.
+    - `mass`: mass of the player.
+    - `drag`: drag of the player.
+    - `friction`: friction of the player.
+    - `elasticity`: elasticity of the player.
+    - `bounciness`: bounciness of the player.
+- `shield`:
+    - `active`: whether the shield is active.
+    - `colour`: colour of the shield.
+    - `hp`: hp of the shield.
+    - `maxHp`: max hp of the shield.
+    - `regenActive`: whether the shield is regenerating.
+    - `regen`: regen of the shield.
+    - `regenTimer`: regen timer of the shield.
+    - `regenColour`: regen colour of the shield.
 - `luck` : luck of the player
 - `roomX`: Starting room X position.
 - `roomY`: Starting room Y position.

@@ -1,5 +1,13 @@
 {
     "name": "peashooter",
+    "description": "the Basic gun",
     "location": "weapons/guns/peashooter.json",
-    "type": "gun"
+    "type": "gun",
+    "starter": true,
+    "consumed": true,
+    "modifier": {
+        "active": false,
+        "modify": ""
+    },
+    "rarity": "common"
 }

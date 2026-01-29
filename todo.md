@@ -1,10 +1,26 @@
 bugs
     if music has been toggled off it shouldnt turn back on on restart / going back to main menu
-    room count at the end is off (maybe same room type in generation)
     the enemies get stuck they should work their way around obstacles
-    shield regens on new game
-    solid false does make you invul when you are hit    
-
+    solid false does make you invul when you are hit  
+    check freezeDuration works below 1 second.  
+    if ghost appears and hyou leave a room with enemies when you go back only the ghost remaims 
+    ghost does not seem to be following you he seems to be stuck frozen in the room
+    when you reenter the guardian room it shows the intro 
+    ghost time should not start until the enemies are dead
+    reload gun when you enter a new room should not reset
+    if an enemy hits you do they take damage?
+    room tweaking
+    rooom bonus item drop
+    speedy item drop
+    perfect item drop
+    angry enemies do not restart on new game
+    enemies should move through ghost enemies and try not stay inside them 
+    dont spawn items on top of one another
+    360 modifier does not work
+    items should moce away from doors as they cannot be picked up
+    mini map does not show up on debug mode, should be an item to show it
+    explode modifier does not work  
+    update game.json vars to implemnt various switches   
 
 
 next up 
@@ -12,27 +28,97 @@ next up
     debug window
     enemies
     rooms
+    server
     levels
 
+server
+    store game data
+    store permaant unlocks 
+    store permant modiifers
+
 items
-    hp+
+    room bonus
+    key bonus
+    speedy bonus
+    perfect bonus
+    inventory screen
+    inventory screen should show the items that are unlocked
+    only drop items that are unlocked
     shield+
     speed+
     luck+
-    gemotery cannon
-    red bombs
-    golden bombs
-    bomb+
     randomstat+
-    homing bullets
-    piercing bullets
-    bullet damage player
-    shoot bombs
-    bullet wall bounce
-    critdamage+
-    critchance+
-    freezechance+
-    bullet explode
+    kick bombs
+
+    guns
+        max ammo
+        ammo
+        reload time
+        chrage time
+
+     bombs
+        size
+        explode time
+        explode radius
+        explode damage
+        explode on impact
+        explode on enemy
+        explode on player
+        explode on wall
+        explode on floor
+        explode on ceiling
+        explode on nothing
+        explode on everything
+        range
+        damage
+        inrease timer
+        decrease timer
+        solid
+        remote detonate
+        remote detomate all
+        can shoot
+        can kick
+        kick explore on impact
+        kick distance
+        explode radius
+        expldoe duration
+        max drop
+
+
+
+     player
+        speed
+        size
+        strength
+        mass
+        drag
+        friction
+        elasticity
+        bounciness
+        luck
+        solid
+        invuln
+        invulnUntil
+        invulTimer
+        invulColour
+        shield hp
+        shield maxHp
+        shield regenActive
+        shield regen
+        shield regenTimer
+
+
+
+
+    shield
+
+
+        
+     
+
+
+     inventory   
+    
 
 
 levels
@@ -51,7 +137,7 @@ logic
 
 bombs
     add an explode on enemy / anything 
-    if you are not moving the bomb should drop in front of you if you are moving it should follow you
+
 
 level 1
 
@@ -113,6 +199,10 @@ debug window
     add a export json option
     move the cords into this 
     go to room (renders it in)
+    move it left
+    move the log to below the debug window
+    add spawn items 
+
 
 
 

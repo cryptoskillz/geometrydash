@@ -1,11 +1,25 @@
 {
     "perfectGoal": 5,
     "NoRooms": 11,
-    "music": false,
+    "music": true,
     "soundEffects": true,
+    "showMinimap": true,
+    "showDebugWindow": false,
+    "showDebugLog": true,
+    "showStats": true,
+    "showUI": true,
+    "showPerfect": true,
+    "showRoomName": true,
+    "showBombs": true,
+    "showAmmo": true,
+    "showHealth": true,
+    "showKeys": true,
+    "showRoom": true,
+    "showOverlay": true,
+    "showWelcome": true,
     "ghost": {
         "spawn": true,
-        "roomGhostTimer": 10000,
+        "roomGhostTimer": 60000,
         "roomFollow": true
     },
     "room": {

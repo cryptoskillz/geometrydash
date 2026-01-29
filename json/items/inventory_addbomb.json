@@ -1,0 +1,9 @@
+{
+    "name": "Bomb +1",
+    "description": "Adds a bomb to your inventory",
+    "location": "weapons/inventory/bombs/add.json",
+    "type": "modifier",
+    "starter": false,
+    "consumed": true,
+    "rarity": "uncommon"
+}
