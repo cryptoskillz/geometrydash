@@ -505,7 +505,7 @@ const DOOR_THICKNESS = 15;
 const DEBUG_START_BOSS = false; // TOGGLE THIS FOR DEBUGGING
 const DEBUG_PLAYER = true;
 const CHEATS_ENABLED = false;
-const DEBUG_WINDOW_ENABLED = false;
+const DEBUG_WINDOW_ENABLED = true;
 const DEBUG_SPAWN_ALL_ITEMS = false; // Master Switch (Overrides others if true)
 const DEBUG_SPAWN_GUNS = false;
 const DEBUG_SPAWN_BOMBS = false;
@@ -719,9 +719,11 @@ async function initGame(isRestart = false) {
 
             // This attempts to play immediately.
             // If the browser blocks it, the 'keydown' listener below will catch it.
-            introMusic.play().catch(() => {
-                log("Autoplay blocked: Waiting for first user interaction to start music.");
-            });
+            if (!musicMuted) {
+                introMusic.play().catch(() => {
+                    log("Autoplay blocked: Waiting for first user interaction to start music.");
+                });
+            }
 
             // Fallback: Start music on the very first key press or click if autoplay failed
             const startAudio = () => {

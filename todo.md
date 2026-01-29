@@ -1,6 +1,6 @@
 bugs
-    if music has been toggled off it shouldnt turn back on on restart / going back to main menu
-    the enemies get stuck they should work their way around obstacles
+    if music has been toggled off it shouldnt turn back on on restart / going back to main menu*
+    the enemies get stuck they should work their way around obstacles this is showign right now with bombs
     solid false does make you invul when you are hit  
     check freezeDuration works below 1 second.  
     if ghost appears and hyou leave a room with enemies when you go back only the ghost remaims 
@@ -25,6 +25,56 @@ bugs
     special items should get from a special folder in items
 
 
+
+
+level plan
+
+level 0
+
+Player is on a black background, with a grey portal.  Nothing else.  you 
+move over the portal and it says game complete.
+
+welcome screen unlocked 
+text unlocked 
+start room unclocked 
+
+level 1
+
+the player is in the start room, no mini map, no ui, no weapon, no doors.  The portal is there this time purple (the main on we use for the rest of the game).  came compelete screen shows up
+
+doors unlocked
+rooms unlocked
+enemies unlocked 
+
+
+level 2
+the player starts in the start room with doors and the following items
+
+peashooet item
+normal bomb item 
+mini map
+ui 
+
+you can equip these if you want to you get a bonus for each of these you dont equip at the end of the level. 
+
+You go through a few rooms and shoot a few enemies
+
+eventually you enter the "boss" room but there is no boss just the portal. came compelete screen shows up
+
+boss enemies unlocked
+music & sfx unlocked
+
+level 3
+
+the unpicked up items stay in the starting room and the game begins proper at this point.
+
+level 4 is golcen path maze (it will say room name followed by dejavu)
+level 5 is harder level one
+level 6 is crazy rooms
+level 7 is boss rush
+level 8 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
+
+
 next up 
     items
     debug window
@@ -39,6 +89,7 @@ server
     store permant modiifers
 
 items
+    coin item
     start room in a 10000 chance to drop a legendary item 
     room bonus
     key bonus
@@ -125,13 +176,7 @@ items
 
 
 levels
-    level 1 is a basic intro
-    level 2 is golcen path maze (it will say room name followed by dejavu)
-    level 3 is harder level one
-    level 4 is crazy rooms
-    level 5 is boss rush
-    level 6 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
-
+    
 
 logic
     reload gun / bomb when they pick up a new item
