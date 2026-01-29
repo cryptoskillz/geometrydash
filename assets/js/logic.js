@@ -2846,7 +2846,7 @@ function takeDamage(amount) {
     const now = Date.now();
     const until = player.invulnUntil || 0;
 
-    if (now < until) {
+    if (player.invuln || now < until) {
         log(`BLOCKED DAMAGE! (Shield/HP Safe). Rem Invul: ${until - now}ms`);
         return;
     }
@@ -2967,7 +2967,7 @@ function playerHit(en, checkInvuln = true, applyKnockback = false, shakescreen =
     if (checkInvuln) {
         const now = Date.now();
         const until = player.invulnUntil || 0;
-        if (now < until) {
+        if (player.invuln || now < until) {
             applyDamage = false;
             // log("Invuln Active - Damage Blocked");
         }
