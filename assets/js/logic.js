@@ -2786,7 +2786,11 @@ function updateGhost() {
 
     // DELAY: If enemies are still alive (locking the room), hold the timer at zero.
     // This allows the player to fight without the ghost timer ticking down.
-    if (isRoomLocked()) {
+    // Check purely for combat enemies to avoid circular dependency with isRoomLocked()
+    const aliveEnemies = enemies.filter(en => !en.isDead);
+    const combatMock = aliveEnemies.filter(en => en.type !== 'ghost');
+
+    if (combatMock.length > 0) {
         roomStartTime = now;
         return;
     }
