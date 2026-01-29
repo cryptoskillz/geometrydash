@@ -32,7 +32,7 @@
     },
     "doors": {
         "openLockedDoors": true,
-        "openRedDoors": false,
+        "openRedDoors": true,
         "openSecretRooms": true
     },
     "canInteract": {

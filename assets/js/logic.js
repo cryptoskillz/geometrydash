@@ -2784,6 +2784,13 @@ function updateGhost() {
     // Use config from gameData, default if missing
     const ghostConfig = gameData.ghost || { spawn: true, roomGhostTimer: 10000 };
 
+    // DELAY: If enemies are still alive (locking the room), hold the timer at zero.
+    // This allows the player to fight without the ghost timer ticking down.
+    if (isRoomLocked()) {
+        roomStartTime = now;
+        return;
+    }
+
     // Only spawn if:
     // 1. Config enabled
     // 2. Not already spawned in this room

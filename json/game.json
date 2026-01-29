@@ -19,7 +19,7 @@
     "showWelcome": true,
     "ghost": {
         "spawn": true,
-        "roomGhostTimer": 60000,
+        "roomGhostTimer": 10000,
         "roomFollow": true
     },
     "room": {
