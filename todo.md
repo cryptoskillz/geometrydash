@@ -1,6 +1,4 @@
 bugs
-    kill the ghost for a hell of a gun
-    360 modifier does not work
     explode modifier does not work  
     update game.json vars to implemnt various switches   
     should be considered as special binuses
