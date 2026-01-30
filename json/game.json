@@ -47,18 +47,18 @@
                 "item": ""
             }
         },
-        "room": {
+        "startroom": {
             "common": {
                 "count": 1,
                 "dropChance": 1
             },
             "uncommon": {
-                "count": 0,
-                "dropChance": 0.1
+                "count": 1,
+                "dropChance": 1
             },
             "rare": {
-                "count": 0,
-                "dropChance": 0.1
+                "count": 1,
+                "dropChance": 1
             },
             "legendary": {
                 "count": 1,
@@ -70,20 +70,20 @@
         },
         "perfect": {
             "common": {
-                "count": 1,
-                "dropChance": 1
-            },
-            "uncommon": {
-                "count": 1,
-                "dropChance": 0.4
-            },
-            "rare": {
                 "count": 0,
                 "dropChance": 0
             },
+            "uncommon": {
+                "count": 0,
+                "dropChance": 0
+            },
+            "rare": {
+                "count": 1,
+                "dropChance": 1
+            },
             "legendary": {
                 "count": 1,
-                "dropChance": 0.1
+                "dropChance": 0
             },
             "special": {
                 "item": ""

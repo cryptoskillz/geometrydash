@@ -1107,6 +1107,9 @@ function changeRoom(dx, dy) {
         levelMap[currentCoord].cleared = (enemies.length === 0);
     }
 
+    // Reset Room Specific Flags
+    player.tookDamageInRoom = false;
+
     // Check if door was locked or recently unlocked by a key
     let doorUsed = null;
     if (dx === 1) doorUsed = "right";
@@ -1885,8 +1888,56 @@ function updateRoomLock() {
         if (roomData.item) {
             spawnRoomRewards(roomData.item);
         }
+
+        // --- SPEEDY BONUS ---
+        // Check if room cleared quickly (e.g. within 5 seconds)
+        // Hardcoded to 5s if speedyGoal not in logic (using local var here)
+        const timeTakenMs = Date.now() - roomStartTime;
+        const speedyLimitMs = roomData.speedGoal || 5000;
+
+        if (timeTakenMs <= speedyLimitMs) {
+            if (gameData.bonuses && gameData.bonuses.speedy) {
+                const dropped = spawnRoomRewards(gameData.bonuses.speedy);
+                if (dropped) {
+                    perfectEl.innerText = "SPEEDY BONUS!";
+                    triggerPerfectText();
+                }
+            }
+        }
+
+        // --- PERFECT BONUS (STREAK) ---
+        // Check if no damage taken in this room
+        if (!player.tookDamageInRoom) {
+            perfectStreak++;
+            const goal = gameData.perfectGoal || 3;
+
+            if (perfectStreak >= goal) {
+                // Check drop config
+                if (gameData.bonuses && gameData.bonuses.perfect) {
+                    const dropped = spawnRoomRewards(gameData.bonuses.perfect);
+                    if (dropped) {
+                        perfectEl.innerText = "PERFECT BONUS!";
+                        triggerPerfectText();
+                        // Reset or Reduce? "only kick in if this is met" likely means reset to start new streak
+                        perfectStreak = 0;
+                    }
+                }
+            }
+        } else {
+            perfectStreak = 0; // Reset streak if hit
+        }
     }
 }
+
+// Helper to show/hide the big text
+function triggerPerfectText() {
+    perfectEl.style.display = 'block';
+    perfectEl.style.animation = 'none';
+    perfectEl.offsetHeight;
+    perfectEl.style.animation = null;
+    setTimeout(() => perfectEl.style.display = 'none', 2000);
+}
+
 
 function spawnRoomRewards(dropConfig, label = null) {
     if (!window.allItemTemplates) return false;
@@ -2999,6 +3050,7 @@ function takeDamage(amount) {
 
     // 2. Health Damage
     player.hp -= amount;
+    player.tookDamageInRoom = true;
     SFX.playerHit();
 
     // Trigger I-Frames

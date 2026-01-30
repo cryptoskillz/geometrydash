@@ -1,6 +1,6 @@
 {
     "name": "Boss Room 1",
-    "speedGoal": 0,
+    "speedGoal": 10000,
     "item": {
         "common": {
             "count": 1,

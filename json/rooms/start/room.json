@@ -1,6 +1,6 @@
 {
     "name": "The Beginning",
-    "speedGoal": 5,
+    "speedGoal": 0,
     "item": {
         "common": {
             "count": 0,
