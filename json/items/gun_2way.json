@@ -4,6 +4,7 @@
     "location": "weapons/guns/2way.json",
     "type": "gun",
     "starter": false,
+    "special": false,
     "consumed": true,
     "unlocked": {
         "active": false,

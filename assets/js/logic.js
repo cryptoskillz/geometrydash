@@ -555,7 +555,7 @@ const DEBUG_SPAWN_GUNS = false;
 const DEBUG_SPAWN_BOMBS = false;
 const DEBUG_SPAWN_INVENTORY = false;
 const DEBUG_SPAWN_MODS_PLAYER = false;
-const DEBUG_SPAWN_MODS_BULLET = false;
+const DEBUG_SPAWN_MODS_BULLET = true;
 
 let musicMuted = false;
 let lastMKeyTime = 0;
@@ -1982,7 +1982,7 @@ function spawnRoomRewards(dropConfig, label = null) {
         // Roll for drop
         if (Math.random() < (conf.dropChance || 0)) {
             // Find items of this rarity
-            const candidates = window.allItemTemplates.filter(i => (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() && i.starter === false);
+            const candidates = window.allItemTemplates.filter(i => (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() && i.starter === false && i.special !== true);
 
             if (candidates.length > 0) {
                 const count = conf.count || 1;
@@ -2867,7 +2867,8 @@ function updateEnemies() {
             const baseDmg = gun.Bullet?.damage || 1;
             const thornsDmg = baseDmg / 2;
 
-            if (thornsDmg > 0) {
+            // Fix: Don't damage frozen/invulnerable enemies on contact
+            if (thornsDmg > 0 && !en.frozen && !en.invulnerable) {
                 en.hp -= thornsDmg;
                 en.hitTimer = 5; // Visual flash
 
@@ -4126,6 +4127,34 @@ function applyModifierToGun(gunObj, modConfig) {
 
         // Helper to apply
         const applyTo = (obj, prop, value, relative) => {
+            // Handle Dot Notation (e.g. "multiDirectional.active")
+            if (prop.includes('.')) {
+                const parts = prop.split('.');
+                let current = obj;
+                // Traverse to parent
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (current[parts[i]] === undefined) return false; // Path doesn't exist
+                    current = current[parts[i]];
+                }
+                const leaf = parts[parts.length - 1];
+
+                // Now apply to leaf
+                if (current[leaf] !== undefined) {
+                    if (relative && typeof current[leaf] === 'number' && typeof value === 'number') {
+                        let old = current[leaf];
+                        current[leaf] += value;
+                        if (current[leaf] < 0 && leaf !== 'startX' && leaf !== 'startY') current[leaf] = 0.05;
+                        log(`Adjusted ${prop}: ${old} -> ${current[leaf]}`);
+                    } else {
+                        current[leaf] = value;
+                        log(`Set ${prop}: ${value}`);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            // Standard Flat Prop
             if (obj[prop] !== undefined) {
                 // log(`Applying ${prop} to ${JSON.stringify(obj)}. Rel: ${relative}, Val: ${value}, Old: ${obj[prop]}`);
                 if (relative && typeof obj[prop] === 'number' && typeof value === 'number') {

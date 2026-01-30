@@ -4,6 +4,7 @@
     "location": "weapons/inventory/bombs/add3.json",
     "type": "modifier",
     "starter": false,
+    "special": false,
     "consumed": true,
     "unlocked": {
         "active": false,

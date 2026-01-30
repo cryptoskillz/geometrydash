@@ -5,6 +5,7 @@
     "type": "gun",
     "starter": false,
     "consumed": true,
+    "special": true,
     "unlocked": {
         "active": false,
         "modifyType": "session"

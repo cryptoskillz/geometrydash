@@ -1,12 +1,13 @@
 bugs
-    kill the ghost for a hell of a gun
-    360 modifier does not work
-    explode modifier does not work  
-    update game.json vars to implemnt various switches   
-    should be considered as special binuses
-    special items should get from a special folder in items
-    if you hit a frozen enemy when you enter a room you can cause it damage
    
+
+next up 
+    debug window
+    enemies
+    rooms
+    items 5
+    server
+    levels
 
 ghost
 
@@ -64,13 +65,7 @@ level 7 is boss rush
 level 8 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
 
 
-next up 
-    items
-    debug window
-    enemies
-    rooms
-    server
-    levels
+
 
 server
     store game data
@@ -173,6 +168,8 @@ logic
     reload gun / bomb when they pick up a new item
     if you get hit perfect bonus will reset 
     show gun name in the UI
+    update game.json vars to implemnt various switches   
+
 
 bombs
     add an explode on enemy / anything 
