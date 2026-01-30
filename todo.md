@@ -1,5 +1,5 @@
 bugs
-    show the pick up item like we see "speedy bonus etc" when you pick up an item
+    show the pick up item like we see "speedy bonus etc" when you pick up an item [DONE]
     rooom bonus item drop
     speedy item drop
     perfect item drop
@@ -11,7 +11,6 @@ bugs
     special items should get from a special folder in items
     dont spawn items on top of one another*
    
-
 
 ghost
 

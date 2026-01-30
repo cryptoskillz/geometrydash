@@ -30,6 +30,50 @@ let lastMusicToggle = 0;
 let debugLogs = [];
 const MAX_DEBUG_LOGS = 10;
 
+// --- FLOATING TEXT SYSTEM ---
+let floatingTexts = [];
+
+function spawnFloatingText(x, y, text, color = "white") {
+    floatingTexts.push({
+        x: x,
+        y: y,
+        text: text,
+        color: color,
+        life: 1.0, // 100% opacity start
+        vy: -1.0 // Float up speed
+    });
+}
+
+
+function updateFloatingTexts() {
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy;
+        ft.life -= 0.015; // Slow fade
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1);
+        }
+    }
+}
+
+function drawFloatingTexts() {
+    floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.life);
+        ctx.fillStyle = ft.color;
+        ctx.font = "bold 16px monospace";
+        ctx.textAlign = "center";
+
+        // Shadow for readability
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 4;
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillText(ft.text, ft.x, ft.y);
+
+        ctx.restore();
+    });
+}
+
 function log(...args) {
     if (typeof DEBUG_WINDOW_ENABLED !== 'undefined' && DEBUG_WINDOW_ENABLED) {
         const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
@@ -1585,6 +1629,7 @@ function update() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
     updateItems(); // Check for item pickups
+    updateFloatingTexts(); // Animate floating texts
 
     //const now = Date.now(); // Check for item pickups
 
@@ -1693,6 +1738,7 @@ async function draw() {
     drawTutorial();
     drawBossIntro();
     drawPortal();
+    drawFloatingTexts(); // Draw notification texts on top
     drawDebugLogs();
     requestAnimationFrame(() => { update(); draw(); });
 }
@@ -3766,6 +3812,7 @@ async function pickupItem(item, index) {
                 player.gunType = filename;
             }
             log(`Equipped Gun: ${config.name}`);
+            spawnFloatingText(player.x, player.y - 30, config.name.toUpperCase(), config.colour || "gold");
         }
         else if (type === 'bomb') {
             // Drop Helper
@@ -3810,6 +3857,7 @@ async function pickupItem(item, index) {
                 player.bombType = filename;
             }
             log(`Equipped Bomb: ${config.name}`);
+            spawnFloatingText(player.x, player.y - 30, config.name.toUpperCase(), config.colour || "gold");
         }
         else if (type === 'modifier') {
             // APPLY MODIFIER
@@ -3886,6 +3934,7 @@ async function pickupItem(item, index) {
             }
 
             log(`Applied Modifier: ${config.name || "Unknown"}`);
+            spawnFloatingText(player.x, player.y - 30, (config.name || "BONUS").toUpperCase(), config.colour || "#3498db");
         }
 
         // Remove from floor 
