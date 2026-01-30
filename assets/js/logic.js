@@ -3646,6 +3646,29 @@ function updateItems() {
         if (item.y < margin) { item.y = margin; item.vy *= -0.5; }
         if (item.y > canvas.height - margin) { item.y = canvas.height - margin; item.vy *= -0.5; }
 
+        // Door Repulsion: Push items away from doors so they don't block exit / become unpickable
+        const DOOR_ZONE = 80;
+        const PUSH_STRENGTH = 0.5;
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        // Top Door Zone
+        if (item.y < DOOR_ZONE && Math.abs(item.x - cx) < DOOR_ZONE) {
+            item.vy += PUSH_STRENGTH;
+        }
+        // Bottom Door Zone
+        if (item.y > canvas.height - DOOR_ZONE && Math.abs(item.x - cx) < DOOR_ZONE) {
+            item.vy -= PUSH_STRENGTH;
+        }
+        // Left Door Zone
+        if (item.x < DOOR_ZONE && Math.abs(item.y - cy) < DOOR_ZONE) {
+            item.vx += PUSH_STRENGTH;
+        }
+        // Right Door Zone
+        if (item.x > canvas.width - DOOR_ZONE && Math.abs(item.y - cy) < DOOR_ZONE) {
+            item.vx -= PUSH_STRENGTH;
+        }
+
         // Player Collision (Push)
         if (item.solid && item.moveable) {
             const dx = item.x - player.x;

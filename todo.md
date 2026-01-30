@@ -1,6 +1,5 @@
 bugs
-    items should moce away from doors when they are pushed as they cannot be picked up
-
+    show the pick up item like we see "speedy bonus etc" when you pick up an item
     rooom bonus item drop
     speedy item drop
     perfect item drop
@@ -11,14 +10,14 @@ bugs
     should be considered as special binuses
     special items should get from a special folder in items
     dont spawn items on top of one another*
-    show the pick up item like we see "speedy bonus etc" when you pick up an item
-    if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left
+   
 
 
 ghost
 
 if you go through multiple room and back track you will see multiple ghosts
 if you leave a room and come back the ghost should be the same place + closer to you basedo on the speed the ghost moves. 
+if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left (with ghost or blowing doors)
 
 
 level plan
