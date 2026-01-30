@@ -4,6 +4,7 @@
     "location": "weapons/guns/shotgun.json",
     "type": "gun",
     "starter": false,
+    "special": false,
     "consumed": true,
     "unlocked": {
         "active": false,

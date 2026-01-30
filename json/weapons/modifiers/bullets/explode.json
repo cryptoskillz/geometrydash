@@ -2,6 +2,6 @@
     "modify": "gun",
     "colour": "#000000",
     "modifiers": {
-        "explode": "true"
+        "Explode.active": "true"
     }
 }

@@ -4,6 +4,7 @@
     "location": "weapons/modifiers/bullets/explode.json",
     "type": "modifier",
     "starter": false,
+    "special": false,
     "consumed": true,
     "unlocked": {
         "active": false,

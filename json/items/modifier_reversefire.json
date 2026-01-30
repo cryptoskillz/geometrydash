@@ -4,6 +4,7 @@
     "location": "weapons/modifiers/bullets/reversefire.json",
     "type": "modifier",
     "starter": false,
+    "special": false,
     "consumed": true,
     "unlocked": {
         "active": false,

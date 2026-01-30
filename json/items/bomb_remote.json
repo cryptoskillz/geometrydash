@@ -6,6 +6,7 @@
     "location": "weapons/bombs/remote.json",
     "type": "bomb",
     "starter": false,
+    "special": false,
     "consumed": true,
     "unlocked": {
         "active": false,

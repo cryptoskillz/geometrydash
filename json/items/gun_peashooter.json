@@ -4,6 +4,7 @@
     "location": "weapons/guns/peashooter.json",
     "type": "gun",
     "starter": true,
+    "special": false,
     "consumed": true,
     "unlocked": {
         "active": true,
