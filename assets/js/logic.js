@@ -2867,7 +2867,8 @@ function updateEnemies() {
             const baseDmg = gun.Bullet?.damage || 1;
             const thornsDmg = baseDmg / 2;
 
-            if (thornsDmg > 0) {
+            // Fix: Don't damage frozen/invulnerable enemies on contact
+            if (thornsDmg > 0 && !en.frozen && !en.invulnerable) {
                 en.hp -= thornsDmg;
                 en.hitTimer = 5; // Visual flash
 
