@@ -569,6 +569,7 @@ async function initGame(isRestart = false) {
     perfectEl.style.display = 'none';
     roomStartTime = Date.now();
     ghostSpawned = false; // Reset Ghost
+    bossKilled = false;   // Reset Boss Kill State
     visitedRooms = {};
     levelMap = {};
 
@@ -2635,7 +2636,34 @@ function updateEnemies() {
                 }
             }
 
-            // 3. Normalize and Apply Speed
+            // 3. Separation (Avoid Crowding)
+            const SEP_WEIGHT = 2.5;
+
+            enemies.forEach((other, oi) => {
+                if (ei === oi || other.isDead) return;
+
+                const dx = en.x - other.x;
+                const dy = en.y - other.y;
+                const dist = Math.hypot(dx, dy);
+
+                // Define a "personal space" slightly larger than physical size
+                const minDist = (en.size + other.size) * 0.8;
+                const checkDist = minDist + 20;
+
+                if (dist < checkDist) {
+                    if (dist === 0) {
+                        // Random push if exact overlap
+                        dirX += (Math.random() - 0.5) * SEP_WEIGHT * 5;
+                        dirY += (Math.random() - 0.5) * SEP_WEIGHT * 5;
+                    } else {
+                        const pushFactor = (checkDist - dist) / checkDist; // 1.0 at center, 0.0 at edge
+                        dirX += (dx / dist) * pushFactor * SEP_WEIGHT;
+                        dirY += (dy / dist) * pushFactor * SEP_WEIGHT;
+                    }
+                }
+            });
+
+            // 4. Normalize and Apply Speed
             const finalMag = Math.hypot(dirX, dirY);
             if (finalMag > 0) {
                 const vx = (dirX / finalMag) * en.speed;

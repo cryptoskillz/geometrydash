@@ -1,6 +1,4 @@
 bugs
-    angry enemies do not restart on new game
-    enemies should move through ghost enemies and try not stay inside them 
     items should moce away from doors when they are pushed as they cannot be picked up
     when you reenter the guardian room it shows the intro 
 
@@ -14,6 +12,7 @@ bugs
     should be considered as special binuses
     special items should get from a special folder in items
     dont spawn items on top of one another*
+    show the pick up item like we see "speedy bonus etc" when you pick up an item
 
 
 ghost
@@ -252,6 +251,7 @@ debug window
 
 
 rooms
+change the drop chane from 100% once we are finished testing
     Boss room
     secrets roons
         secret room generate at random and can be hidden behind walls etc these do not render in the golden path special things unlock them
