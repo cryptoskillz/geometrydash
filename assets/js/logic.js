@@ -1051,7 +1051,7 @@ async function initGame(isRestart = false) {
 
         // Load player specific assets
         const [gunData, bombData] = await Promise.all([
-            fetch(`/json/weapons/guns/${player.gunType}.json?t=` + Date.now()).then(res => res.json()),
+            fetch(`/json/weapons/guns/player/${player.gunType}.json?t=` + Date.now()).then(res => res.json()),
             fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json())
         ]);
         gun = gunData;
@@ -1212,7 +1212,7 @@ window.addEventListener('keydown', e => {
         (async () => {
             try {
                 const [gData, bData] = await Promise.all([
-                    fetch(`/json/weapons/guns/${player.gunType}.json?t=` + Date.now()).then(res => res.json()),
+                    fetch(`/json/weapons/guns/player/${player.gunType}.json?t=` + Date.now()).then(res => res.json()),
                     fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json())
                 ]);
                 gun = gData;
@@ -1807,47 +1807,108 @@ function fireBullet(direction, speed, vx, vy, angle) {
         }
     }
 
-    // Helper to create the base bullet object
-    const createBullet = (velX, velY) => {
-        // Determine the shape ONCE at creation
-        let bulletShape = gun.Bullet?.geometry?.shape || "circle";
+    // 2. Spawning Logic
+    // We defer to spawnBullet but we need to calculate the spawn point based on player mechanics
+    const barrelLength = player.size + 10;
+    const startX = player.x + Math.cos(angle) * barrelLength;
+    const startY = player.y + Math.sin(angle) * barrelLength;
 
-        // If shape is 'random', pick one from the shapes array immediately
-        if (bulletShape === 'random' && gun.Bullet?.geometry?.shapes?.length > 0) {
-            const possibleShapes = gun.Bullet.geometry.shapes;
-            bulletShape = possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
-        }
+    if (direction === 0) {
+        spawnBullet(startX, startY, vx, vy, gun);
+    } // ... rest of logic handled by simpler spawn calls if needed, but original logic had complex if/else
+    // For minimal disruption, let's keep the if-else structure for MULTI-DIRECTIONAL but use spawnBullet
 
-        // Calculate Spawn Offset (Barrel Tip)
-        const barrelLength = player.size + 10;
-        const angle = Math.atan2(velY, velX);
-        const startX = player.x + Math.cos(angle) * barrelLength;
-        const startY = player.y + Math.sin(angle) * barrelLength;
+    // However, existing fireBullet logic has complex directional logic. 
+    // To minimize risk, I will define spawnBullet explicitly OUTSIDE and just call it.
+    // BUT since I am REPLACING code, I need to be careful.
 
-        return {
-            x: startX,
-            y: startY,
-            vx: velX,
-            vy: velY,
-            life: gun.Bullet?.range || 60,
-            damage: gun.Bullet?.damage || 1,
-            size: gun.Bullet?.size || 5,
-            curve: gun.Bullet?.curve || 0,
-            homing: gun.Bullet?.homing,
-            canDamagePlayer: gun.Bullet?.canDamagePlayer || false,
-            hasLeftPlayer: false, // Start as false, set to true once it exits player radius
-            shape: bulletShape, // This is now a fixed shape (triangle, square, etc.)
-            animated: gun.Bullet?.geometry?.animated || false,
-            filled: gun.Bullet?.geometry?.filled !== undefined ? gun.Bullet.geometry.filled : true,
-            colour: gun.Bullet?.colour || "yellow",
-            spinAngle: 0,
-            hitEnemies: []
-        };
+    // Let's implement spawnBullet as a global function (or scope it properly) and use it here.
+    // Since this is inside logic.js global scope, I can define it above/below.
+    // For this refactor, I will Replace the 'createBullet' inner helper and the usage.
+}
+
+// Global Helper for spawning bullets (Player OR Enemy)
+function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", owner = null) {
+    const bulletConfig = weaponSource.Bullet || {};
+
+    // Determine shape
+    let bulletShape = bulletConfig.geometry?.shape || "circle";
+    if (bulletShape === 'random' && bulletConfig.geometry?.shapes?.length > 0) {
+        const possibleShapes = bulletConfig.geometry.shapes;
+        bulletShape = possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
+    }
+
+    const b = {
+        x: x,
+        y: y,
+        vx: vx,
+        vy: vy,
+        life: bulletConfig.range || 60,
+        damage: bulletConfig.damage || 1,
+        size: (bulletConfig.size || 5),
+        curve: bulletConfig.curve || 0,
+        homing: bulletConfig.homing,
+        canDamagePlayer: bulletConfig.canDamagePlayer || false,
+        hasLeftPlayer: false,
+        shape: bulletShape,
+        animated: bulletConfig.geometry?.animated || false,
+        filled: bulletConfig.geometry?.filled !== undefined ? bulletConfig.geometry.filled : true,
+        colour: bulletConfig.colour || "yellow",
+        spinAngle: 0,
+        hitEnemies: [],
+        ownerType: ownerType // 'player' or 'enemy'
     };
 
-    // 2. Spawning Logic (using else-if to prevent duplicate logic execution)
+    if (ownerType === 'enemy') {
+        b.hasLeftPlayer = true; // No safety buffer needed for player
+        // Optional: Safety buffer for the enemy who shot it?
+    }
+
+    bullets.push(b);
+    return b;
+}
+
+function fireBullet(direction, speed, vx, vy, angle) {
+    // 1. Safety check / No Bullets Mode
+    if (gun.Bullet?.NoBullets) {
+        const now = Date.now();
+        if (now - (player.lastClick || 0) > 200) {
+            SFX.click();
+            player.lastClick = now;
+        }
+        return;
+    }
+
+    // Ammo Check
+    if (gun.Bullet?.ammo?.active) {
+        if (player.reloading) return;
+        if (player.ammo <= 0) {
+            if (player.ammoMode === 'finite') return;
+            if (player.ammoMode === 'reload' && player.reserveAmmo <= 0) return;
+            reloadWeapon();
+            return;
+        }
+        player.ammo--;
+        if (player.ammo <= 0) {
+            if (player.reserveAmmo > 0 || player.ammoMode === 'recharge') {
+                reloadWeapon();
+            }
+        }
+    }
+
+    const barrelLength = player.size + 10;
+    // Re-calculate spawn position based on player
+    // Note: 'direction' arg in original code was doing some heavy lifting for multi-directional stuff 
+    // but the 'vx/vy' passed in are already calculated for the main bullet.
+
+    // We simply use the passed vx/vy to determine spawn offset
+    const spawnAngle = Math.atan2(vy, vx);
+    const startX = player.x + Math.cos(spawnAngle) * barrelLength;
+    const startY = player.y + Math.sin(spawnAngle) * barrelLength;
+
+    // 2. Spawning
     if (direction === 0) {
-        bullets.push(createBullet(vx, vy));
+        spawnBullet(startX, startY, vx, vy, gun, "player");
         if (gun.Bullet?.reverseFire) bullets.push(createBullet(-vx, -vy));
 
         // MultiDirectional Logic
@@ -3151,6 +3212,53 @@ function updateEnemies() {
                     // Try sliding
                     if (!isBlocked(nextX, en.y)) en.x = nextX;
                     else if (!isBlocked(en.x, nextY)) en.y = nextY;
+                }
+            }
+
+            // --- GUN LOGIC ---
+            // Load Gun if defined
+            if (en.gun && typeof en.gun === 'string' && !en.gunConfig) {
+                if (!en.gunLoading) {
+                    en.gunLoading = true;
+                    fetch(en.gun).then(r => r.json()).then(data => {
+                        en.gunConfig = data;
+                        en.gunLoading = false;
+                    }).catch(e => {
+                        log("Error loading enemy gun:", e);
+                        en.gunConfig = { error: true };
+                    });
+                }
+            }
+
+            // Fire Gun
+            if (en.gunConfig && !en.gunConfig.error) {
+                // Check if player is alive
+                if (player.hp > 0) {
+                    const range = en.gunConfig.Bullet?.range || 60; // range is life in frames.
+                    // Visual check: approx 5 * life?
+                    const dist = Math.hypot(player.x - en.x, player.y - en.y);
+
+                    // Let's use a generous engagement distance (e.g. 400px)
+                    if (dist < 500) {
+                        const fireRate = (en.gunConfig.Bullet?.fireRate || 1) * 1000;
+
+                        if (!en.lastShot || now - en.lastShot > fireRate) {
+                            // FIRE!
+                            const angle = Math.atan2(player.y - en.y, player.x - en.x);
+                            const speed = en.gunConfig.Bullet?.speed || 4;
+                            const vx = Math.cos(angle) * speed;
+                            const vy = Math.sin(angle) * speed;
+
+                            // Spawn slightly outside enemy
+                            const spawnX = en.x + Math.cos(angle) * (en.size + 5);
+                            const spawnY = en.y + Math.sin(angle) * (en.size + 5);
+
+                            spawnBullet(spawnX, spawnY, vx, vy, en.gunConfig, "enemy", en);
+                            en.lastShot = now;
+                            // Optional: Sound?
+                            // SFX.shoot(0.02);
+                        }
+                    }
                 }
             }
 

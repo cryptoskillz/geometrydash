@@ -1,5 +1,6 @@
 bugs
     is the player cheat in game.json doing anything?
+    is 2way used atall whats the difference beween this and 2way
 
 next up 
     enemies
@@ -23,7 +24,7 @@ enemies
     add pyshics to the enemies json instead of having them hard coded in logic.js
     add more shapes
     transformer boss square, circle, 4 rectnagles for legs and you have to take out each limb
-    
+
 
 
 ghost
