@@ -14,5 +14,11 @@
     "invulColour": "#ffffff",
     "gun": "json/weapons/guns/enemy/peashooter.json",
     "shape": "circle",
+    "MovePattern": {
+        "type": "static",
+        "startX": 100,
+        "startY": 100,
+        "pattern": ""
+    },
     "special": false
 }
