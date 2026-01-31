@@ -1344,6 +1344,12 @@ function spawnEnemies() {
                         inst.moveType = { ...(inst.moveType || {}), ...group.moveType };
                     }
 
+                    // Indestructible Check
+                    if (inst.hp === 0) {
+                        inst.indestructible = true;
+                        inst.hp = 9999; // Set high HP just in case, though we rely on the flag
+                    }
+
                     // Determine Spawn Position
                     // User Rule: Use specified X/Y "unless its 0,0 then it will be ignored"
                     // We check inst.moveType because we just merged it. 
@@ -2258,7 +2264,8 @@ function updateRoomTransitions(doors, roomLocked) {
 }
 
 function isRoomLocked() {
-    const aliveEnemies = enemies.filter(en => !en.isDead);
+    // Alive enemies that are NOT indestructible
+    const aliveEnemies = enemies.filter(en => !en.isDead && !en.indestructible);
     let isLocked = false;
     const nonGhostEnemies = aliveEnemies.filter(en => en.type !== 'ghost');
 
@@ -3279,7 +3286,7 @@ function updateEnemies() {
         });
 
         // 5. DEATH CHECK
-        if (en.hp <= 0 && !en.isDead) {
+        if (en.hp <= 0 && !en.isDead && !en.indestructible) {
             en.isDead = true;
             en.deathTimer = 30;
             log(`Enemy died: ${en.type}`);

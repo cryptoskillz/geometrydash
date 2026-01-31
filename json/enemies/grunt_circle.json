@@ -12,8 +12,12 @@
     "deathType": "fadeaway",
     "deathDuration": 30,
     "invulColour": "#ffffff",
-    "gun": "json/weapons/guns/enemy/peashooter.json",
     "shape": "circle",
-    "moveType": {},
+    "gun": "json/weapons/guns/enemy/peashooter.json",
+    "moveType": {
+        "type": "track",
+        "x": 0,
+        "y": 0
+    },
     "special": false
 }

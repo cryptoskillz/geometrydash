@@ -13,5 +13,11 @@
     "deathType": "fadeaway",
     "deathDuration": 30,
     "shape": "circle",
+    "gun": "",
+    "moveType": {
+        "type": "track",
+        "x": 0,
+        "y": 0
+    },
     "special": true
 }

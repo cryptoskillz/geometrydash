@@ -45,11 +45,11 @@
     "height": 600,
     "enemies": [
         {
-            "type": "grunt",
+            "type": "grunt_star",
             "count": 2
         },
         {
-            "type": "speedy",
+            "type": "speedy_triangle",
             "count": 1
         }
     ]

@@ -13,5 +13,11 @@
     "deathDuration": 30,
     "invulColour": "#ffffff",
     "shape": "triangle",
+    "gun": "",
+    "moveType": {
+        "type": "track",
+        "x": 0,
+        "y": 0
+    },
     "special": false
 }

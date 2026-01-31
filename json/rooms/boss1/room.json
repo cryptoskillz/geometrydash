@@ -26,7 +26,7 @@
             "count": 1
         },
         {
-            "type": "grunt",
+            "type": "grunt_turret",
             "count": 5
         }
     ],

@@ -35,11 +35,11 @@
     },
     "enemies": [
         {
-            "type": "grunt",
+            "type": "grunt_circle",
             "count": 1
         },
         {
-            "type": "speedy",
+            "type": "speedy_circle",
             "count": 1
         },
         {
