@@ -1015,11 +1015,11 @@ async function initGame(isRestart = false) {
         // 3. Pre-load ALL room templates
         roomTemplates = {};
         const templatePromises = [];
-        templatePromises.push(fetch('/json/rooms/start/room.json?t=' + Date.now()).then(res => res.json()).then(data => roomTemplates["start"] = data));
-        templatePromises.push(fetch('/json/rooms/boss1/room.json?t=' + Date.now()).then(res => res.json()).then(data => roomTemplates["boss"] = data));
+        templatePromises.push(fetch('/json/rooms/start/room.json?t=' + Date.now()).then(res => res.json()).then(data => { data.templateId = "start"; roomTemplates["start"] = data; }));
+        templatePromises.push(fetch('/json/rooms/boss1/room.json?t=' + Date.now()).then(res => res.json()).then(data => { data.templateId = "boss"; roomTemplates["boss"] = data; }));
 
         roomManifest.rooms.forEach(id => {
-            templatePromises.push(fetch(`/json/rooms/${id}/room.json?t=` + Date.now()).then(res => res.json()).then(data => roomTemplates[id] = data));
+            templatePromises.push(fetch(`/json/rooms/${id}/room.json?t=` + Date.now()).then(res => res.json()).then(data => { data.templateId = id; roomTemplates[id] = data; }));
         });
 
         await Promise.all(templatePromises);
@@ -3749,7 +3749,8 @@ function goContinue() {
 
 function drawTutorial() {
     // --- Start Room Tutorial Text ---
-    if (player.roomX === 0 && player.roomY === 0 && (DEBUG_START_BOSS === false)) {
+    // --- Start Room Tutorial Text ---
+    if (player.roomX === 0 && player.roomY === 0 && roomData.templateId === 'start' && (DEBUG_START_BOSS === false)) {
         ctx.save();
 
         // Internal helper for keycaps
