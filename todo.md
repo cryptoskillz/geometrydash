@@ -12,6 +12,7 @@ bugs
  
 next up 
     enemies
+    debug
     rooms
     items 5
     server
@@ -19,7 +20,6 @@ next up
 
 
 enemies
-
     add enemy hit and enemy death sound  from json
     boss hit boss death  from json
     death shake from json
@@ -28,7 +28,6 @@ enemies
     add more shapes
     transformer boss square, circle, 4 rectnagles for legs and you have to take out each limb
         have swarm enemies that run away unless there are x of them
-
     enemy move types
         pattern
 

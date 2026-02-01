@@ -872,6 +872,7 @@ async function initGame(isRestart = false) {
     if (uiEl) uiEl.style.display = isRestart ? 'block' : 'none';
     bullets = [];
     bombs = [];
+    particles = [];
     if (typeof portal !== 'undefined') portal.active = false;
 
     // ... [Previous debug and player reset logic remains the same] ...
@@ -890,6 +891,8 @@ async function initGame(isRestart = false) {
     perfectEl.style.display = 'none';
     roomStartTime = Date.now();
     ghostSpawned = false; // Reset Ghost
+    ghostEntry = null;    // Reset Ghost Entry State
+    roomFreezeUntil = 0;  // Reset Freeze Timer
     bossKilled = false;   // Reset Boss Kill State
     visitedRooms = {};
     levelMap = {};
@@ -3142,8 +3145,8 @@ function updateEnemies() {
                 }
 
                 // 2.5 Avoid Walls (Stay in Room)
-                const WALL_DETECT_DIST = 50;
-                const WALL_PUSH_WEIGHT = 6.0; // Stronger than RunAway to keep them in
+                const WALL_DETECT_DIST = 30;
+                const WALL_PUSH_WEIGHT = 1.5; // Reduced so they can corner the player
 
                 if (en.x < BOUNDARY + WALL_DETECT_DIST) dirX += WALL_PUSH_WEIGHT * ((BOUNDARY + WALL_DETECT_DIST - en.x) / WALL_DETECT_DIST);
                 if (en.x > canvas.width - BOUNDARY - WALL_DETECT_DIST) dirX -= WALL_PUSH_WEIGHT * ((en.x - (canvas.width - BOUNDARY - WALL_DETECT_DIST)) / WALL_DETECT_DIST);
@@ -3612,7 +3615,7 @@ function playerHit(en, checkInvuln = true, applyKnockback = false, shakescreen =
     if (checkInvuln) {
         const now = Date.now();
         const until = player.invulnUntil || 0;
-        if (player.invuln || now < until) {
+        if (player.invuln || (now < until && !en.ignoreInvuln)) {
             applyDamage = false;
             // log("Invuln Active - Damage Blocked");
         }

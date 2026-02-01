@@ -19,5 +19,6 @@
         "x": 0,
         "y": 0
     },
+    "ignoreInvuln": true,
     "special": true
 }
