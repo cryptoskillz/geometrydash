@@ -1,5 +1,4 @@
 bugs
-    use local storage for game data, unlocks etc
     if movetype has an x,y start it there
     restsrt game should slip welcome screen
     main menu should move to enter key and be default on the pause, game over, victory
@@ -11,7 +10,7 @@ bugs
         inventory
         bullets 
         player
-        
+
      
 
 next up 
@@ -27,12 +26,6 @@ level plan
 
 
 
-level 1
-
-the player is in the start room, no mini map, no ui, no weapon, no doors.  The portal is there this time purple (the main on we use for the rest of the game).  came compelete screen shows up
-
-rooms unlocked
-enemies unlocked 
 
 
 level 2
@@ -40,8 +33,7 @@ the player starts in the start room with doors and the following items
 
 peashooet item
 normal bomb item 
-mini map
-ui 
+
 
 you can equip these if you want to you get a bonus for each of these you dont equip at the end of the level. 
 
@@ -55,6 +47,9 @@ music & sfx unlocked
 level 3
 
 the unpicked up items stay in the starting room and the game begins proper at this point.
+mini map
+ui 
+
 
 level 4 is golcen path maze (it will say room name followed by dejavu)
 level 5 is harder level one

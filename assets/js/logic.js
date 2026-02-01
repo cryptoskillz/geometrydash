@@ -1200,15 +1200,65 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
             player.gunType = savedPlayerStats.gunType;
             player.bombType = savedPlayerStats.bombType;
             player.speed = savedPlayerStats.speed;
+            player.speed = savedPlayerStats.speed;
+            log("Restored Player Stats - Gun:", player.gunType);
         }
 
+        // Apply Game Config Overrides
+        log("Checking Overrides - gameData.gunType:", gameData.gunType, "gameData.bombType:", gameData.bombType);
+
+        if (gameData.gunType) {
+            log("Applying gameData override for gunType:", gameData.gunType);
+            player.gunType = gameData.gunType;
+        }
+        if (gameData.bombType) player.bombType = gameData.bombType;
+
+        log("Final Player Config - Gun:", player.gunType, "Bomb:", player.bombType);
+
         // Load player specific assets
-        const [gunData, bombData] = await Promise.all([
-            (player.gunType ? fetch(`/json/weapons/guns/player/${player.gunType}.json?t=` + Date.now()).then(res => res.json()) : Promise.resolve({ Bullet: { NoBullets: true } })),
-            (player.bombType ? fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json()) : Promise.resolve({}))
-        ]);
-        gun = gunData;
-        bomb = bombData;
+        let fetchedGun = null;
+        let fetchedBomb = null;
+
+        try {
+            if (player.gunType) {
+                const gunUrl = `/json/weapons/guns/player/${player.gunType}.json?t=` + Date.now();
+                log("Fetching Gun from:", gunUrl);
+                const gRes = await fetch(gunUrl);
+                if (gRes.ok) fetchedGun = await gRes.json();
+                else console.error("Gun fetch failed:", gRes.status, gRes.statusText);
+            } else {
+                log("No player.gunType defined, skipping initial fetch.");
+            }
+        } catch (e) { console.error("Gun fetch error:", e); }
+
+        if (!fetchedGun) {
+            log("Attempting fallback to 'peashooter'...");
+            try {
+                const res = await fetch(`/json/weapons/guns/player/peashooter.json?t=` + Date.now());
+                if (res.ok) {
+                    fetchedGun = await res.json();
+                    player.gunType = 'peashooter'; // Update player state
+                }
+            } catch (e) { }
+        }
+
+        const bombUrl = player.bombType ? `/json/weapons/bombs/${player.bombType}.json?t=` + Date.now() : null;
+        if (bombUrl) {
+            try {
+                const bRes = await fetch(bombUrl);
+                if (bRes.ok) fetchedBomb = await bRes.json();
+            } catch (e) { }
+        }
+
+        if (!fetchedGun) {
+            console.error("CRITICAL: Could not load ANY gun. Player will be unarmed.");
+            gun = { Bullet: { NoBullets: true } };
+            spawnFloatingText(canvas.width / 2, canvas.height / 2, "ERROR: GUN LOAD FAILED", "red");
+        } else {
+            gun = fetchedGun;
+            log("Loaded Gun Data:", gun.name);
+        }
+        bomb = fetchedBomb || {};
 
         if (gameData.music) {
             // --- 1. INSTANT AUDIO SETUP ---
@@ -1470,6 +1520,10 @@ function startGame() {
         player = { ...defaults, ...JSON.parse(JSON.stringify(p)) };
         if (!player.maxHp) player.maxHp = player.hp || 3;
         if (!player.inventory) player.inventory = { keys: 0, bombs: 0 };
+
+        // RE-APPLY GameOverrides (Fixed: startGame was wiping initGame overrides)
+        if (gameData.gunType) player.gunType = gameData.gunType;
+        if (gameData.bombType) player.bombType = gameData.bombType;
     }
 
     // Async Load Assets then Start
@@ -2830,7 +2884,11 @@ function drawPlayer() {
     // 4. --- PLAYER ---
 
     // Gun Rendering (Barrels)
-    if (!gun.Bullet?.NoBullets) {
+    if (Math.random() < 0.01) {
+        log("Render Debug - Gun:", gun?.name, "NoBullets:", gun?.Bullet?.NoBullets, "Ammo:", player.ammo);
+    }
+
+    if (gun && gun.Bullet && !gun.Bullet.NoBullets) {
         // Helper to draw a single barrel at a given angle
         const drawBarrel = (angle, color = "#555") => {
             ctx.save();
@@ -4806,6 +4864,17 @@ async function pickupItem(item, index) {
             }
             log(`Equipped Gun: ${config.name}`);
             spawnFloatingText(player.x, player.y - 30, config.name.toUpperCase(), config.colour || "gold");
+
+            // PERSIST LOADOUT
+            try {
+                const saved = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
+                // Normalize key to match initGame loader
+                const key = 'json/game.json';
+                if (!saved[key]) saved[key] = {};
+                saved[key].gunType = player.gunType;
+                localStorage.setItem('game_unlocks', JSON.stringify(saved));
+                // log("Saved Gun Preference:", player.gunType);
+            } catch (e) { console.error("Failed to save loadout:", e); }
         }
         else if (type === 'bomb') {
             // Drop Helper
@@ -4850,7 +4919,17 @@ async function pickupItem(item, index) {
                 player.bombType = filename;
             }
             log(`Equipped Bomb: ${config.name}`);
-            spawnFloatingText(player.x, player.y - 30, config.name.toUpperCase(), config.colour || "gold");
+            spawnFloatingText(player.x, player.y - 30, config.name.toUpperCase(), config.colour || "orange");
+
+            // PERSIST LOADOUT
+            try {
+                const saved = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
+                const key = 'json/game.json';
+                if (!saved[key]) saved[key] = {};
+                saved[key].bombType = player.bombType;
+                localStorage.setItem('game_unlocks', JSON.stringify(saved));
+                // log("Saved Bomb Preference:", player.bombType);
+            } catch (e) { console.error("Failed to save loadout:", e); }
         }
         else if (type === 'modifier') {
             // APPLY MODIFIER

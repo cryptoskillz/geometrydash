@@ -1,7 +1,7 @@
 {
     "name": "Start Level",
     "description": "Unlocks start level",
-    "unlock": "startlevel2",
+    "unlock": "startlevel3",
     "json": "game.json",
     "attr": "startLevel",
     "value": "json/levels/3.json"
