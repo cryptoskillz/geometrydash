@@ -12,7 +12,7 @@
     "deathType": "fadeaway",
     "deathDuration": 30,
     "invulColour": "#ffffff",
-    "shape": "circle",
+    "shape": "triangle",
     "gun": "",
     "moveType": {
         "type": "track",
