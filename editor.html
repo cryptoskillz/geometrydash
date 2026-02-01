@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rogue Demo Room Editor</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* ... existing styles ... */
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: #111;
+            color: #eee;
+            font-family: monospace;
+        }
+
+        #editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #222;
+        }
+
+        canvas {
+            background: #000;
+            border: 2px solid #555;
+            cursor: crosshair;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #sidebar {
+            width: 320px;
+            background: #1a1a1a;
+            border-left: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .sidebar-content {
+            padding: 10px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            margin-bottom: 2px;
+        }
+
+        details {
+            width: 100%;
+        }
+
+        summary {
+            padding: 10px;
+            background: #333;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            font-weight: bold;
+            color: #8e44ad;
+            list-style: none;
+            /* Hide default triangle */
+            position: relative;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: '+';
+            position: absolute;
+            right: 10px;
+            color: #888;
+        }
+
+        details[open] summary::after {
+            content: '-';
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid #444;
+            background: #2a2a2a;
+        }
+
+        .panel-content {
+            padding: 10px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 11px;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 6px;
+            background: #111;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 3px;
+            font-family: inherit;
+            box-sizing: border-box;
+            /* Important for grid */
+        }
+
+        input:focus {
+            border-color: #8e44ad;
+            outline: none;
+        }
+
+        /* ... buttons and entity list ... */
+        button {
+            width: 100%;
+            padding: 8px;
+            background: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        button.primary {
+            background: #8e44ad;
+            /* Match theme */
+        }
+
+        button.primary:hover {
+            background: #9b59b6;
+        }
+
+        #entity-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            background: #111;
+            margin-top: 5px;
+        }
+
+        .entity-item {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .entity-item:hover {
+            background: #333;
+        }
+
+        .entity-item.selected {
+            background: #8e44ad;
+            color: white;
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            border-left: 4px solid #8e44ad;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            font-size: 12px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideIn 0.3s forwards, fadeOut 0.5s 2.5s forwards;
+            pointer-events: auto;
+            min-width: 200px;
+        }
+
+        .toast.success {
+            border-left-color: #27ae60;
+        }
+
+        .toast.error {
+            border-left-color: #c0392b;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+                pointer-events: none;
+            }
+        }
+    </style>
+    </style>
+</head>
+
+<body>
+    <div id="editor-container">
+        <div id="toolbar"
+            style="margin-bottom: 15px; background: #222; padding: 10px; border-radius: 20px; border: 1px solid #444;">
+            <label style="display:inline; margin-right:15px; cursor:pointer;"><input type="checkbox" id="gridToggle"
+                    checked>Grid </label><label style="display:inline; margin-right:15px; cursor:pointer;"><input
+                    type="checkbox" id="snapToggle" checked>Snap </label><span id="cursor-coords"
+                style="margin-left: 10px; color: #aaa; font-size: 11px;">0,
+                0</span>
+        </div><canvas id="editorCanvas" width="800" height="600"></canvas>
+    </div>
+    <div id="sidebar">
+        <div class="sidebar-content">
+            <!-- Room Config Panel -->
+            <div class="panel">
+                <details open>
+                    <summary>Room Properties</summary>
+                    <div class="panel-content">
+                        <div class="config-grid">
+                            <div class="full-width"><label>Name</label><input type="text" id="roomName"
+                                    value="New Room"></div>
+                            <div class="full-width"><label>Description</label><input type="text" id="roomDescription"
+                                    placeholder="Optional..."></div>
+                            <div><label>Key Bonus</label><input type="number" id="roomKeyBonus" value="1.0" step="0.1">
+                            </div>
+                            <div><label>Speed Goal</label><input type="number" id="roomSpeedGoal" value="0"></div>
+                            <div class="full-width"><label style="display:inline; cursor:pointer;"><input
+                                        type="checkbox" id="roomAllDoorsUnlocked" style="width:auto;">All Doors
+                                    Unlocked </label></div>
+                            <div><label>Width</label><input type="number" id="roomWidth" value="800" step="50">
+                            </div>
+                            <div><label>Height</label><input type="number" id="roomHeight" value="600" step="50">
+                            </div>
+                            <div class="full-width"><button onclick="updateRoomSize()" style="margin-top:5px;">Apply
+                                    Dimensions</button></div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            <!-- Doors Panel -->
+            <div class="panel">
+                <details>
+                    <summary>Doors</summary>
+                    <div class="panel-content">
+                        <div
+                            style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; font-size: 10px; text-align: center;">
+                            <div></div>
+                            <div>Active</div>
+                            <div>Locked</div>
+                            <div>Secret</div>
+                            <!-- Top -->
+                            <div style="text-align:left; padding-top:4px;">TOP</div>
+                            <div><input type="checkbox" id="doorTopActive"></div>
+                            <div><input type="checkbox" id="doorTopLocked"></div>
+                            <div><input type="checkbox" id="doorTopSecret"></div>
+                            <!-- Bottom -->
+                            <div style="text-align:left; padding-top:4px;">BTM</div>
+                            <div><input type="checkbox" id="doorBottomActive"></div>
+                            <div><input type="checkbox" id="doorBottomLocked"></div>
+                            <div><input type="checkbox" id="doorBottomSecret"></div>
+                            <!-- Left -->
+                            <div style="text-align:left; padding-top:4px;">LEFT</div>
+                            <div><input type="checkbox" id="doorLeftActive"></div>
+                            <div><input type="checkbox" id="doorLeftLocked"></div>
+                            <div><input type="checkbox" id="doorLeftSecret"></div>
+                            <!-- Right -->
+                            <div style="text-align:left; padding-top:4px;">RIGHT</div>
+                            <div><input type="checkbox" id="doorRightActive"></div>
+                            <div><input type="checkbox" id="doorRightLocked"></div>
+                            <div><input type="checkbox" id="doorRightSecret"></div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            <!-- Item Drops Panel -->
+            <div class="panel">
+                <details>
+                    <summary>Item Drops</summary>
+                    <div class="panel-content">
+                        <div class="config-grid"><label class="full-width"
+                                style="color:#aaa; border-bottom:1px solid #333; margin-bottom:5px;">Common</label>
+                            <div><label>Count</label><input type="number" id="dropCommonCount" value="0">
+                            </div>
+                            <div><label>Chance</label><input type="number" id="dropCommonChance" value="0" step="0.1">
+                            </div><label class="full-width"
+                                style="color:#27ae60; border-bottom:1px solid #333; margin-bottom:5px; margin-top:5px;">Uncommon</label>
+                            <div><label>Count</label><input type="number" id="dropUncommonCount" value="0">
+                            </div>
+                            <div><label>Chance</label><input type="number" id="dropUncommonChance" value="0" step="0.1">
+                            </div><label class="full-width"
+                                style="color:#3498db; border-bottom:1px solid #333; margin-bottom:5px; margin-top:5px;">Rare</label>
+                            <div><label>Count</label><input type="number" id="dropRareCount" value="0">
+                            </div>
+                            <div><label>Chance</label><input type="number" id="dropRareChance" value="0" step="0.1">
+                            </div><label class="full-width"
+                                style="color:#f1c40f; border-bottom:1px solid #333; margin-bottom:5px; margin-top:5px;">Legendary</label>
+                            <div><label>Count</label><input type="number" id="dropLegendaryCount" value="0">
+                            </div>
+                            <div><label>Chance</label><input type="number" id="dropLegendaryChance" value="0"
+                                    step="0.1"></div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            <!-- Entities Panel -->
+            <div class="panel">
+                <details open>
+                    <summary>Assets</summary>
+                    <div class="panel-content"><select id="entityTypeSelector">
+                            <option value="enemy">Enemies</option>
+                            <option value="item">Items</option>
+                        </select><input type="text" id="assetSearch" placeholder="Filter...">
+                        <div id="entity-list">
+                            <!-- Populated by JS -->
+                            <div class="entity-item" style="color: #777;">Loading assets...</div>
+                        </div>
+                        <div
+                            style="margin-top: 10px; padding: 5px; background: #111; border: 1px solid #333; border-radius: 3px;">
+                            <label style="margin:0;">Tool: <span id="currentTool"
+                                    style="color: #8e44ad; font-weight:bold;">Select
+                                    Asset</span></label>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            <!-- Selected Object Properties -->
+            <div class="panel" id="selectedObjectPanel" style="display:none; border-color: #f39c12;">
+                <details open>
+                    <summary style="color:#f39c12;">Selected Object</summary>
+                    <div class="panel-content">
+                        <div style="font-size:11px; color:#aaa; margin-bottom:5px;">Type: <span id="selObjType"
+                                style="color:#fff;">-</span></div>
+                        <div class="config-grid">
+                            <div><label>Count</label><input type="number" id="selObjCount" value="1" min="1"></div>
+                            <div><label>Move Type</label><select id="selObjMoveType">
+                                    <option value="static">Static</option>
+                                    <option value="track">Track</option>
+                                    <option value="runAway">Run Away</option>
+                                </select></div>
+                            <div class="full-width" style="text-align:left; padding-left:5px;">
+                                <label style="display:inline; cursor:pointer;"><input type="checkbox"
+                                        id="selObjRandomStart" style="width:auto;">Random Start </label>
+                            </div>
+                        </div><small style="color:#777; font-size:9px;">Coords: <span id="selObjCoords">0,
+                                0</span></small>
+                    </div>
+                </details>
+            </div>
+            <!-- Export Panel -->
+            <div class="panel">
+                <details open>
+                    <summary>IO & Data</summary>
+                    <div class="panel-content">
+                        <hr style="border: 0; border-top: 1px solid #444; margin: 10px 0;">
+                        <button class="primary" onclick="exportJSON()">Copy JSON to
+                            Clipboard</button>
+                        <div style="height:5px;"></div><button onclick="loadFromClipboard()">Load form
+                            Clipboard</button>
+                        <div style="height:5px;"></div><button onclick="testRoom()"
+                            style="background: #27ae60; font-weight: bold;">Test Room
+                            (Debug)</button><textarea id="jsonOutput" rows="3"
+                            style="width: 100%; margin-top:10px; background: #111; color: #0f0; border: 1px solid #555; font-size:10px;"
+                            readonly placeholder="Exported JSON will appear here..."></textarea>
+                    </div>
+                </details>
+            </div>
+            <div style="text-align: center; color: #555; font-size: 10px; padding: 10px;">Left
+                Click: Place | Drag: Move | Right Click: Delete<br>Shift+Click: Multi-Place
+                (Planned) </div>
+        </div>
+    </div>
+    <!-- Test Room Modal -->
+    <div id="testModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center;">
+        <div
+            style="background:#222; border:1px solid #444; padding:5px; border-radius:5px; width:95vw; height:90vh; display:flex; flex-direction:column; box-shadow: 0 0 50px rgba(0,0,0,0.8);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px; padding:0 5px;"><span
+                    style="color:#27ae60; font-weight:bold;">Test Mode</span><button onclick="closeTestModal()"
+                    style="width:auto; background:#c0392b; padding:2px 10px; font-size:12px;">CLOSE (ESC)</button>
+            </div><iframe id="testFrame" style="flex:1; border:none; background:#000;"></iframe>
+        </div>
+    </div>
+    <script src="assets/js/editor.js"></script>
+</body>
+
+</html>
