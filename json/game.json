@@ -1,6 +1,6 @@
 {
     "perfectGoal": 5,
-    "startLevel": "levels/0.json",
+    "startLevel": "json/levels/0.json",
     "music": false,
     "soundEffects": false,
     "showDebugWindow": false,

@@ -995,13 +995,31 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         // 1. Load Game Config First
         let gData = await fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 }));
 
+        // APPLY SAVED UNLOCK OVERRIDES (Moved here to affect startLevel)
+        try {
+            const saved = localStorage.getItem('game_unlocks');
+            if (saved) {
+                const overrides = JSON.parse(saved);
+                const targetKeys = ['json/game.json', 'game.json', '/json/game.json'];
+                targetKeys.forEach(k => {
+                    if (overrides[k]) {
+                        log("Applying Unlock Overrides for:", k, overrides[k]);
+                        gData = { ...gData, ...overrides[k] };
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Failed to apply saved unlocks", e);
+        }
+
         // 2. Load Level Specific Data
         // Use nextLevel if provided, else config startLevel
         const levelFile = nextLevel || gData.startLevel;
         if (levelFile) {
             try {
                 log("Loading Level:", levelFile);
-                const levelRes = await fetch(`json/${levelFile}?t=${Date.now()}`);
+                const url = levelFile.startsWith('json/') ? levelFile : `json/${levelFile}`;
+                const levelRes = await fetch(`${url}?t=${Date.now()}`);
                 if (levelRes.ok) {
                     const levelData = await levelRes.json();
                     // Merge level data into game data (Level overrides Game)
@@ -1021,23 +1039,7 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
             fetch('json/items/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ items: [] }))
         ]);
 
-        // APPLY SAVED UNLOCK OVERRIDES
-        try {
-            const saved = localStorage.getItem('game_unlocks');
-            if (saved) {
-                const overrides = JSON.parse(saved);
-                // Check for 'json/game.json' or 'game.json' or '/json/game.json'
-                const targetKeys = ['json/game.json', 'game.json', '/json/game.json'];
-                targetKeys.forEach(k => {
-                    if (overrides[k]) {
-                        log("Applying Unlock Overrides for:", k, overrides[k]);
-                        gData = { ...gData, ...overrides[k] };
-                    }
-                });
-            }
-        } catch (e) {
-            console.error("Failed to apply saved unlocks", e);
-        }
+
 
         gameData = gData;
 
@@ -1871,6 +1873,7 @@ function changeRoom(dx, dy) {
     const nextEntry = levelMap[nextCoord];
     if (nextEntry) {
         roomData = nextEntry.roomData;
+        log("Enter Room:", nextCoord, "Boss:", roomData.isBoss, "EndGame:", roomData.endGame, "Cleared:", nextEntry.cleared);
         visitedRooms[nextCoord] = nextEntry; // Add to visited for minimap
 
         roomNameEl.innerText = roomData.name || "Unknown Room";
@@ -2445,7 +2448,11 @@ async function draw() {
 
 function drawPortal() {
     // Only draw if active AND in the boss room
-    if (!portal.active || !roomData.isBoss) return;
+    // Only draw if active AND in the boss room
+    if (!portal.active || !roomData.isBoss) {
+        if (roomData.isBoss) console.log("Portal Skip - Active:", portal.active, "IsBoss:", roomData.isBoss);
+        return;
+    }
     const time = Date.now() / 500;
 
     ctx.save();
