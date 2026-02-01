@@ -171,8 +171,9 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 const SFX = {
     // A quick high-to-low "pew"
-    shoot: (vol = 0.05) => {
+    shoot: (vol = 0.2) => {
         if (gameData.soundEffects === false) return;
+        // console.log("SFX: Shoot triggered"); // Debug
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'square'; // Classic NES sound
@@ -4752,6 +4753,21 @@ async function pickupItem(item, index) {
             }
 
             gun = config;
+
+            // REFRESH AMMO STATS
+            if (gun.Bullet?.ammo?.active) {
+                player.ammoMode = gun.Bullet?.ammo?.type || 'finite';
+                player.maxMag = gun.Bullet?.ammo?.amount || 100;
+                player.reloadTime = gun.Bullet?.ammo?.resetTimer !== undefined ? gun.Bullet?.ammo?.resetTimer : (gun.Bullet?.ammo?.reload || 1000);
+
+                // Reset ammo to full on pickup? Yes, usually finding a gun gives you full ammo for it.
+                player.ammo = player.maxMag;
+                player.reloading = false;
+            } else {
+                // Infinite ammo fallback if config missing/inactive
+                player.ammoMode = 'infinite';
+                player.ammo = 999;
+            }
 
             // RE-APPLY ACTIVE MODIFIERS
             if (activeModifiers.length > 0) {
