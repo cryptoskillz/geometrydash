@@ -937,13 +937,15 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
 
     gameState = STATES.START; // Always reset to START first, let startGame() transition to PLAY
     overlayEl.style.display = 'none';
-    welcomeEl.style.display = 'none'; // Default hidden, show only after config check
+    welcomeEl.style.display = 'none'; // Default hidden, show only    // Initial UI State
     if (uiEl) {
-        if (isRestart) {
-            uiEl.style.display = (gameData && gameData.showUI !== false) ? 'block' : 'none';
-        } else {
-            uiEl.style.display = 'none'; // Hidden until start
-        }
+        // uiEl.style.display = (gameData && gameData.showUI !== false) ? 'flex' : 'none'; // OLD
+        uiEl.style.display = 'flex'; // Always keep flex container for layout
+        const statsPanel = document.getElementById('stats-panel');
+        if (statsPanel) statsPanel.style.display = (gameData && gameData.showUI !== false) ? 'block' : 'none';
+
+        const mapCanvas = document.getElementById('minimapCanvas');
+        if (mapCanvas) mapCanvas.style.display = (gameData && gameData.showMinimap !== false) ? 'block' : 'none';
     }
     bullets = [];
     bombs = [];
@@ -1545,9 +1547,13 @@ function startGame() {
             // Start Game
             gameState = STATES.PLAY;
             welcomeEl.style.display = 'none';
-            uiEl.style.display = (gameData.showUI !== false) ? 'block' : 'none';
+            if (uiEl) {
+                // Manage UI Components Independently
+                uiEl.style.display = 'flex'; // Enable container
 
-            // Show Level Title
+                const statsPanel = document.getElementById('stats-panel');
+                if (statsPanel) statsPanel.style.display = (gameData.showUI !== false) ? 'block' : 'none';
+            }     // Show Level Title
             if (gameData.name) {
                 showLevelTitle(gameData.name);
             }

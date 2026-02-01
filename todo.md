@@ -4,7 +4,9 @@ bugs
     main menu should move to enter key and be default on the pause, game over, victory
     on level tooling up if you dont pick up the peashoort or bombs you go into a pacafist run 
     use item flag unlocked on level 3
-    drop items flag on level 3 if not picked up items are never dropped
+is perfect bonus reset between runds
+why am i getting perfect bonus for running through empty rooms
+s    drop items flag on level 3 if not picked up items are never dropped
         guns items
         bombd
         inventory
@@ -26,37 +28,19 @@ level plan
 
 
 
-
-
-level 2
-the player starts in the start room with doors and the following items
-
-peashooet item
-normal bomb item 
-
-
-you can equip these if you want to you get a bonus for each of these you dont equip at the end of the level. 
-
-You go through a few rooms and shoot a few enemies
-
-eventually you enter the "boss" room but there is no boss just the portal. came compelete screen shows up
-
-boss enemies unlocked
-music & sfx unlocked
-
 level 3
 
 the unpicked up items stay in the starting room and the game begins proper at this point.
 mini map
 ui 
 
-
-level 4 is golcen path maze (it will say room name followed by dejavu)
-level 5 is harder level one
-level 6 ghost chase
-level 6 is crazy rooms
-level 7 is boss rush
-level 8 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
+level 4 standaed boss 
+level 5 is golcen path maze (it will say room name followed by dejavu)
+level 6 is harder level one
+level 7 ghost chase
+level 8 is crazy rooms
+level 9 is boss rush
+level 10 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
 
 
 
