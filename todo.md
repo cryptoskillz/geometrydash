@@ -1,9 +1,6 @@
 bugs
-
-
-    is the player cheat in game.json doing anything?
+- [x] is the player cheat in game.json doing anything? (Now implements God Mode)
     is 2way used atall whats the difference beween this and 2way and num of rooms
-    gun turret should use the x y override 
     in debug space is spqaing room
  
 next up 

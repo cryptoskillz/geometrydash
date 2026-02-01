@@ -828,7 +828,7 @@ const DOOR_THICKNESS = 15;
 // Load configurations (Async)
 let DEBUG_START_BOSS = false;
 let DEBUG_PLAYER = true;
-let CHEATS_ENABLED = false;
+let GODMODE_ENABLED = false;
 let DEBUG_WINDOW_ENABLED = false;
 let DEBUG_LOG_ENABLED = false;
 let DEBUG_SPAWN_ALL_ITEMS = false;
@@ -913,7 +913,7 @@ async function initGame(isRestart = false) {
         if (gameData.debug) {
             DEBUG_START_BOSS = gameData.debug.startBoss ?? false;
             DEBUG_PLAYER = gameData.debug.player ?? true;
-            CHEATS_ENABLED = gameData.debug.cheats ?? false;
+            GODMODE_ENABLED = gameData.debug.godmode ?? false;
             DEBUG_WINDOW_ENABLED = gameData.debug.windowEnabled ?? false;
             DEBUG_LOG_ENABLED = gameData.debug.log ?? false;
 
@@ -1395,6 +1395,16 @@ function spawnEnemies() {
                         inst.moveType = { ...(inst.moveType || {}), ...group.moveType };
                     }
 
+                    // Allow top-level spawn overrides (x, y) from room.json
+                    if (group.x !== undefined) {
+                        inst.moveType = inst.moveType || {};
+                        inst.moveType.x = group.x;
+                    }
+                    if (group.y !== undefined) {
+                        inst.moveType = inst.moveType || {};
+                        inst.moveType.y = group.y;
+                    }
+
                     // Indestructible Check
                     if (inst.hp === 0) {
                         inst.indestructible = true;
@@ -1414,7 +1424,9 @@ function spawnEnemies() {
 
                     if (mt && typeof mt === 'object') {
                         if (mt.x !== undefined && mt.y !== undefined) {
-                            if (mt.x !== 0 || mt.y !== 0) {
+                            // Rule 1: Ignore 0,0 (treat as unset/random)
+                            // Rule 2: Only 'static' enemies use fixed positioning
+                            if ((mt.x !== 0 || mt.y !== 0) && mt.type === 'static') {
                                 useFixed = true;
                                 fixedX = mt.x;
                                 fixedY = mt.y;
@@ -3505,6 +3517,12 @@ function updateGhost() {
 
 // --- DAMAGE & SHIELD LOGIC ---
 function takeDamage(amount) {
+    // 0. CHECK GODMODE
+    if (typeof GODMODE_ENABLED !== 'undefined' && GODMODE_ENABLED) {
+        log("BLOCKED DAMAGE! (God Mode Enabled)");
+        return;
+    }
+
     // 0. GLOBAL IMMUNITY CHECK (Room Freeze / I-Frames)
     // Applies to BOTH Shield and HP
     const now = Date.now();
