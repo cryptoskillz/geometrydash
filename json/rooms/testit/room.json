@@ -1,0 +1,79 @@
+{
+    "name": "New Room",
+    "description": "",
+    "keyBonus": 1,
+    "speedGoal": 0,
+    "allDoorsUnlocked": 0,
+    "width": 800,
+    "height": 600,
+    "item": {
+        "common": {
+            "count": 0,
+            "dropChance": 0
+        },
+        "uncommon": {
+            "count": 0,
+            "dropChance": 0
+        },
+        "rare": {
+            "count": 0,
+            "dropChance": 0
+        },
+        "legendary": {
+            "count": 0,
+            "dropChance": 0
+        }
+    },
+    "doors": {
+        "top": {
+            "active": 0,
+            "locked": 0,
+            "secret": false
+        },
+        "bottom": {
+            "active": 0,
+            "locked": 0,
+            "secret": false
+        },
+        "left": {
+            "active": 0,
+            "locked": 0,
+            "secret": false
+        },
+        "right": {
+            "active": 0,
+            "locked": 0,
+            "secret": false
+        }
+    },
+    "enemies": [
+        {
+            "type": "tank",
+            "count": 1,
+            "moveType": {
+                "type": "track",
+                "x": 0,
+                "y": 0
+            }
+        },
+        {
+            "type": "tank",
+            "count": 1,
+            "moveType": {
+                "type": "track",
+                "x": 0,
+                "y": 0
+            }
+        },
+        {
+            "type": "tank",
+            "count": 1,
+            "moveType": {
+                "type": "track",
+                "x": 0,
+                "y": 0
+            }
+        }
+    ],
+    "items": []
+}

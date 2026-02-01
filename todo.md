@@ -1,32 +1,15 @@
 bugs
     use local storage for game data, unlocks etc
+    if movetype has an x,y start it there
  
 next up 
-    rooms / edtior
-    items 5
-    server
+    
     levels
-
-
-enemies
-    add enemy hit and enemy death sound  from json
-    boss hit boss death  from json
-    death shake from json
-    maybe if ghost is x rooms away we just spawn him in the new room
-    add pyshics to the enemies json instead of having them hard coded in logic.js
-    add more shapes
-    transformer boss square, circle, 4 rectnagles for legs and you have to take out each limb
-        have swarm enemies that run away unless there are x of them
-    enemy move types
-        pattern
-
-
-ghost
-- [x] ghost does not always seem to kill you if it hots i think if there are other emenuies something is going wrong witht he collision
-
-if you go through multiple room and back track you will see multiple ghosts
-if you leave a room and come back the ghost should be the same place + closer to you basedo on the speed the ghost moves. 
-if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left (with ghost or blowing doors)
+    rooms
+    items 5
+    balance
+    unlocks / permance
+    server
 
 
 level plan
@@ -76,6 +59,67 @@ level 6 ghost chase
 level 6 is crazy rooms
 level 7 is boss rush
 level 8 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
+
+
+
+
+NPCs
+    shop keeper 
+
+rooms
+    number of rooms json change this to per level if used
+change the drop chane from 100% once we are finished testing
+    Boss room
+    shop
+        shows up once a round (have to add coins)
+    secrets roons
+        secret room generate at random and can be hidden behind walls etc these do not render in the golden path special things unlock them
+    special room
+        special rooms are things like shops etc they can have a max per level attr
+        special room that gets smaller the longer you are in it (squeeze room)
+    guantlet room
+        enemies with spawn
+    scroll rooms 
+        extra large rooms that you scroll through
+    large rooms 
+        rooms where you grow in size every tick until you are so big you cannot move
+    small rooms
+        rooms where you get smaller and if you dont kill all the enemies before you go to nothing you die
+    squeeze rooms
+        rooms that get smaller the longer you are in them
+    rotate roons
+        roons that rotate as you in them
+    backwards
+        rooms that revers the controls
+
+editor
+    add a enemy editor
+    add a player editor
+    add an item editor
+    add an object editor
+
+enemies
+    add enemy hit and enemy death sound  from json
+    boss hit boss death  from json
+    death shake from json
+    maybe if ghost is x rooms away we just spawn him in the new room
+    add pyshics to the enemies json instead of having them hard coded in logic.js
+    add more shapes
+    transformer boss square, circle, 4 rectnagles for legs and you have to take out each limb
+        have swarm enemies that run away unless there are x of them
+    enemy move types
+        pattern
+
+
+
+
+
+ghost
+- [x] ghost does not always seem to kill you if it hots i think if there are other emenuies something is going wrong witht he collision
+
+if you go through multiple room and back track you will see multiple ghosts
+if you leave a room and come back the ghost should be the same place + closer to you basedo on the speed the ghost moves. 
+if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left (with ghost or blowing doors)
 
 
 
@@ -236,29 +280,7 @@ debug window
 
 
 
-rooms
-    number of rooms json change this to per level if used
-change the drop chane from 100% once we are finished testing
-    Boss room
-    secrets roons
-        secret room generate at random and can be hidden behind walls etc these do not render in the golden path special things unlock them
-    special room
-        special rooms are things like shops etc they can have a max per level attr
-        special room that gets smaller the longer you are in it (squeeze room)
-    guantlet room
-        enemies with spawn
-    scroll rooms 
-        extra large rooms that you scroll through
-    large rooms 
-        rooms where you grow in size every tick until you are so big you cannot move
-    small rooms
-        rooms where you get smaller and if you dont kill all the enemies before you go to nothing you die
-    squeeze rooms
-        rooms that get smaller the longer you are in them
-    rotate roons
-        roons that rotate as you in them
-    backwards
-        rooms that revers the controls
+
 
 
 

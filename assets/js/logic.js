@@ -1145,7 +1145,30 @@ async function initGame(isRestart = false) {
             bossIntroEndTime = Date.now() + 2000;
             levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(roomTemplates["boss"])), cleared: false };
         } else {
-            generateLevel(gameData.NoRooms || 11);
+            // --- DEBUG ROOM LOADER ---
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('debugRoom') === 'true') {
+                const debugData = localStorage.getItem('debugRoomData');
+                if (debugData) {
+                    try {
+                        const parsed = JSON.parse(debugData);
+                        console.log("Loading Test Room:", parsed);
+                        // Override 'start' template
+                        roomTemplates["start"] = parsed;
+                        // Ensure roomTemplates['boss'] exists to prevent crash if not loaded yet?
+                        // Actually loadAssets() happens before initGame(), so templates should exist.
+                        // We just override "start" AFTER loadAssets() but BEFORE generateLevel().
+
+                        // WAIT! roomTemplates are loaded in loadAssets(). 
+                        // We need to inject this logic AFTER `loadAssets` completes but BEFORE game starts.
+                        // `initGame` calls `loadAssets`, awaits it, then does setup.
+                        // We should inject this logic inside `initGame` after `loadAssets`.
+                    } catch (e) {
+                        console.error("Failed to parse Debug Room Data", e);
+                    }
+                }
+            }
+            generateLevel(gameData.levelLength || 11);
         }
 
         const startEntry = levelMap["0,0"];

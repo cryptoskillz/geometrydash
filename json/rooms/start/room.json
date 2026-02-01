@@ -1,5 +1,7 @@
 {
     "name": "The Beginning",
+    "description": "",
+    "keyBonus": 1.0,
     "speedGoal": 0,
     "item": {
         "common": {
