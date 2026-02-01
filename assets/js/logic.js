@@ -2700,9 +2700,24 @@ function spawnRoomRewards(dropConfig, label = null) {
                     if (res.ok) {
                         const itemData = await res.json();
                         // Spawn Logic
+                        let dropX = (canvas.width / 2) + (Math.random() - 0.5) * 50;
+                        let dropY = (canvas.height / 2) + (Math.random() - 0.5) * 50;
+
+                        // Avoid Portal (if active & same room)
+                        // Note: Portal usually spawns at center or specific spot.
+                        if (portal.active && roomData.isBoss) {
+                            const dist = Math.hypot(dropX - portal.x, dropY - portal.y);
+                            if (dist < 80) {
+                                // Push away
+                                const angle = Math.atan2(dropY - portal.y, dropX - portal.x);
+                                dropX = portal.x + Math.cos(angle) * 100;
+                                dropY = portal.y + Math.sin(angle) * 100;
+                            }
+                        }
+
                         groundItems.push({
-                            x: (canvas.width / 2) + (Math.random() - 0.5) * 50,
-                            y: (canvas.height / 2) + (Math.random() - 0.5) * 50,
+                            x: dropX,
+                            y: dropY,
                             data: itemData,
                             roomX: player.roomX, roomY: player.roomY,
                             vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
@@ -2746,7 +2761,14 @@ function spawnRoomRewards(dropConfig, label = null) {
                 return Math.hypot(dx, dy) < minDist;
             });
 
-            if (!overlap) {
+            // Check collision with Portal (if active)
+            let portalOverlap = false;
+            if (portal.active && roomData.isBoss) {
+                const pDist = Math.hypot(dropX - portal.x, dropY - portal.y);
+                if (pDist < 80) portalOverlap = true;
+            }
+
+            if (!overlap && !portalOverlap) {
                 valid = true;
                 break;
             }
