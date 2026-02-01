@@ -1005,7 +1005,7 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
                 targetKeys.forEach(k => {
                     if (overrides[k]) {
                         log("Applying Unlock Overrides for:", k, overrides[k]);
-                        gData = { ...gData, ...overrides[k] };
+                        gData = deepMerge(gData, overrides[k]);
                     }
                 });
             }
@@ -1201,19 +1201,15 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
             player.bombType = savedPlayerStats.bombType;
             player.speed = savedPlayerStats.speed;
             player.speed = savedPlayerStats.speed;
-            log("Restored Player Stats - Gun:", player.gunType);
         }
 
         // Apply Game Config Overrides
-        log("Checking Overrides - gameData.gunType:", gameData.gunType, "gameData.bombType:", gameData.bombType);
 
         if (gameData.gunType) {
             log("Applying gameData override for gunType:", gameData.gunType);
             player.gunType = gameData.gunType;
         }
         if (gameData.bombType) player.bombType = gameData.bombType;
-
-        log("Final Player Config - Gun:", player.gunType, "Bomb:", player.bombType);
 
         // Load player specific assets
         let fetchedGun = null;
@@ -1222,7 +1218,6 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         try {
             if (player.gunType) {
                 const gunUrl = `/json/weapons/guns/player/${player.gunType}.json?t=` + Date.now();
-                log("Fetching Gun from:", gunUrl);
                 const gRes = await fetch(gunUrl);
                 if (gRes.ok) fetchedGun = await gRes.json();
                 else console.error("Gun fetch failed:", gRes.status, gRes.statusText);
@@ -2884,10 +2879,6 @@ function drawPlayer() {
     // 4. --- PLAYER ---
 
     // Gun Rendering (Barrels)
-    if (Math.random() < 0.01) {
-        log("Render Debug - Gun:", gun?.name, "NoBullets:", gun?.Bullet?.NoBullets, "Ammo:", player.ammo);
-    }
-
     if (gun && gun.Bullet && !gun.Bullet.NoBullets) {
         // Helper to draw a single barrel at a given angle
         const drawBarrel = (angle, color = "#555") => {
@@ -5213,12 +5204,50 @@ function saveUnlockOverride(file, attr, value) {
     try {
         const store = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
         if (!store[file]) store[file] = {};
-        store[file][attr] = value;
+
+        // Handle dot notation for nested attributes (e.g., "ghost.spawn")
+        const parts = attr.split('.');
+        let current = store[file];
+
+        for (let i = 0; i < parts.length - 1; i++) {
+            const part = parts[i];
+            if (!current[part] || typeof current[part] !== 'object') {
+                current[part] = {};
+            }
+            current = current[part];
+        }
+
+        current[parts[parts.length - 1]] = value;
+
         localStorage.setItem('game_unlocks', JSON.stringify(store));
         log(`Saved Unlock Override: ${file} -> ${attr} = ${value}`);
     } catch (e) {
         console.error("Failed to save unlock persistence", e);
     }
+}
+
+// Utility for Deep Merging (Prevents overwriting sibling properties)
+function deepMerge(target, source) {
+    const isObject = (obj) => obj && typeof obj === 'object';
+
+    if (!isObject(target) || !isObject(source)) {
+        return source;
+    }
+
+    Object.keys(source).forEach(key => {
+        const targetValue = target[key];
+        const sourceValue = source[key];
+
+        if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+            target[key] = sourceValue; // Arrays: Replace (simplest for config)
+        } else if (isObject(targetValue) && isObject(sourceValue)) {
+            target[key] = deepMerge(Object.assign({}, targetValue), sourceValue);
+        } else {
+            target[key] = sourceValue;
+        }
+    });
+
+    return target;
 }
 
 function showLevelTitle(title) {

@@ -2,7 +2,7 @@
     "name": "Enemies",
     "description": "Unlocks enemies",
     "unlock": "enemies",
-    "json": "",
-    "attr": "",
-    "value": ""
+    "json": "game.json",
+    "attr": "ghost.spawn",
+    "value": true
 }

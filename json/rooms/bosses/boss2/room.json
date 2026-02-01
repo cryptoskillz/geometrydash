@@ -57,7 +57,7 @@
     "width": 800,
     "height": 600,
     "unlocks": [
-        "enemies",
+        "minimap",
         "startlevel3"
     ],
     "nextLevel": "",
