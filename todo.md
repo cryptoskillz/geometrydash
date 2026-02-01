@@ -1,9 +1,9 @@
 bugs
 
-    when you restart with a ghost the ghost is still there
-    enemies cant get you in the corner
-    bullet remain on trestart
-    ghost does not always seem to kill you if it hots i think if there are other emenuies something is going wrong witht he collision
+- [x] when you restart with a ghost the ghost is still there
+- [x] enemies cant get you in the corner
+- [x] bullet remain on trestart
+- [x] ghost does not always seem to kill you if it hots i think if there are other emenuies something is going wrong witht he collision
     if a static / invul enemy is in the room when you leave it sghould still be there when you come back
        check each enemy in span enemy
     is the player cheat in game.json doing anything?

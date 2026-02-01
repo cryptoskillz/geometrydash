@@ -873,6 +873,7 @@ async function initGame(isRestart = false) {
     bullets = [];
     bombs = [];
     particles = [];
+    enemies = [];
     if (typeof portal !== 'undefined') portal.active = false;
 
     // ... [Previous debug and player reset logic remains the same] ...
