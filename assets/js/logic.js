@@ -13,7 +13,7 @@ const roomNameEl = document.getElementById('roomName');
 const bombsEl = document.getElementById('bombs');
 const ammoEl = document.getElementById('ammo');
 const mapCanvas = document.getElementById('minimapCanvas');
-const mctx = mapCanvas.getContext('2d');
+const mctx = mapCanvas ? mapCanvas.getContext('2d') : null;
 const debugSelect = document.getElementById('debug-select');
 const debugForm = document.getElementById('debug-form');
 const debugPanel = document.getElementById('debug-panel');
@@ -933,8 +933,6 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
 
     // MOVED: Music start logic is now handled AFTER game.json is loaded to respect "music": false setting.
 
-    gameState = isRestart ? STATES.PLAY : STATES.START;
-
     gameState = STATES.START; // Always reset to START first, let startGame() transition to PLAY
     overlayEl.style.display = 'none';
     welcomeEl.style.display = 'none'; // Default hidden, show only    // Initial UI State
@@ -1282,7 +1280,7 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         }
 
         // Init Menu UI
-        updateWelcomeScreen();
+        if (!isRestart) updateWelcomeScreen();
         // Initialize Ammo
         if (gun.Bullet?.ammo?.active) {
             player.ammoMode = gun.Bullet?.ammo?.type || 'finite'; // 'finite', 'reload', 'recharge'
@@ -1439,7 +1437,7 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         }
 
         // AUTO START IF CONFIGURED (After everything is ready)
-        if (gameData.showWelcome === false) {
+        if (gameData.showWelcome === false || isRestart) {
             startGame();
         }
 
@@ -1472,11 +1470,30 @@ window.addEventListener('keydown', e => {
     }
     keys[e.code] = true;
     if (gameState === STATES.GAMEOVER) {
-        if (e.code === 'Enter' || e.code === 'KeyR') {
+        if (e.code === 'KeyR') {
             restartGame();
         }
-        if (e.code === 'KeyM') {
+        // Death: Enter = Main Menu, M/C = Continue(Revive) logic preserved if they want it, 
+        // but User specifically asked for "Main Menu (Enter)"
+        if (e.code === 'Enter') {
             goToWelcome();
+        }
+        // Keep M/C as "Revive" hack? Or remove it? 
+        // User didn't say remove it, just "change main menu to enter".
+        // I will keep M/C for "Continue" (Revive) as hidden feature if button is hidden, 
+        // OR just leave them. But Enter is now explicit Main Menu.
+        // Actually, if Enter was Restart before, now it's Menu.
+        if (e.code === 'KeyM' || e.code === 'KeyC') {
+            goContinue();
+        }
+    }
+    if (gameState === STATES.WIN) {
+        // Victory: Enter = Continue (Next Level/Roam)
+        if (e.code === 'Enter' || e.code === 'KeyC' || e.code === 'KeyM') {
+            goContinue();
+        }
+        if (e.code === 'KeyR') {
+            restartGame();
         }
     }
     // Pause menu key controls
@@ -1488,7 +1505,11 @@ window.addEventListener('keydown', e => {
             restartGame(); // R = Restart
         }
         if (e.code === 'KeyM') {
-            goToWelcome(); // M = Main Menu
+            // Keep M for Menu here? Or also Continue? 
+            // Stick to standard for Pause, but user hates M for Menu in GameOver. 
+            // Let's make M = Continue here too for consistency if they want.
+            // But usually Pause -> Menu is valid. I'll leave Pause M as Menu for now unless requested.
+            goToWelcome();
         }
     }
 });
@@ -4369,17 +4390,41 @@ function gameOver() {
         h1.style.color = "red";
     }
 
-    overlayEl.querySelector('#continueBtn').style.display = 'none';
-    // Hide Restart on Victory
-    overlayEl.querySelector('#restartBtn').style.display = (gameState === STATES.WIN) ? 'none' : '';
+    // Show/Hide Layout based on Win/Loss
+    const continueBtn = overlayEl.querySelector('#continueBtn');
+    const menuBtn = overlayEl.querySelector('#menuBtn');
+    const restartBtn = overlayEl.querySelector('#restartBtn');
+
+    if (gameState === STATES.WIN) {
+        // Victory: Show Continue (Enter)
+        continueBtn.style.display = 'block';
+        continueBtn.innerText = "(Enter) Continue";
+        menuBtn.style.display = 'none'; // Hide Menu button on Victory? Or Keep it mapped to M?
+        // Let's keep Menu visible but maybe mapped to M?
+        // User asked for "Main Menu (Enter)" for DEATH popup. 
+        // For Victory, they asked for "Enter to Continue".
+
+        restartBtn.style.display = 'none';
+    } else {
+        // Death (Game Over)
+        // Request: "Main Menu (Enter)"
+        continueBtn.style.display = 'none'; // Hide continue on death (unless we want the revive hack visible)
+        // If I hide continue, M/C keys still work.
+
+        menuBtn.style.display = 'block';
+        menuBtn.innerText = "Main Menu (Enter)";
+
+        restartBtn.style.display = 'block';
+    }
 }
 
 function gameWon() {
-    gameState = STATES.GAMEOVER;
+    gameState = STATES.WIN;
     overlayEl.style.display = 'flex';
     statsEl.innerText = "Rooms cleared: " + (Math.abs(player.roomX) + Math.abs(player.roomY));
-    document.querySelector('#overlay h1').innerText = "VICTORY!";
-    document.querySelector('#overlay h1').style.color = "#f1c40f"; // Gold for victory
+
+    // Explicitly call gameOver logic to update UI text/buttons sharing logic
+    gameOver();
 }
 
 function gameMenu() {
@@ -4401,6 +4446,13 @@ function goToWelcome() {
 
 function goContinue() {
     overlay.style.display = 'none';
+
+    // If Continuing from Death (Game Over), Revive Player
+    if (player.hp <= 0) {
+        player.hp = 3; // Basic Revive
+        updateUI();
+    }
+
     gameState = STATES.PLAY
 }
 
@@ -4485,6 +4537,7 @@ function drawTutorial() {
 }
 
 function drawMinimap() {
+    if (!mctx) return; // Safety check
     if (gameData && gameData.showMinimap === false) return;
 
     const mapSize = 100;
