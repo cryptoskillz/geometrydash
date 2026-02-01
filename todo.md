@@ -1,11 +1,8 @@
 bugs
-
-    in debug space is spqaing room
+    use local storage for game data, unlocks etc
  
 next up 
-    enemies
-    debug
-    rooms
+    rooms / edtior
     items 5
     server
     levels
