@@ -1,4 +1,6 @@
 bugs
+RESET DOES NTO REST THE GUN
+ghpsot does nto restart on death
     if movetype has an x,y start it there
     restsrt game should slip welcome screen
     main menu should move to enter key and be default on the pause, game over, victory
@@ -16,7 +18,11 @@ s    drop items flag on level 3 if not picked up items are never dropped
      
 
 next up 
-    unlocks & levels
+
+    uo updates
+        inventory
+        stats
+        player with modifiers
     rooms
     items 5
     balance

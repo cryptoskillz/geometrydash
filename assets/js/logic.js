@@ -1498,8 +1498,8 @@ window.addEventListener('keydown', e => {
     }
     // Pause menu key controls
     if (gameState === STATES.GAMEMENU) {
-        if (e.code === 'KeyP' || e.code === 'KeyC') {
-            goContinue();  // P or C = Continue
+        if (e.code === 'KeyP' || e.code === 'KeyC' || e.code === 'Enter') {
+            goContinue();  // P, C, or Enter = Continue
         }
         if (e.code === 'KeyR') {
             restartGame(); // R = Restart
