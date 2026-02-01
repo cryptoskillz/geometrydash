@@ -1,5 +1,7 @@
 {
     "name": "Room 8",
+    "description": "",
+    "keyBonus": 1.0,
     "speedGoal": 10000,
     "item": {
         "common": {
