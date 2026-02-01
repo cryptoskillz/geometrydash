@@ -761,34 +761,82 @@ function generateLevel(length) {
 
     // 3. Initialize levelMap with room data
     levelMap = {};
+
+    // Helper to find specific types
+    const findStartTemplate = () => {
+        // 0. Explicit loaded start room (tagged with _type = 'start')
+        const explicitStart = Object.keys(roomTemplates).find(k => roomTemplates[k]._type === 'start');
+        if (explicitStart) return roomTemplates[explicitStart];
+
+        // 1. Try explicit "start" (legacy or named)
+        if (roomTemplates["start"]) return roomTemplates["start"];
+        if (roomTemplates["rooms/start/room.json"]) return roomTemplates["rooms/start/room.json"];
+        if (roomTemplates["rooms/start.json"]) return roomTemplates["rooms/start.json"];
+
+        // 2. Try to find any room with "start" in name/ID
+        const startKey = Object.keys(roomTemplates).find(k => k.toLowerCase().includes('start'));
+        if (startKey) return roomTemplates[startKey];
+
+        // 3. Fallback: Take the first "normal" room available
+        // We filter out "boss" tagged ones to be safe, though loose matching is fine for V1
+        const keys = Object.keys(roomTemplates).filter(k =>
+            !roomTemplates[k]._type || roomTemplates[k]._type !== 'boss'
+        );
+        if (keys.length > 0) return roomTemplates[keys[0]];
+
+        return null; // Fatal
+    };
+
+    const findBossTemplate = () => {
+        // 1. Try explicit "boss" (legacy)
+        if (roomTemplates["boss"]) return roomTemplates["boss"];
+
+        // 2. Try any room tagged as boss (from bossrooms list)
+        const bossKey = Object.keys(roomTemplates).find(k => roomTemplates[k]._type === 'boss');
+        if (bossKey) return roomTemplates[bossKey];
+
+        // 3. Fallback
+        const keys = Object.keys(roomTemplates);
+        return roomTemplates[keys[keys.length - 1]];
+    };
+
+    const startTmpl = findStartTemplate();
+    const bossTmpl = findBossTemplate();
+
     fullMapCoords.forEach(coord => {
         let template;
         if (coord === "0,0") {
-            template = roomTemplates["start"];
+            template = startTmpl;
         } else if (coord === bossCoord) {
-            template = roomTemplates["boss"];
+            template = bossTmpl;
         } else {
-            const keys = Object.keys(roomTemplates).filter(k => k !== "start" && k !== "boss");
+            // Random Normal Room
+            // Filter keys to exclude start/boss specifics if possible, or just pick random normal
+            const keys = Object.keys(roomTemplates).filter(k =>
+                roomTemplates[k] !== startTmpl && roomTemplates[k] !== bossTmpl &&
+                (!roomTemplates[k]._type || roomTemplates[k]._type !== 'boss')
+            );
+
             if (keys.length > 0) {
                 const randomKey = keys[Math.floor(Math.random() * keys.length)];
                 template = roomTemplates[randomKey];
             } else {
-                template = roomTemplates["start"];
+                template = startTmpl; // Last resort
             }
         }
 
         // Check if template exists
         if (!template) {
-            console.error(`Missing template for coord: ${coord}. Start: ${!!roomTemplates["start"]}, Boss: ${!!roomTemplates["boss"]}, BossCoord: ${bossCoord}`);
-            template = roomTemplates["start"]; // Emergency fallback
-            if (!template) return; // Critical failure logic handled by try/catch bubbling
+            console.error(`Missing template for coord: ${coord}.`);
+            template = startTmpl || { width: 800, height: 600, name: "Empty Error Room", doors: {} };
         }
 
         // Deep copy template
         const roomInstance = JSON.parse(JSON.stringify(template));
         levelMap[coord] = {
             roomData: roomInstance,
-            cleared: coord === "0,0" // Start room is pre-cleared
+            // Start room is pre-cleared ONLY if it's NOT a boss room
+            cleared: (coord === "0,0") && !roomInstance.isBoss
         };
     });
 
@@ -902,10 +950,29 @@ async function initGame(isRestart = false) {
     levelMap = {};
 
     try {
-        // 1. Load basic configs
-        const [manData, gData, mData, itemMan] = await Promise.all([
+        // 1. Load Game Config First
+        let gData = await fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 }));
+
+        // 2. Load Level Specific Data
+        if (gData.startLevel) {
+            try {
+                log("Loading Level:", gData.startLevel);
+                const levelRes = await fetch(`json/${gData.startLevel}?t=${Date.now()}`);
+                if (levelRes.ok) {
+                    const levelData = await levelRes.json();
+                    // Merge level data into game data (Level overrides Game)
+                    gData = { ...gData, ...levelData };
+                } else {
+                    console.error("Failed to load level file:", gData.startLevel);
+                }
+            } catch (err) {
+                console.error("Error parsing level file:", err);
+            }
+        }
+
+        // 3. Load Manifests in Parallel
+        const [manData, mData, itemMan] = await Promise.all([
             fetch('/json/players/manifest.json?t=' + Date.now()).then(res => res.json()),
-            fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 })),
             fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] })),
             fetch('json/items/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ items: [] }))
         ]);
@@ -1116,17 +1183,76 @@ async function initGame(isRestart = false) {
             }
         }
 
-        // 3. Pre-load ALL room templates
+
+
+        // 4. Load Room Templates (Dynamic from Level Data)
         roomTemplates = {};
-        const templatePromises = [];
-        templatePromises.push(fetch('/json/rooms/start/room.json?t=' + Date.now()).then(res => res.json()).then(data => { data.templateId = "start"; roomTemplates["start"] = data; }));
-        templatePromises.push(fetch('/json/rooms/boss1/room.json?t=' + Date.now()).then(res => res.json()).then(data => { data.templateId = "boss"; roomTemplates["boss"] = data; }));
+        const roomProtos = [];
 
-        roomManifest.rooms.forEach(id => {
-            templatePromises.push(fetch(`/json/rooms/${id}/room.json?t=` + Date.now()).then(res => res.json()).then(data => { data.templateId = id; roomTemplates[id] = data; }));
-        });
+        // Helper to load a room file
+        const loadRoomFile = (path, type) => {
+            if (!path || path.trim() === "") return Promise.resolve();
+            // Handle relative paths from JSON (e.g. "rooms/start.json")
+            // Ensure we don't double stack "json/" if valid path provided
+            const url = path.startsWith('http') || path.startsWith('/') || path.startsWith('json/') ? path : `json/${path}`;
+            return fetch(url + '?t=' + Date.now())
+                .then(res => {
+                    if (!res.ok) throw new Error("404");
+                    return res.json();
+                })
+                .then(data => {
+                    // ID is filename without extension or just the path for uniqueness
+                    const parts = path.split('/');
+                    const id = parts[parts.length - 1].replace('.json', '');
+                    data.templateId = id;
+                    // Tag it
+                    if (type) data._type = type;
+                    // Special case: if name is "Start Room", force ID to "start" for logic compatibility?
+                    // actually, better to handle that in generation.
+                    // Store
+                    roomTemplates[id] = data;
+                    // Also store by full path just in case
+                    roomTemplates[path] = data;
+                })
+                .catch(err => console.error(`Failed to load room: ${path}`, err));
+        };
 
-        await Promise.all(templatePromises);
+        // A. Standard Rooms
+        let available = gameData.avalibleroons || gameData.availablerooms || [];
+        available = available.filter(p => p && p.trim() !== "");
+        // If empty, fallback to manifest?
+        // ONE CHECK: Only fallback if we DON'T have a startRoom/bossRoom config
+        // meaning we are truly in a "default game" state, not a specific level file state.
+        if (available.length === 0 && !gameData.startRoom && !gameData.bossRoom) {
+            // FALLBACK: Load from old manifest
+            try {
+                const m = await fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json());
+                if (m.rooms) {
+                    m.rooms.forEach(r => roomProtos.push(loadRoomFile(`rooms/${r}/room.json`, 'normal')));
+                    // Also try to load start/boss legacy
+                    roomProtos.push(loadRoomFile('rooms/start/room.json', 'start'));
+                    roomProtos.push(loadRoomFile('rooms/boss1/room.json', 'boss'));
+                }
+            } catch (e) { console.warn("No legacy manifest found"); }
+        } else {
+            available.forEach(path => roomProtos.push(loadRoomFile(path, 'normal')));
+        }
+
+        // C. Explicit Start Room
+        if (gameData.startRoom) {
+            roomProtos.push(loadRoomFile(gameData.startRoom, 'start'));
+        }
+
+        // B. Boss Rooms
+        let bosses = gameData.bossrooms || [];
+        // Support singular 'bossRoom' fallback
+        if (gameData.bossRoom && gameData.bossRoom.trim() !== "") {
+            bosses.push(gameData.bossRoom);
+        }
+        bosses = bosses.filter(p => p && p.trim() !== "");
+        bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
+
+        await Promise.all(roomProtos);
 
         // 4. Pre-load ALL enemy templates
         enemyTemplates = {};
@@ -1168,7 +1294,7 @@ async function initGame(isRestart = false) {
                     }
                 }
             }
-            generateLevel(gameData.levelLength || 11);
+            generateLevel(gameData.NoRooms !== undefined ? gameData.NoRooms : 11);
         }
 
         const startEntry = levelMap["0,0"];
@@ -4202,18 +4328,39 @@ function drawDebugLogs() {
 function drawBossIntro() {
     const now = Date.now();
     if (now < bossIntroEndTime) {
+        // User Request: If bossRoom is explicitly empty, skip intro
+        if (!gameData.bossRoom) return;
+
         ctx.save();
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Find boss name
-        let bossName = "BOSS";
-        let bossDesc = "Prepare yourself!";
+        let bossName = "";
+        let bossDesc = "";
 
-        // Try to find from templates or current enemies
-        if (enemyTemplates["boss"]) {
-            bossName = enemyTemplates["boss"].name || bossName;
-            bossDesc = enemyTemplates["boss"].description || bossDesc;
+        // 1. Priority: Room Name (if specific)
+        if (roomData && roomData.name && !roomData.name.includes("Boss Room")) {
+            bossName = roomData.name;
+            bossDesc = roomData.description || bossDesc;
+        }
+        // 2. Priority: Actual Spawned Boss
+        else {
+            const activeBoss = enemies.find(e => e.type === 'boss' || e.isBoss || e.special);
+            if (activeBoss) {
+                bossName = activeBoss.name || bossName;
+                bossDesc = activeBoss.description || bossDesc;
+            }
+        }
+
+        // IF NO BOSS NAME FOUND, SKIP THE INTRO
+        if (!bossName) {
+            ctx.restore();
+            // Optional: cancel the timer immediately so it doesn't keep checking?
+            // bossIntroEndTime = 0; 
+            // But 'now < bossIntroEndTime' controls the loop, so returning here just draws nothing for this frame.
+            // Better to just return.
+            return;
         }
 
         ctx.textAlign = "center";

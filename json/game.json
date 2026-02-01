@@ -1,7 +1,7 @@
 {
     "perfectGoal": 5,
-    "NoRooms": 11,
-    "music": true,
+    "startLevel": "levels/0.json",
+    "music": false,
     "soundEffects": true,
     "showMinimap": true,
     "showDebugWindow": false,
