@@ -2347,8 +2347,8 @@ function update() {
     // updateMusicToggle(); // Moved up
     updateRemoteDetonation(); // Remote Bombs - Check BEFORE Use consumes space
     updateBombInteraction(); // Kick/Interact with Bombs
-    if (keys["Space"]) updateUse();
-    if (keys["KeyP"]) {
+    if (keys["Space"] && gameData.items !== false) updateUse();
+    if (keys["KeyP"] && gameData.pause !== false) {
         keys["KeyP"] = false; // Prevent repeated triggers
         gameMenu();
         return;
@@ -4345,10 +4345,9 @@ function drawTutorial() {
         let mx = canvas.width / 6;
         let my = canvas.height - 80;
 
-        const actions = [
-            { label: "ITEM", key: "⎵" },
-            { label: "PAUSE", key: "P" }
-        ];
+        const actions = [];
+        if (gameData.items !== false) actions.push({ label: "ITEM", key: "⎵" });
+        if (gameData.pause !== false) actions.push({ label: "PAUSE", key: "P" });
 
         if (player.bombType) {
             actions.push({ label: "BOMB", key: "B" });

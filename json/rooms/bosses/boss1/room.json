@@ -1,6 +1,6 @@
 {
-    "name": "NOTHING HERE ",
-    "description": "You should not be here",
+    "name": "Boss Room 1",
+    "description": "",
     "keyBonus": 1.0,
     "speedGoal": 0,
     "item": {
@@ -18,7 +18,7 @@
         },
         "legendary": {
             "count": 1,
-            "dropChance": 0
+            "dropChance": 0.5
         }
     },
     "isBoss": true,
@@ -48,11 +48,9 @@
     "width": 800,
     "height": 600,
     "unlocks": [
-        "text",
-        "victory",
-        "welcome",
-        "rooms",
-        "startlevel1"
+        "music",
+        "soundEffects",
+        "startlevel2"
     ],
     "nextLevel": "",
     "endGame": true

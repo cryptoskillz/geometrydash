@@ -1,0 +1,8 @@
+{
+    "name": "Sound Effects",
+    "description": "Unlocks sound effects",
+    "unlock": "soundEffects",
+    "json": "game.json",
+    "attr": "soundEffects",
+    "value": "true"
+}

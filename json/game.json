@@ -8,7 +8,7 @@
     "showDebugWindow": false,
     "showDebugLog": false,
     "showMinimap": false,
-    "showUI": true,
+    "showUI": false,
     "showWelcome": false,
     "showCharacterSelect": false,
     "showStats": false,
