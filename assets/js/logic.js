@@ -3742,15 +3742,32 @@ function updateEnemies() {
                 if (en.y > canvas.height - BOUNDARY - WALL_DETECT_DIST) dirY -= WALL_PUSH_WEIGHT * ((en.y - (canvas.height - BOUNDARY - WALL_DETECT_DIST)) / WALL_DETECT_DIST);
 
                 // 3. Separation
-                const SEP_WEIGHT = 2.5;
+                const SEP_WEIGHT = 6.0; // Increased for stronger push
                 enemies.forEach((other, oi) => {
                     if (ei === oi || other.isDead) return;
                     const odx = en.x - other.x; const ody = en.y - other.y;
                     const odist = Math.hypot(odx, ody);
-                    const checkDist = (en.size + other.size) * 0.8 + 20;
+                    const checkDist = (en.size + other.size); // Full size check
                     if (odist < checkDist) {
-                        if (odist === 0) { dirX += (Math.random() - 0.5) * 5; dirY += (Math.random() - 0.5) * 5; }
-                        else { const push = (checkDist - odist) / checkDist; dirX += (odx / odist) * push * SEP_WEIGHT; dirY += (ody / odist) * push * SEP_WEIGHT; }
+                        const overlap = checkDist - odist;
+                        if (odist === 0) {
+                            // Random spread if exact overlap
+                            const rx = (Math.random() - 0.5) * 2;
+                            const ry = (Math.random() - 0.5) * 2;
+                            dirX += rx * 10; dirY += ry * 10;
+                            en.x += rx; en.y += ry; // Hard nudge
+                        } else {
+                            const push = (checkDist - odist) / checkDist;
+                            // Cubic push for steering velocity
+                            const strongPush = push * push * push;
+                            dirX += (odx / odist) * strongPush * SEP_WEIGHT * 5;
+                            dirY += (ody / odist) * strongPush * SEP_WEIGHT * 5;
+
+                            // HARD MOVEMENT RESOLVE (Fix stuck enemies)
+                            const resolveFactor = 0.1;
+                            en.x += (odx / odist) * overlap * resolveFactor;
+                            en.y += (ody / odist) * overlap * resolveFactor;
+                        }
                     }
                 });
 
