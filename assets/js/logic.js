@@ -4927,16 +4927,20 @@ async function pickupItem(item, index) {
             log(`Equipped Gun: ${config.name}`);
             spawnFloatingText(player.x, player.y - 30, config.name.toUpperCase(), config.colour || "gold");
 
-            // PERSIST LOADOUT
+            // PERSIST UNLOCKS ONLY (Peashooter)
             try {
                 const saved = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
                 // Normalize key to match initGame loader
                 const key = 'json/game.json';
                 if (!saved[key]) saved[key] = {};
-                saved[key].gunType = player.gunType;
-                localStorage.setItem('game_unlocks', JSON.stringify(saved));
-                // log("Saved Gun Preference:", player.gunType);
-            } catch (e) { console.error("Failed to save loadout:", e); }
+
+                // Robust Check: If the file loaded was peashooter.json, unlock it.
+                if (location.endsWith('peashooter.json')) {
+                    saved[key].unlocked_peashooter = true;
+                    log("Unlocked Peashooter permanently (Location verified)");
+                    localStorage.setItem('game_unlocks', JSON.stringify(saved));
+                }
+            } catch (e) { console.error("Failed to save unlock:", e); }
         }
         else if (type === 'bomb') {
             // Drop Helper
@@ -4989,10 +4993,10 @@ async function pickupItem(item, index) {
                 const key = 'json/game.json';
                 if (!saved[key]) saved[key] = {};
 
-                // Only mark Normal Bomb as "Unlocked"
-                if (player.bombType === 'normal') {
+                // Robust Check: If the file loaded was normal.json, unlock it.
+                if (location.endsWith('normal.json')) {
                     saved[key].unlocked_bomb_normal = true;
-                    log("Unlocked Normal Bomb permanently");
+                    log("Unlocked Normal Bomb permanently (Location verified)");
                     localStorage.setItem('game_unlocks', JSON.stringify(saved));
                 }
             } catch (e) { console.error("Failed to save unlock:", e); }
