@@ -1404,32 +1404,7 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         bosses = bosses.filter(p => p && p.trim() !== "");
         bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
 
-        // D. Special: Editor Test Room
-        const urlParams = new URLSearchParams(window.location.search);
-        const isDebugRoom = urlParams.get('debugRoom') === 'true';
 
-        if (isDebugRoom) {
-            try {
-                const debugJson = localStorage.getItem('debugRoomData');
-                if (debugJson) {
-                    const debugData = JSON.parse(debugJson);
-                    debugData.templateId = 'debug_test';
-                    // Force this as the ONLY room
-                    roomProtos.length = 0; // Clear others
-                    roomProtos.push(Promise.resolve(debugData));
-                    log("Loaded EDITOR TEST ROOM from LocalStorage");
-
-                    // Override Game Config for testing
-                    gameData.startRoom = null;
-                    gData.startRoom = null;
-                    gData.bossrooms = [];
-                    // Also ensure we don't try to generate a huge map
-                    gData.NoRooms = 1;
-                }
-            } catch (e) {
-                console.error("Failed to load debug room data:", e);
-            }
-        }
 
         await Promise.all(roomProtos);
 
@@ -1444,35 +1419,39 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         await Promise.all(ePromises);
 
         // 5. Generate Level
+        const urlParams = new URLSearchParams(window.location.search);
+        const isDebugRoom = urlParams.get('debugRoom') === 'true';
+
         if (DEBUG_START_BOSS) {
             bossCoord = "0,0";
             goldenPath = ["0,0"];
             bossIntroEndTime = Date.now() + 2000;
             levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(roomTemplates["boss"])), cleared: false };
-        } else {
-            // --- DEBUG ROOM LOADER ---
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('debugRoom') === 'true') {
-                const debugData = localStorage.getItem('debugRoomData');
-                if (debugData) {
-                    try {
-                        const parsed = JSON.parse(debugData);
-                        console.log("Loading Test Room:", parsed);
-                        // Override 'start' template
-                        roomTemplates["start"] = parsed;
-                        // Ensure roomTemplates['boss'] exists to prevent crash if not loaded yet?
-                        // Actually loadAssets() happens before initGame(), so templates should exist.
-                        // We just override "start" AFTER loadAssets() but BEFORE generateLevel().
+        }
+        else if (isDebugRoom) {
+            // --- EDITOR TEST ROOM BYPASS ---
+            try {
+                const debugJson = localStorage.getItem('debugRoomData');
+                if (debugJson) {
+                    const debugData = JSON.parse(debugJson);
 
-                        // WAIT! roomTemplates are loaded in loadAssets(). 
-                        // We need to inject this logic AFTER `loadAssets` completes but BEFORE game starts.
-                        // `initGame` calls `loadAssets`, awaits it, then does setup.
-                        // We should inject this logic inside `initGame` after `loadAssets`.
-                    } catch (e) {
-                        console.error("Failed to parse Debug Room Data", e);
-                    }
+                    bossCoord = "0,0";
+                    goldenPath = ["0,0"];
+                    levelMap["0,0"] = { roomData: debugData, cleared: false }; // Directly inject into map
+
+                    // Force Skip Welcome
+                    gameData.showWelcome = false;
+                    gData.showWelcome = false;
+                } else {
+                    console.error("No debugRoomData found in localStorage");
+                    generateLevel(gameData.NoRooms !== undefined ? gameData.NoRooms : 11);
                 }
+            } catch (e) {
+                console.error("Failed to load test room", e);
+                generateLevel(gameData.NoRooms !== undefined ? gameData.NoRooms : 11);
             }
+        }
+        else {
             generateLevel(gameData.NoRooms !== undefined ? gameData.NoRooms : 11);
         }
 
