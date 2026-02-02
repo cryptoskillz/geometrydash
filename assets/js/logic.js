@@ -1789,8 +1789,8 @@ function spawnEnemies() {
                     if (mt && typeof mt === 'object') {
                         if (mt.x !== undefined && mt.y !== undefined) {
                             // Rule 1: Ignore 0,0 (treat as unset/random)
-                            // Rule 2: Only 'static' enemies use fixed positioning
-                            if ((mt.x !== 0 || mt.y !== 0) && mt.type === 'static') {
+                            // Rule 2: user requested "if movetype has x,y start it there" regardless of type
+                            if (mt.x !== 0 || mt.y !== 0) {
                                 useFixed = true;
                                 fixedX = mt.x;
                                 fixedY = mt.y;
