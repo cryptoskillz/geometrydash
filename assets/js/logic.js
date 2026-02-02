@@ -4983,15 +4983,19 @@ async function pickupItem(item, index) {
             log(`Equipped Bomb: ${config.name}`);
             spawnFloatingText(player.x, player.y - 30, config.name.toUpperCase(), config.colour || "orange");
 
-            // PERSIST LOADOUT
+            // PERSIST UNLOCKS ONLY (Normal Bomb)
             try {
                 const saved = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
                 const key = 'json/game.json';
                 if (!saved[key]) saved[key] = {};
-                saved[key].bombType = player.bombType;
-                localStorage.setItem('game_unlocks', JSON.stringify(saved));
-                // log("Saved Bomb Preference:", player.bombType);
-            } catch (e) { console.error("Failed to save loadout:", e); }
+
+                // Only mark Normal Bomb as "Unlocked"
+                if (player.bombType === 'normal') {
+                    saved[key].unlocked_bomb_normal = true;
+                    log("Unlocked Normal Bomb permanently");
+                    localStorage.setItem('game_unlocks', JSON.stringify(saved));
+                }
+            } catch (e) { console.error("Failed to save unlock:", e); }
         }
         else if (type === 'modifier') {
             // APPLY MODIFIER
