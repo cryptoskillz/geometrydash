@@ -49,6 +49,7 @@
     "width": 800,
     "height": 600,
     "unlocks": [
+        "itemPickup",
         "music",
         "soundEffects",
         "pause",

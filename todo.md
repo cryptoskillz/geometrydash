@@ -1,9 +1,8 @@
 bugs
+    on welcoem screen when you have something local data it will ask you to continue or new game
     dont drop the same item twice
     mini map should not show red for static enemies once the room is clear it should go yellow
-    space not opening doors when you have keys
     boss sometimes not rendering on level 4
-RESET DOES NTO REST THE GUN
     if movetype has an x,y start it there
     on level tooling up if you dont pick up the peashoort or bombs you go into a pacafist run 
     use item flag unlocked on level 3
@@ -29,7 +28,7 @@ next up
 level plan
 
 drop items flag on level 3 if not picked up items are never dropped
-    guns items
+    guns items (uses items)
 bombs
 inventory
 bullets 

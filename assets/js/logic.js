@@ -4542,7 +4542,7 @@ function drawTutorial() {
         let my = canvas.height - 80;
 
         const actions = [];
-        if (gameData.items !== false) actions.push({ label: "ITEM", key: "⎵" });
+        if (gameData.itemPickup) actions.push({ label: "ITEM", key: "⎵" });
         if (gameData.pause !== false) actions.push({ label: "PAUSE", key: "P" });
         if (gameData.music) actions.push({ label: "MUSIC", key: "0" });
 
