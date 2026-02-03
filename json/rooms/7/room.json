@@ -49,10 +49,12 @@
     "enemies": [
         {
             "type": "tank",
-            "variant": "small",
+            "variant": "normal",
             "shape": "square",
             "mode": "normal",
-            "randomise": false,
+            "randomiseVariant": false,
+            "randomiseShape": false,
+            "randomiseColour": false,
             "modifiers": {},
             "count": 2,
             "moveType": {}

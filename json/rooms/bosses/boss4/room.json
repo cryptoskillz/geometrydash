@@ -25,14 +25,16 @@
     "isBoss": true,
     "enemies": [
         {
-            "type": "boss",
+            "type": "thirdboss",
+            "variant": "normal",
+            "shape": "",
+            "mode": "normal",
+            "randomiseVariant": false,
+            "randomiseShape": false,
+            "randomiseColour": false,
+            "modifiers": {},
             "count": 1,
-            "x": 400,
-            "y": 300
-        },
-        {
-            "type": "grunt_turret",
-            "count": 5
+            "moveType": {}
         }
     ],
     "doors": {},

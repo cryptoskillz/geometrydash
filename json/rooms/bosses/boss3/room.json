@@ -26,7 +26,15 @@
     "enemies": [
         {
             "type": "secondboss",
-            "count": 1
+            "variant": "normal",
+            "shape": "",
+            "mode": "normal",
+            "randomiseVariant": false,
+            "randomiseShape": false,
+            "randomiseColour": false,
+            "modifiers": {},
+            "count": 1,
+            "moveType": {}
         }
     ],
     "doors": {},

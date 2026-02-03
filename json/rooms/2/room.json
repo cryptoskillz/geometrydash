@@ -54,6 +54,7 @@
             "mode": "normal",
             "randomiseVariant": false,
             "randomiseShape": true,
+            "randomiseColour": true,
             "modifiers": {},
             "count": 5,
             "moveType": {}

@@ -1743,6 +1743,12 @@ function applyEnemyConfig(inst, group) {
         inst.shape = shapes[Math.floor(Math.random() * shapes.length)];
     }
 
+    // 1c. Randomise Colour if requested
+    if (group.randomiseColour) {
+        const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
+        inst.color = colors[Math.floor(Math.random() * colors.length)];
+    }
+
     // 2. Apply Variant Stats
     // "medium" is default, no changes
     if (group.variant === 'speedy') {

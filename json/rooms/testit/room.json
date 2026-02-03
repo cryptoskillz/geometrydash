@@ -81,7 +81,8 @@
             "variant": "small",
             "shape": "square",
             "mode": "normal",
-            "randomise": false,
+            "randomiseVariant": false,
+            "randomiseShape": false,
             "modifiers": {},
             "count": 1,
             "moveType": {
