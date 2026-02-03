@@ -1598,6 +1598,11 @@ window.addEventListener('keyup', e => {
     keys[e.code] = false;
 });
 
+// Clear keys on window blur to prevent sticky inputs
+window.addEventListener('blur', () => {
+    keys = {};
+});
+
 // --- HELPER: START GAME LOGIC ---
 function startGame() {
     if (gameState === STATES.PLAY) return;

@@ -1,12 +1,5 @@
 bugs
-    add a loading screen at the start and hide everything until the game is loaded and the apolication state has been set to game
-    bombb blast pushing the player away not working (maybe can damage player has to be on) *maybe only when door is being blown
-    the boss is not invul during intro
-    replace java script new game with something nice
-    room 1 shows the boss and the stasrt room intro text in room 1
-    if you push item into portal is should push it back out
-    we should show a loading bar at the start whilst it is loading and hide everthing else
-    sometimes you are pulled down and the up does not work but you can do left and right its like down is stuch, it may work in other directions 
+
     
 
 
@@ -18,6 +11,12 @@ next up
         inventory
         stats
         player with modifiers
+        unlocked items
+        unlocked enemies
+        unlocked players
+        unlocked rooms
+        unlocked guns
+        unlocked bombs
     ghost
     rooms
     items
