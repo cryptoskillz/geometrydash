@@ -3905,7 +3905,7 @@ function updateEnemies() {
                 let finalDamage = b.damage || 1;
                 if (en.type !== 'ghost' && Math.random() < (gun.Bullet?.critChance || 0)) finalDamage *= (gun.Bullet?.critDamage || 2);
 
-                if (!en.indestructible && !en.invulnerable) { // Only damage if not invuln/indestructible
+                if (!en.indestructible && !en.invulnerable && Date.now() >= bossIntroEndTime) { // Only damage if not invuln/indestructible AND intro finished
                     en.hp -= finalDamage;
                     en.hitTimer = 10;
                 }
@@ -4421,6 +4421,8 @@ function drawBombs(doors) {
                 b.didDamage = true;
                 enemies.forEach(en => {
                     if (Math.hypot(b.x - en.x, b.y - en.y) < b.maxR) {
+                        // FIX: check invulnerability AND Boss Intro
+                        if (Date.now() < bossIntroEndTime) return;
                         en.hp -= b.damage;
                         en.hitTimer = 10; // Visual flash
                         // Death Logic
