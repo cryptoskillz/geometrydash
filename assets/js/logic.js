@@ -1510,6 +1510,14 @@ window.addEventListener('keydown', e => {
 
     if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
     if (gameState === STATES.START) {
+        // Modal Input Block
+        const modal = document.getElementById('newGameModal');
+        if (modal && modal.style.display !== 'none') {
+            if (e.code === 'Escape' || e.code === 'KeyN') { // Allow Escape or N to close
+                cancelNewGame();
+            }
+            return; // Block all other inputs
+        }
         // Allow Menu Navigation keys to pass through to handleGlobalInputs
         if (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'KeyM') {
             log("Keydown Menu Key:", e.code);
