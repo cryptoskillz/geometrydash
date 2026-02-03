@@ -1780,6 +1780,7 @@ function applyEnemyConfig(inst, group) {
     }
 
     // 4. Apply Mode (Angry)
+    inst.mode = group.mode || 'normal'; // Store mode for rendering
     if (group.mode === 'angry') {
         const angryStats = config.modeStats.angry;
         if (angryStats) {
@@ -4427,6 +4428,27 @@ function drawEnemies() {
         }
 
         ctx.fill();
+
+        // DRAW EYES
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = `bold ${Math.max(10, en.size * 0.8)}px sans-serif`;
+
+        // Ensure eye color contrasts with body
+        // Simple check: if body is white/very light, use black eyes? 
+        // For now, default white, but if body is white (invuln), use black?
+        if (en.hitTimer > 0 || en.frozen || en.invulnerable) {
+            ctx.fillStyle = "black";
+        }
+
+        let eyes = "- -";
+        if (en.mode === 'angry') {
+            eyes = "> <";
+        }
+
+        ctx.fillText(eyes, en.x, en.y + bounceY);
+
         ctx.restore();
     });
 }
