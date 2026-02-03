@@ -1779,6 +1779,17 @@ function applyEnemyConfig(inst, group) {
         inst.shape = group.shape;
     }
 
+    // Capture Base Stats (After Variant, Before Mode)
+    if (!inst.baseStats) {
+        inst.baseStats = {
+            speed: inst.speed,
+            hp: inst.hp,
+            damage: inst.damage,
+            color: inst.color,
+            size: inst.size
+        };
+    }
+
     // 4. Apply Mode (Angry)
     inst.mode = group.mode || 'normal'; // Store mode for rendering
     if (group.mode === 'angry') {
@@ -1795,6 +1806,11 @@ function applyEnemyConfig(inst, group) {
             }
 
             if (angryStats.color) inst.color = angryStats.color;
+
+            // Angry Timer
+            if (angryStats.angryTime) {
+                inst.angryUntil = Date.now() + angryStats.angryTime;
+            }
         }
     }
 
@@ -3841,6 +3857,26 @@ function updateEnemies() {
             }
         }
 
+        // Angry Timer Revert
+        if (en.mode === 'angry' && en.angryUntil && now > en.angryUntil) {
+            en.mode = 'normal';
+            if (en.baseStats) {
+                // Revert Stats
+                en.speed = en.baseStats.speed;
+                en.damage = en.baseStats.damage;
+                // HP Handling: Maintain current HP percentage or just cap? 
+                // If we drop max HP (implied by baseStats.hp being lower), we should probably ensure current hp isn't > base.
+                // But en.hp is used as current HP. 
+                // Simple approach: If current HP > base HP, cap it.
+                if (en.hp > en.baseStats.hp) en.hp = en.baseStats.hp;
+
+                en.color = en.baseStats.color;
+
+                // Reset size if we changed it? (Angry doesn't usually change size but safe to have)
+                en.size = en.baseStats.size;
+            }
+        }
+
         // 2. Frozen/Movement Logic
         if (!en.frozen) {
             // --- STATIC MOVEMENT CHECK ---
@@ -4027,7 +4063,13 @@ function updateEnemies() {
                 if (gun.Bullet?.pierce && b.hitEnemies?.includes(ei)) return;
 
                 let finalDamage = b.damage || 1;
-                if (en.type !== 'ghost' && Math.random() < (gun.Bullet?.critChance || 0)) finalDamage *= (gun.Bullet?.critDamage || 2);
+                const isCrit = Math.random() < (gun.Bullet?.critChance || 0);
+                if (en.type !== 'ghost' && isCrit) {
+                    finalDamage *= (gun.Bullet?.critDamage || 2);
+                    en.lastHitCritical = true;
+                } else {
+                    en.lastHitCritical = false;
+                }
 
                 if (!en.indestructible && !en.invulnerable && Date.now() >= bossIntroEndTime) { // Only damage if not invuln/indestructible AND intro finished
                     en.hp -= finalDamage;
@@ -4443,11 +4485,33 @@ function drawEnemies() {
         }
 
         let eyes = "- -";
-        if (en.mode === 'angry') {
+
+        if (en.frozen || (en.invulnerable && en.freezeEnd && Date.now() < en.freezeEnd)) {
+            eyes = "* *";
+        } else if (en.hitTimer > 0) {
+            if (en.lastHitCritical) {
+                eyes = "* !"; // Manga Style
+            } else {
+                eyes = "x x";
+            }
+        } else if (en.mode === 'angry') {
             eyes = "> <";
         }
 
-        ctx.fillText(eyes, en.x, en.y + bounceY);
+        // Calculate Eye Offset to look at player
+        const aimDx = player.x - en.x;
+        const aimDy = player.y - en.y;
+        const aimDist = Math.hypot(aimDx, aimDy);
+        const lookOffset = en.size * 0.3; // How far eyes move
+        let eyeX = en.x;
+        let eyeY = en.y + bounceY;
+
+        if (aimDist > 0) {
+            eyeX += (aimDx / aimDist) * lookOffset;
+            eyeY += (aimDy / aimDist) * lookOffset;
+        }
+
+        ctx.fillText(eyes, eyeX, eyeY);
 
         ctx.restore();
     });

@@ -3,6 +3,7 @@
     "name": "The Second Boss",
     "description": "You killed his brother!",
     "hp": 20,
+    "angryAfterHit": 1,
     "damage": 1,
     "knockback": 100,
     "shake": 2,

@@ -3,6 +3,7 @@
     "name": "The First Boss",
     "description": "He doesn't like it up him!",
     "hp": 2,
+    "angryAfterHit": 1,
     "damage": 1,
     "knockback": 100,
     "shake": 2,

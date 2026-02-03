@@ -1,8 +1,9 @@
 {
     "type": "tank",
     "description": "Slow and armored.",
-    "hp": 25,
     "damage": 2,
+    "hp": 25,
+    "angryAfterHit": 1,
     "knockback": 100,
     "shake": 2,
     "speed": 0.6,

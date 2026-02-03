@@ -3,6 +3,7 @@
     "name": "The Guardian!",
     "description": "The big bad.",
     "hp": 20,
+    "angryAfterHit": 1,
     "damage": 2,
     "knockback": 100,
     "shake": 2,

@@ -67,7 +67,8 @@
                 "damage": 1.5,
                 "speed": 5.0,
                 "speedySpeed": 1.25,
-                "color": "#e74c3c"
+                "color": "#e74c3c",
+                "angryTime": 5000
             }
         }
     },
@@ -77,7 +78,7 @@
     "itemPickup": false,
     "soundEffects": false,
     "showDebugWindow": true,
-    "showDebugLog": false,
+    "showDebugLog": true,
     "showMinimap": false,
     "showUI": false,
     "showWelcome": false,
