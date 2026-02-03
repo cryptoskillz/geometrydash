@@ -5047,6 +5047,22 @@ function updateItems() {
             item.vx -= PUSH_STRENGTH;
         }
 
+        // Portal Repulsion
+        if (typeof portal !== 'undefined' && portal.active) {
+            const pdx = item.x - portal.x;
+            const pdy = item.y - portal.y;
+            const pdist = Math.hypot(pdx, pdy);
+            const PORTAL_ZONE = 60; // Slightly larger than portal visual
+
+            if (pdist < PORTAL_ZONE) {
+                // Push away from center
+                const angle = Math.atan2(pdy, pdx);
+                const force = 1.0;
+                item.vx += Math.cos(angle) * force;
+                item.vy += Math.sin(angle) * force;
+            }
+        }
+
         // Player Collision (Push)
         if (item.solid && item.moveable) {
             const dx = item.x - player.x;
