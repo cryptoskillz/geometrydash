@@ -1513,8 +1513,11 @@ window.addEventListener('keydown', e => {
         // Modal Input Block
         const modal = document.getElementById('newGameModal');
         if (modal && modal.style.display !== 'none') {
-            if (e.code === 'Escape' || e.code === 'KeyN') { // Allow Escape or N to close
+            if (e.code === 'Escape' || e.code === 'KeyN' || e.code === 'Enter') { // Allow Escape, N, or Enter to close
                 cancelNewGame();
+            }
+            if (e.code === 'KeyD') {
+                confirmNewGame();
             }
             return; // Block all other inputs
         }
