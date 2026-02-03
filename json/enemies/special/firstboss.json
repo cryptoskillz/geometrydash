@@ -3,6 +3,7 @@
     "name": "The First Boss",
     "description": "He doesn't like it up him!",
     "hp": 2,
+    "alwaysAngry": false,
     "angryAfterHit": 1,
     "angryTime": 5000,
     "damage": 1,

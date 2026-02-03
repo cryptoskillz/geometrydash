@@ -3,6 +3,7 @@
     "description": "Standard dungeon dweller.",
     "damage": 2,
     "hp": 2,
+    "alwaysAngry": false,
     "angryAfterHit": 0.05,
     "angryTime": 5000,
     "knockback": 100,

@@ -1897,6 +1897,12 @@ function applyEnemyConfig(inst, group) {
     }
 
     // 4. Apply Mode (Angry)
+    // ALWAYS ANGRY OVERRIDE
+    if (group.alwaysAngry || inst.alwaysAngry) {
+        group.mode = 'angry';
+        inst.alwaysAngry = true;
+    }
+
     inst.mode = group.mode || 'normal'; // Store mode for rendering
     if (group.mode === 'angry') {
         const angryStats = config.modeStats.angry;
@@ -1914,9 +1920,13 @@ function applyEnemyConfig(inst, group) {
             if (angryStats.color) inst.color = angryStats.color;
 
             // Angry Timer
-            const duration = inst.angryTime || angryStats.angryTime;
-            if (duration) {
-                inst.angryUntil = Date.now() + duration;
+            if (inst.alwaysAngry) {
+                inst.angryUntil = Infinity;
+            } else {
+                const duration = inst.angryTime || angryStats.angryTime;
+                if (duration) {
+                    inst.angryUntil = Date.now() + duration;
+                }
             }
         }
     }
@@ -3962,7 +3972,7 @@ function updateEnemies() {
         }
 
         // Angry Timer Revert
-        if (en.mode === 'angry' && en.angryUntil && now > en.angryUntil) {
+        if (en.mode === 'angry' && !en.alwaysAngry && en.angryUntil && now > en.angryUntil) {
             en.mode = 'normal';
             if (en.baseStats) {
                 // Revert Stats
@@ -4213,9 +4223,11 @@ function updateEnemies() {
 
                             // If already angry, just extend timer
                             if (en.mode === 'angry') {
-                                const duration = en.angryTime || angryStats.angryTime;
-                                if (duration) {
-                                    en.angryUntil = Date.now() + duration;
+                                if (!en.alwaysAngry) {
+                                    const duration = en.angryTime || angryStats.angryTime;
+                                    if (duration) {
+                                        en.angryUntil = Date.now() + duration;
+                                    }
                                 }
                             } else {
                                 // Become Angry
@@ -4236,9 +4248,13 @@ function updateEnemies() {
                                 if (angryStats.color) en.color = angryStats.color;
 
                                 // Timer
-                                const duration = en.angryTime || angryStats.angryTime;
-                                if (duration) {
-                                    en.angryUntil = Date.now() + duration;
+                                if (en.alwaysAngry) {
+                                    en.angryUntil = Infinity;
+                                } else {
+                                    const duration = en.angryTime || angryStats.angryTime;
+                                    if (duration) {
+                                        en.angryUntil = Date.now() + duration;
+                                    }
                                 }
 
                                 log(`${en.type} became ANGRY!`);

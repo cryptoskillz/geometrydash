@@ -3,6 +3,7 @@
     "name": "The Second Boss",
     "description": "You killed his brother!",
     "hp": 20,
+    "alwaysAngry": true,
     "angryAfterHit": 1,
     "angryTime": 50000,
     "damage": 1,
