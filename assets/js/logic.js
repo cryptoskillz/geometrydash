@@ -248,6 +248,40 @@ const SFX = {
 
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+    },
+
+    // Angry Scream
+    scream: (vol = 0.2) => {
+        if (gameData.soundEffects === false) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        // Screech: 800Hz to 200Hz rapid drop
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.3);
+
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    },
+
+    // Citical Hit Yelp
+    yelp: (vol = 0.2) => {
+        if (gameData.soundEffects === false) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        // Short, sharp yelp: 600Hz to 400Hz quickly
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
 };
 
@@ -4067,6 +4101,8 @@ function updateEnemies() {
                 if (en.type !== 'ghost' && isCrit) {
                     finalDamage *= (gun.Bullet?.critDamage || 2);
                     en.lastHitCritical = true;
+                    log(`CRIT! Chance: ${gun.Bullet?.critChance}, Damage: ${finalDamage}`);
+                    SFX.yelp();
                 } else {
                     en.lastHitCritical = false;
                 }
@@ -4074,6 +4110,57 @@ function updateEnemies() {
                 if (!en.indestructible && !en.invulnerable && Date.now() >= bossIntroEndTime) { // Only damage if not invuln/indestructible AND intro finished
                     en.hp -= finalDamage;
                     en.hitTimer = 10;
+
+                    // Angry After Hit Logic
+                    if (en.angryAfterHit && Math.random() < en.angryAfterHit) {
+                        const config = gameData.enemyConfig || {};
+                        const angryStats = config.modeStats?.angry;
+                        if (angryStats) {
+                            // Ensure base stats are captured if they weren't already (e.g. if spawned without applyEnemyConfig or weird state)
+                            if (!en.baseStats) {
+                                en.baseStats = {
+                                    speed: en.speed,
+                                    hp: en.hp,
+                                    damage: en.damage,
+                                    color: en.color,
+                                    size: en.size
+                                };
+                            }
+
+                            // If already angry, just extend timer
+                            if (en.mode === 'angry') {
+                                if (angryStats.angryTime) {
+                                    en.angryUntil = Date.now() + angryStats.angryTime;
+                                }
+                            } else {
+                                // Become Angry
+                                en.mode = 'angry';
+
+                                // Apply Angry Stats (similar to applyEnemyConfig)
+                                if (angryStats.damage) en.damage = (en.baseStats.damage || 1) * angryStats.damage;
+
+                                // Special handling for speedy variant speed in angry mode
+                                // We need to check variant. Assuming en.variant is set.
+                                if (en.variant === 'speedy' && angryStats.speedySpeed) {
+                                    en.speed = (en.baseStats.speed || 1) * angryStats.speedySpeed;
+                                } else if (angryStats.speed) {
+                                    // Use base speed * angry multiplier
+                                    en.speed = (en.baseStats.speed || 1) * angryStats.speed;
+                                }
+
+                                if (angryStats.color) en.color = angryStats.color;
+
+                                // Timer
+                                if (angryStats.angryTime) {
+                                    en.angryUntil = Date.now() + angryStats.angryTime;
+                                }
+
+                                log(`${en.type} became ANGRY!`);
+                                SFX.scream();
+                                spawnFloatingText(en.x, en.y - 30, "RAAAGH!", "red");
+                            }
+                        }
+                    }
                 }
 
                 // Explode/Remove bullet if it hit something solid or took damage

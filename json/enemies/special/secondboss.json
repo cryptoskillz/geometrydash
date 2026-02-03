@@ -4,6 +4,7 @@
     "description": "You killed his brother!",
     "hp": 20,
     "angryAfterHit": 1,
+    "angryTime": 5000,
     "damage": 1,
     "knockback": 100,
     "shake": 2,

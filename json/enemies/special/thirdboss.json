@@ -4,6 +4,7 @@
     "description": "The big bad.",
     "hp": 20,
     "angryAfterHit": 1,
+    "angryTime": 5000,
     "damage": 2,
     "knockback": 100,
     "shake": 2,

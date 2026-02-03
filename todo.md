@@ -12,7 +12,6 @@ Balance
 
     rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
 
-    rather than have small, medium, large and speedy enemies ie small_tank we could just have a base enemy and then add modifiers to it to make tank_small, tank_medium, tank_large, tank_speedy the only exception to this I guess is bosses (thoguh you could boss_tank as a modifier but you want standalone special bosses distinct from the nornal grunts) and stealth, enemies with guns etc 
 
     Add a canPickUp flag to enemy Json to steal and use your spawned items and guns 
 
