@@ -955,6 +955,9 @@ let lastMKeyTime = 0;
 
 // configurations
 async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
+    // 0. Force Audio Resume (Must be first, to catch user interaction)
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
     if (isInitializing) return;
     isInitializing = true;
 
@@ -1657,6 +1660,9 @@ window.addEventListener('blur', () => {
 
 // --- HELPER: START GAME LOGIC ---
 function startGame() {
+    // Force Audio Resume on User Interaction
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
     if (gameState === STATES.PLAY) return;
 
     // Check Lock
