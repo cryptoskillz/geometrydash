@@ -4255,14 +4255,35 @@ function updateEnemies() {
 
                 // 2. Avoid Bombs
                 const AVOID_WEIGHT = 4.0;
-                for (const b of bombs) {
-                    if (b.solid && !b.exploding) {
-                        const bdx = en.x - b.x; const bdy = en.y - b.y;
-                        const bDist = Math.hypot(bdx, bdy);
-                        const safeDist = en.size + (b.baseR || 15) + 50;
-                        if (bDist < safeDist) {
-                            const push = (safeDist - bDist) / safeDist;
-                            if (bDist > 0) { dirX += (bdx / bDist) * push * AVOID_WEIGHT; dirY += (bdy / bDist) * push * AVOID_WEIGHT; }
+                // Heavy enemies (Bosses, Large Variants) don't fear bombs, they kick them.
+                const isHeavy = (en.type === 'boss' || (en.size && en.size >= 35));
+
+                if (!isHeavy) {
+                    for (const b of bombs) {
+                        if (b.solid && !b.exploding) {
+                            const bdx = en.x - b.x; const bdy = en.y - b.y;
+                            const bDist = Math.hypot(bdx, bdy);
+                            const safeDist = en.size + (b.baseR || 15) + 50;
+                            if (bDist < safeDist) {
+                                const push = (safeDist - bDist) / safeDist;
+                                if (bDist > 0) { dirX += (bdx / bDist) * push * AVOID_WEIGHT; dirY += (bdy / bDist) * push * AVOID_WEIGHT; }
+                            }
+                        }
+                    }
+                } else {
+                    // Heavy Enemy Bomb Kicking Logic
+                    for (const b of bombs) {
+                        if (b.solid && !b.exploding) {
+                            const dist = Math.hypot(en.x - b.x, en.y - b.y);
+                            // Check simpler collision radius
+                            if (dist < en.size + (b.baseR || 15)) {
+                                // Kick!
+                                const angle = Math.atan2(b.y - en.y, b.x - en.x);
+                                const force = 8.0; // Strong kick
+                                b.vx = Math.cos(angle) * force;
+                                b.vy = Math.sin(angle) * force;
+                                b.moveable = true; // Ensure it slides
+                            }
                         }
                     }
                 }

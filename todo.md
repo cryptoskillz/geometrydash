@@ -4,6 +4,7 @@ bugs
     player can move around once they go through the portal
     player can move around once they go through the portal
     angry mod increase fire rate if enemy has a gun 
+    [x] Boss/Heavy enemies kick bombs instead of being trapped
     pull to the left keys still an isuse ive noticed its during item spawn / pick up
     turret mode should be invul by default
     when paused the ghost timer should not run
