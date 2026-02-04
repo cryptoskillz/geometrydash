@@ -119,6 +119,63 @@ let bombs = [];
 let keys = {};
 let groundItems = []; // Items sitting on the floor
 let loreData = null;
+let speechData = null;
+
+// --- HELPER: SPEECH TRIGGER ---
+function triggerSpeech(enemy, type, forceText = null) {
+    if ((!speechData && !forceText) || enemy.isDead) return;
+
+    // Probability Checks (unless forced)
+    if (!forceText) {
+        if (type === 'idle' && Math.random() > 0.001) return; // Low chance for idle (0.1% per frame, ~3.6s adj for 60fps but logic runs fast?)
+        // actually logic runs at 60fps? 0.001 is 1 in 1000 frames -> ~16 seconds per enemy. Reasonable.
+        if (type === 'hit' && Math.random() > 0.3) return; // 30% chance on hit
+    }
+
+    let text = forceText;
+
+    if (!text && speechData) {
+        let pool = [];
+
+        // Select Pool based on Priority
+        // 1. Scripted/Events (handled by caller passing type='event'?)
+
+        // 2. Mood
+        if (type === 'angry' && speechData.moods && speechData.moods.angry) {
+            pool = speechData.moods.angry;
+        }
+        // 3. Event Type
+        else if (speechData.events && speechData.events[type]) {
+            pool = speechData.events[type];
+        }
+        // 4. Enemy Type Specific
+        else if (enemy.type && speechData.types && speechData.types[enemy.type]) {
+            // Mix type specific with general? Or override?
+            // Let's use type specific if available, otherwise general
+            // Actually, maybe 50/50?
+            if (Math.random() < 0.5) pool = speechData.types[enemy.type];
+        }
+
+        // 5. General Fallback
+        if (!pool || pool.length === 0) {
+            pool = speechData.general || ["..."];
+        }
+
+        // Pick Random
+        if (pool.length > 0) {
+            text = pool[Math.floor(Math.random() * pool.length)];
+        }
+    }
+
+    if (text) {
+        enemy.speech = {
+            text: text,
+            timer: 120, // 2 Seconds (Assuming 60fps)
+            maxTimer: 120,
+            color: type === 'angry' ? '#e74c3c' : 'white'
+        };
+    }
+}
 
 // --- HELPER: LORE GENERATION ---
 function generateLore(enemy) {
@@ -1171,12 +1228,17 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         // 1. Load Game Config First
         let gData = await fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 }));
 
-        // 1b. Load Lore Data
+        // 1b. Load Lore & Speech Data
         try {
-            loreData = await fetch('/json/enemies/lore/names.json?t=' + Date.now()).then(res => res.json());
-            log("Loaded Lore Data");
+            const [lData, sData] = await Promise.all([
+                fetch('/json/enemies/lore/names.json?t=' + Date.now()).then(r => r.json()).catch(() => null),
+                fetch('/json/enemies/lore/speech.json?t=' + Date.now()).then(r => r.json()).catch(() => null)
+            ]);
+            loreData = lData;
+            speechData = sData;
+            log("Loaded Lore & Speech Data");
         } catch (e) {
-            console.warn("Failed to load lore data", e);
+            console.warn("Failed to load lore/speech data", e);
             loreData = null;
         }
 
@@ -4322,6 +4384,9 @@ function updateEnemies() {
                     en.hp -= finalDamage;
                     en.hitTimer = 10;
 
+                    // Speech: Hit
+                    triggerSpeech(en, 'hit');
+
                     // Angry After Hit Logic
                     if (en.angryAfterHit && Math.random() < en.angryAfterHit) {
                         const config = gameData.enemyConfig || {};
@@ -4377,6 +4442,9 @@ function updateEnemies() {
                                 log(`${en.type} became ANGRY!`);
                                 SFX.scream();
                                 spawnFloatingText(en.x, en.y - 30, "RAAAGH!", "red");
+
+                                // Speech: Angry
+                                triggerSpeech(en, 'angry');
                             }
                         }
                     }
@@ -4719,15 +4787,7 @@ function drawEnemies() {
             ctx.fillStyle = en.color || "#e74c3c";
         }
 
-        // Draw Name if present
-        // Draw Name if present
-        if (en.lore && en.lore.displayName && !en.isDead) {
-            ctx.textAlign = "center";
-            ctx.textBaseline = "bottom";
-            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-            ctx.font = "10px monospace";
-            ctx.fillText(en.lore.displayName, en.x, en.y - en.size - 5);
-        }
+
 
         // DRAWING SHAPE
         const shape = en.shape || "circle";
@@ -4801,6 +4861,50 @@ function drawEnemies() {
         }
 
         ctx.fill();
+
+        // Draw Name (After Fill to avoid color bleed)
+        if (gameData.ShowEnemyNames !== false && en.lore && en.lore.displayName && !en.isDead) {
+            ctx.save(); // Isolate text styles
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.font = "10px monospace";
+            ctx.fillText(en.lore.displayName, en.x, en.y - en.size - 5);
+            ctx.restore();
+            ctx.restore();
+        }
+
+        // DRAW SPEECH BUBBLE
+        if (en.speech && en.speech.timer > 0) {
+            ctx.save();
+            ctx.font = "bold 12px sans-serif";
+            const text = en.speech.text;
+            const textMetrics = ctx.measureText(text);
+            const w = textMetrics.width + 10;
+            const h = 20;
+            const bX = en.x;
+            const bY = en.y - en.size - 25 - (bounceY || 0); // Above name
+
+            // Bubble Background
+            ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            ctx.strokeStyle = en.speech.color || "white";
+            ctx.lineWidth = 1;
+
+            // Rounded Rect
+            ctx.beginPath();
+            ctx.roundRect(bX - w / 2, bY - h, w, h, 5);
+            ctx.fill();
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = en.speech.color || "white";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, bX, bY - h / 2);
+
+            en.speech.timer--;
+            ctx.restore();
+        }
 
         // DRAW EYES
         ctx.fillStyle = "white";

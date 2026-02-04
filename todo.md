@@ -11,8 +11,28 @@ bugs
     WHNE YOU CNT PIcK UP AN ITEM GIVE A fail SOUND
     add polygon as the currency
     new shapes
+    running into an enemy shoul dmake a sound
 
-       
+  
+next up 
+    balance3
+    sfx 
+    ui updates
+        inventory
+        stats
+        player with modifiers
+        unlocked items
+        unlocked enemies
+        unlocked players
+        unlocked rooms
+        unlocked guns
+        unlocked bombs
+    ghost
+    rooms
+    items
+    balance
+    unlocks / permance
+    server     
 
 
 
@@ -22,6 +42,7 @@ bugs
 Balance
 
     give each enemy a name and have an unlockable item enemy name
+    enemy helth bar
 
     make most items locked at the start and you can unlock x items at random everytime you beat a level, beat the game to unlock permance mode 
     so you cna buy the item you want for the next run you can also get really expensice items that are permant upgrades so upgrades are permant and active when you start a new run such as enemy names
@@ -119,25 +140,6 @@ enemies
          with even number of sides
 
 
-next up 
-    balance
-    sfx 
-    ui updates
-        inventory
-        stats
-        player with modifiers
-        unlocked items
-        unlocked enemies
-        unlocked players
-        unlocked rooms
-        unlocked guns
-        unlocked bombs
-    ghost
-    rooms
-    items
-    balance
-    unlocks / permance
-    server
 
 ghost
 ghost does not appear in boss rooms
