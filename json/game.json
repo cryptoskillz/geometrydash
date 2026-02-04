@@ -68,6 +68,7 @@
                 "speed": 5.0,
                 "speedySpeed": 1.25,
                 "color": "#e74c3c",
+                "fireRate": 0.5,
                 "angryTime": 5000
             }
         }
@@ -77,8 +78,8 @@
     "items": true,
     "itemPickup": false,
     "soundEffects": false,
-    "showDebugWindow": false,
-    "showDebugLog": false,
+    "showDebugWindow": true,
+    "showDebugLog": true,
     "showMinimap": false,
     "showUI": false,
     "showWelcome": false,
@@ -92,6 +93,8 @@
     "showKeys": false,
     "showRoom": false,
     "showOverlay": false,
+    "ShowEnemyNames": true,
+    "ShowEnemyHealth": false,
     "ghost": {
         "spawn": false,
         "roomGhostTimer": 10000,
@@ -215,7 +218,7 @@
     "debug": {
         "startBoss": false,
         "player": true,
-        "godMode": false,
+        "godMode": true,
         "windowEnabled": true,
         "log": false,
         "spawn": {

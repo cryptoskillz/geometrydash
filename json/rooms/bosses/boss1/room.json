@@ -27,9 +27,9 @@
     "width": 800,
     "height": 600,
     "unlocks": [
-        "itemPickup",
+        "itempickup",
         "music",
-        "soundEffects",
+        "soundeffects",
         "pause",
         "firstboss",
         "startlevel2"

@@ -1,8 +1,61 @@
 bugs
+    after portal does that level start screen ebfore going to the next one
+    pull the player still persissts seems to happen when you pick up an item / spawn an item 
+    sometimes when you pick up an item they all despawn
+
+  
+next up 
+    balance3
+    sfx & ui updates
+        game settings
+            nventory
+            stats
+            player with modifiers
+            unlocked items
+            unlocked enemies
+            unlocked players
+            unlocked rooms
+            unlocked guns
+            unlocked bombs
+    ghost
+    rooms
+    items
+    balance
+    unlocks / permance
+    server     
+
+
+
+       
 
 
 Balance
-    bomb blast should not go throug solid players it should be absorbed by them
+
+    enemy health bar
+
+    make most items locked at the start and you can unlock x items at random everytime you beat a level, beat the game to unlock permance mode 
+    so you cna buy the item you want for the next run you can also get really expensice items that are permant upgrades so upgrades are permant and active when you start a new run such as enemy names
+
+    peermant unlocks can be purchased for gold coins you collect once you unlock permance mode you can pay to buy any item you unlocked 
+
+    enemies have a happy mode where they run around and jump for joy and add hp to you if you hit them 
+
+    enemies have a dazed mode theres eyes turn to circles and they run away from the player for a few seconds
+
+    enemies have a confused mode and they attack each other 
+
+    enemy can randomly be scared and they run away out of the room,  You fimd these enemies in the bnss room explaining their cowardice and they attack in the boss battle which shouting 
+    
+    "WITNESS ME"
+
+    to which the boss always responds
+
+    "MEDICORE"
+
+
+    if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
+
+    it would be good to have a list of text each enemy types says and it picks one randonlu and says some after hit, some minding their own business, some when they are and angry and dead.  The crux of this is to potray the "enemies" as the good guys and we will slowly reveal that the player maybe the bad guy in the game. 
     
     when you get a bonus (ie rare, uncommon etc trigger then you should only get the highest not multipile items spawned
 
@@ -27,36 +80,68 @@ Balance
 
     A sucessful pacacfier run awards you the pacacfier gun that does no damage but could be used to turn enemies into pets / friends
 
-    
+   sound
 
-next up 
-    bug fixes 6 and balance 
-    ui updates
-        inventory
-        stats
-        player with modifiers
-        unlocked items
-        unlocked enemies
-        unlocked players
-        unlocked rooms
-        unlocked guns
-        unlocked bombs
-    ghost
-    rooms
-    items
-    balance
-    unlocks / permance
-    server
+    sound effect for portal
+    sound effect for bomb
+    sound effect for item spswn
+    different sound for each gun
+    different sound for each type yelp angry etc
+    add sound effects to button presses 
+    sound effect when you go past secret room (add seret room)
+    WHNE YOU CNT PIcK UP AN ITEM GIVE A fail SOUND
+    running into an enemy shoul dmake a sound
+
+enemies
+
+ regular
+
+        pentagon
+        heptagon
+        octagon
+        nonagon
+        decagon
+        parrallelogram
+        rhombus
+        trapezoid
+        kite
+
+        irregular
+
+        triangle
+        quadrilateral
+        pentagon
+        hexagon
+        heptagon
+        octagon
+        nonagon
+        decagon
+
+        3d
+
+        sphere
+        right circular cone
+        ectangular box
+        cube
+        cylinder
+        pyramid
+
+
+         with even number of sides
+
+
 
 ghost
+ghost appears when you stay on th ewelcoem screen for 10 seconds stopping ghost from spawining in start room will fix this 
+ghost does not appear in boss rooms
 if you go through multiple room and back track you will see multiple ghosts
 if you leave a room and come back the ghost should be the same place + closer to you basedo on the speed the ghost moves. 
 if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left (with ghost or blowing doors)
+  door is gone
     ghost timer is running when you are on the welcome screen
     ghpst wont enter a room with an indestrcutible eemies
     if an enemy is nor sold (ie ghost) he should nor try to around enemies just go through them
         solid enemies cant go through each other, player or objects
-        non solid enemies can go through each other, player or objects
         non solid enemies can be shot by bullets
         solid enemies can be shot by bullets
         player can alos be solid or non solid    
@@ -121,8 +206,7 @@ editor
 
 enemies
     add enemy hit and enemy death sound  from json
-    boss hit boss death  from json
-    death shake from json
+    [x] boss should not get name from names.json he already has a name from json
     maybe if ghost is x rooms away we just spawn him in the new room
     add pyshics to the enemies json instead of having them hard coded in logic.js
     add more shapes

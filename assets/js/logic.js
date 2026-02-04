@@ -46,6 +46,8 @@ function spawnFloatingText(x, y, text, color = "white") {
 }
 
 
+let pauseStartTime = 0;
+
 function updateFloatingTexts() {
     for (let i = floatingTexts.length - 1; i >= 0; i--) {
         const ft = floatingTexts[i];
@@ -118,6 +120,136 @@ let enemies = [];
 let bombs = [];
 let keys = {};
 let groundItems = []; // Items sitting on the floor
+let loreData = null;
+let speechData = null;
+
+// --- HELPER: SPEECH TRIGGER ---
+function triggerSpeech(enemy, type, forceText = null) {
+    if ((!speechData && !forceText) || enemy.isDead) return;
+
+    // Probability Checks (unless forced)
+    if (!forceText) {
+        if (type === 'idle' && Math.random() > 0.001) return; // Low chance for idle (0.1% per frame, ~3.6s adj for 60fps but logic runs fast?)
+        // actually logic runs at 60fps? 0.001 is 1 in 1000 frames -> ~16 seconds per enemy. Reasonable.
+        if (type === 'hit' && Math.random() > 0.3) return; // 30% chance on hit
+    }
+
+    let text = forceText;
+
+    if (!text && speechData) {
+        let pool = [];
+
+        // Select Pool based on Priority
+        // 1. Scripted/Events (handled by caller passing type='event'?)
+
+        // 2. Mood
+        if (type === 'angry' && speechData.moods && speechData.moods.angry) {
+            pool = speechData.moods.angry;
+        }
+        // 3. Event Type
+        else if (speechData.events && speechData.events[type]) {
+            pool = speechData.events[type];
+        }
+        // 4. Enemy Type Specific
+        else if (enemy.type && speechData.types && speechData.types[enemy.type]) {
+            // Mix type specific with general? Or override?
+            // Let's use type specific if available, otherwise general
+            // Actually, maybe 50/50?
+            if (Math.random() < 0.5) pool = speechData.types[enemy.type];
+        }
+
+        // 5. General Fallback
+        if (!pool || pool.length === 0) {
+            pool = speechData.general || ["..."];
+        }
+
+        // Pick Random
+        if (pool.length > 0) {
+            text = pool[Math.floor(Math.random() * pool.length)];
+        }
+    }
+
+    if (text) {
+        enemy.speech = {
+            text: text,
+            timer: 120, // 2 Seconds (Assuming 60fps)
+            maxTimer: 120,
+            color: type === 'angry' ? '#e74c3c' : 'white'
+        };
+    }
+}
+
+// --- HELPER: LORE GENERATION ---
+function generateLore(enemy) {
+    if (!loreData) return null;
+
+    // Skip Bosses - they have their own names defined in JSON
+    if (enemy.type === 'boss' || enemy.isBoss) return null;
+
+    // 1. Name Parts
+    const prefix = loreData.prefixes[Math.floor(Math.random() * loreData.prefixes.length)];
+    const firstName = loreData.firstNames[Math.floor(Math.random() * loreData.firstNames.length)];
+
+    // 2. Surname by Shape
+    const shape = enemy.shape ? enemy.shape.toLowerCase() : 'default';
+    const surnames = loreData.surnames[shape] || loreData.surnames['default'];
+    // Fallback if shape key exists but list empty
+    const surnameList = (surnames && surnames.length > 0) ? surnames : loreData.surnames['default'];
+    const surname = surnameList[Math.floor(Math.random() * surnameList.length)];
+
+    // 3. Nickname by Stats
+    let nickname = "";
+    // Build pool based on stats
+    let pool = [];
+    if (enemy.speed > 3) pool.push('speed');
+    if (enemy.hp > 5) pool.push('hp');
+    if (enemy.damage > 2) pool.push('damage');
+    if (enemy.size > 30) pool.push('size');
+    if (enemy.size < 20) pool.push('tiny');
+    if (enemy.alwaysAngry) pool.push('angry');
+
+    // Fallback pool
+    if (pool.length === 0) pool = ['speed', 'hp'];
+
+    const cat = pool[Math.floor(Math.random() * pool.length)];
+    const nicks = loreData.nicknames[cat] || [];
+    if (nicks.length > 0) {
+        nickname = nicks[Math.floor(Math.random() * nicks.length)];
+    }
+
+    // 4. Randomize Display Format
+    // Options: 
+    // - Nickname (if exists)
+    // - First Name
+    // - Full Name (First Surname)
+    // - Formal (Prefix Surname)
+    // - Formal Full (Prefix First Surname)
+    // - Nick Mid (First "Nick" Surname) - if exists
+
+    let options = [
+        { type: 'first', val: firstName },
+        { type: 'full', val: `${firstName} ${surname}` },
+        { type: 'formal_sur', val: `${prefix} ${surname}` },
+        { type: 'formal_full', val: `${prefix} ${firstName} ${surname}` }
+    ];
+
+    if (nickname) {
+        options.push({ type: 'nick', val: nickname }); // Just "The Tank"
+        options.push({ type: 'nick_mid', val: `${firstName} "${nickname}" ${surname}` });
+    }
+
+    // Select Random
+    const selected = options[Math.floor(Math.random() * options.length)];
+    const displayName = selected.val;
+
+    return {
+        fullName: `${prefix} ${firstName} ${surname}`,
+        nickname: nickname,
+        displayName: displayName, // Use this for rendering
+        title: `${nickname} ${firstName}`
+    };
+}
+
 
 let bomb = {}
 let gun = {}
@@ -169,11 +301,34 @@ let ghostEntry = null;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+// --- ROBUST AUDIO UNLOCKER ---
+const unlockAudio = () => {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+            console.log("AudioContext Resumed Successfully!");
+            // Optional: Remove listeners if we only needed one interaction
+            // window.removeEventListener('click', unlockAudio);
+            // window.removeEventListener('keydown', unlockAudio);
+        }).catch(e => console.error("Audio Resume Failed:", e));
+    }
+};
+// Attach to all major interactions to ensure we catch one
+window.addEventListener('click', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
+window.addEventListener('touchstart', unlockAudio);
+
+// Force unlock on init too
+unlockAudio();
+
 const SFX = {
     // A quick high-to-low "pew"
     shoot: (vol = 0.2) => {
+        // Debug Audio State
+        if (audioCtx.state === 'suspended') {
+            console.warn("SFX Attempted but AudioContext is SUSPENDED. Click to unlock.");
+        }
         if (gameData.soundEffects === false) return;
-        // console.log("SFX: Shoot triggered"); // Debug
+
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'square'; // Classic NES sound
@@ -428,6 +583,31 @@ function updateDebugEditor() {
 function renderDebugForm() {
     if (!debugForm || !debugSelect) return;
     debugForm.innerHTML = '';
+
+    // Add Audio Test Button
+    const btn = document.createElement('button');
+    btn.innerText = "TEST AUDIO";
+    btn.onclick = () => {
+        console.log("TEST AUDIO CLICKED");
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+            console.log("Audio Resumed via Test Button");
+        }
+        // Force a raw sound test bypassing all game logic
+        const o = audioCtx.createOscillator();
+        o.frequency.value = 440;
+        o.connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + 0.5);
+
+        // Also try game SFX
+        SFX.shoot();
+        SFX.yelp();
+    };
+    btn.style.marginBottom = "10px";
+    btn.style.width = "100%";
+    debugForm.appendChild(btn);
+
     const type = debugSelect.value;
 
     // SPAWN LOGIC REFACTOR
@@ -845,9 +1025,13 @@ function generateLevel(length) {
 
         // 2. Try any room tagged as boss (from bossrooms list)
         const bossKey = Object.keys(roomTemplates).find(k => roomTemplates[k]._type === 'boss');
-        if (bossKey) return roomTemplates[bossKey];
+        if (bossKey) {
+            log("Found Boss Template:", bossKey);
+            return roomTemplates[bossKey];
+        }
 
         // 3. Fallback
+        console.warn("No Boss Template found. Using last available.");
         const keys = Object.keys(roomTemplates);
         return roomTemplates[keys[keys.length - 1]];
     };
@@ -913,6 +1097,11 @@ function generateLevel(length) {
                 // Keep locked status if template specifically had it, otherwise 0
                 if (data.doors[d.name].locked === undefined) data.doors[d.name].locked = 0;
 
+                // FORCE UNLOCK if on Golden Path to ensuring Boss is reachable
+                if (goldenPath && goldenPath.includes(coord) && goldenPath.includes(neighborCoord)) {
+                    data.doors[d.name].locked = 0;
+                }
+
                 // Sync door coordinates if missing
                 if (d.name === "top" || d.name === "bottom") {
                     if (data.doors[d.name].x === undefined) data.doors[d.name].x = (data.width || 800) / 2;
@@ -955,6 +1144,9 @@ let lastMKeyTime = 0;
 
 // configurations
 async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
+    // 0. Force Audio Resume (Must be first, to catch user interaction)
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
     if (isInitializing) return;
     isInitializing = true;
 
@@ -1002,16 +1194,20 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
     log(`initGame called. isRestart=${isRestart}, keepStats=${keepStats}, player.bombType=${player ? player.bombType : 'null'}`);
 
     if (keepStats && player) {
-        savedPlayerStats = {
-            hp: player.hp,
-            maxHp: player.maxHp,
-            inventory: { ...player.inventory },
-            gunType: player.gunType,
-            bombType: player.bombType,
-            speed: player.speed,
-            perfectStreak: perfectStreak // Save Streak
-        };
-        log("Saved Player Stats:", JSON.stringify(savedPlayerStats));
+        // Deep Clone to preserve ALL properties (items, modifiers, etc.)
+        savedPlayerStats = JSON.parse(JSON.stringify(player));
+
+        // Remove volatile runtime state
+        delete savedPlayerStats.x;
+        delete savedPlayerStats.y;
+        delete savedPlayerStats.vx;
+        delete savedPlayerStats.vy;
+        delete savedPlayerStats.roomX;
+        delete savedPlayerStats.roomY;
+        delete savedPlayerStats.invulnUntil;
+        delete savedPlayerStats.frozen;
+
+        log("Saved Complete Player State");
     }
 
     if (!savedPlayerStats) {
@@ -1041,6 +1237,20 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
     try {
         // 1. Load Game Config First
         let gData = await fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 }));
+
+        // 1b. Load Lore & Speech Data
+        try {
+            const [lData, sData] = await Promise.all([
+                fetch('/json/enemies/lore/names.json?t=' + Date.now()).then(r => r.json()).catch(() => null),
+                fetch('/json/enemies/lore/speech.json?t=' + Date.now()).then(r => r.json()).catch(() => null)
+            ]);
+            loreData = lData;
+            speechData = sData;
+            log("Loaded Lore & Speech Data");
+        } catch (e) {
+            console.warn("Failed to load lore/speech data", e);
+            loreData = null;
+        }
 
         // APPLY SAVED UNLOCK OVERRIDES (Moved here to affect startLevel)
         try {
@@ -1079,6 +1289,17 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
                 const levelRes = await fetch(`${url}?t=${Date.now()}`);
                 if (levelRes.ok) {
                     const levelData = await levelRes.json();
+
+                    // AUTO-DETECT: If this file is a Room (has isBoss), ensure it's set as the bossRoom 
+                    // so it gets loaded into templates correctly.
+                    if (levelData.isBoss && !levelData.bossRoom) {
+                        log("Level file identified as Boss Room. Setting bossRoom to self:", levelFile);
+                        levelData.bossRoom = levelFile;
+                        // Also force NoRooms to 1? Or let generation handle it?
+                        // Usually boss levels are 1 room.
+                        if (levelData.NoRooms === undefined) levelData.NoRooms = 1;
+                    }
+
                     // Merge level data into game data (Level overrides Game)
                     gData = { ...gData, ...levelData };
                 } else {
@@ -1250,15 +1471,14 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
 
         // Restore Stats if kept
         if (savedPlayerStats) {
-            log("Restoring Stats:", savedPlayerStats);
-            player.hp = savedPlayerStats.hp;
-            player.maxHp = savedPlayerStats.maxHp || player.maxHp;
-            player.inventory = savedPlayerStats.inventory;
-            player.gunType = savedPlayerStats.gunType;
-            player.bombType = savedPlayerStats.bombType;
-            player.speed = savedPlayerStats.speed;
+            log("Restoring Full Player State");
+            // Merge saved state OVER the default template
+            // This ensures we keep new defaults if valid, but restore all our progress
+            Object.assign(player, savedPlayerStats);
+
+            // Explicitly ensure criticals if missing (shouldn't happen with full clone)
             if (savedPlayerStats.perfectStreak !== undefined) {
-                perfectStreak = savedPlayerStats.perfectStreak; // Restore Streak
+                perfectStreak = savedPlayerStats.perfectStreak;
             }
         }
 
@@ -1335,6 +1555,7 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
             // Fallback: Start music on the very first key press or click if autoplay failed
             const startAudio = () => {
                 if (introMusic.paused && !musicMuted) introMusic.play();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
                 window.removeEventListener('keydown', startAudio);
                 window.removeEventListener('mousedown', startAudio);
             };
@@ -1388,18 +1609,22 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
                     return res.json();
                 })
                 .then(data => {
-                    // ID is filename without extension or just the path for uniqueness
+                    // ID Generation: Handle "room.json" collision
                     const parts = path.split('/');
-                    const id = parts[parts.length - 1].replace('.json', '');
+                    let id = parts[parts.length - 1].replace('.json', '');
+                    if (id === 'room' && parts.length > 1) {
+                        id = parts[parts.length - 2]; // Use folder name (e.g. "boss4", "start")
+                    }
+
                     data.templateId = id;
                     // Tag it
                     if (type) data._type = type;
-                    // Special case: if name is "Start Room", force ID to "start" for logic compatibility?
-                    // actually, better to handle that in generation.
+
                     // Store
                     roomTemplates[id] = data;
                     // Also store by full path just in case
                     roomTemplates[path] = data;
+                    log(`Loaded Room: ${id} (${type || 'normal'})`);
                 })
                 .catch(err => console.error(`Failed to load room: ${path}`, err));
         };
@@ -1511,20 +1736,17 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         }
 
         // AUTO START IF CONFIGURED (After everything is ready)
-        if (gameData.showWelcome === false || isRestart) {
-            startGame();
-        }
-
-    } catch (err) {
-        console.warn("Could not load configurations", err);
-        if (!gameLoopStarted) {
-            gameLoopStarted = true;
-            draw();
-        }
     } finally {
         isInitializing = false;
         const loadingEl = document.getElementById('loading');
         if (loadingEl) loadingEl.style.display = 'none';
+
+        // AUTO START IF CONFIGURED (After everything is ready)
+        // Moved here to ensure isInitializing is false before starting
+        if (gameData.showWelcome === false || isRestart) {
+            // Pass savedPlayerStats existence as keepState flag
+            startGame((savedPlayerStats && Object.keys(savedPlayerStats).length > 0) ? true : false);
+        }
     }
 }
 // Initial Start
@@ -1655,19 +1877,32 @@ window.addEventListener('blur', () => {
 });
 
 // --- HELPER: START GAME LOGIC ---
-function startGame() {
-    if (gameState === STATES.PLAY) return;
+let isGameStarting = false;
+function startGame(keepState = false) {
+    // Force Audio Resume on User Interaction
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // Guard against starting while Initializing or Unlocking or already starting
+    if (gameState === STATES.PLAY || isGameStarting || isInitializing || isUnlocking) return;
+    isGameStarting = true;
 
     // Check Lock
     const p = availablePlayers[selectedPlayerIndex];
 
     if (p && p.locked) {
         log("Player Locked - Cannot Start");
+        isGameStarting = false;
         return;
     }
 
+    // Show Loading Screen immediately to block input/visuals
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    welcomeEl.style.display = 'none';
+
     // Apply Selected Player Stats
-    if (p) {
+    // IF keepState is true, we assume player object is already correctly set (loaded or preserved)
+    if (!keepState && p) {
         // Apply stats but keep runtime properties like x/y if needed (though start resets them)
         // Actually initGame reset player.x/y already.
         const defaults = { x: 300, y: 200, roomX: 0, roomY: 0 };
@@ -1690,8 +1925,12 @@ function startGame() {
             gun = gData;
             bomb = bData;
 
-            // Initialize Ammo for new gun
-            if (gun.Bullet?.ammo?.active) {
+            if (loadingEl) loadingEl.style.display = 'none'; // Hide loading when done
+
+
+            // Initialize Ammo for new gun (Only if NOT keeping state or if we swapped guns?)
+            // If keeping state, ammo should be preserved.
+            if (!keepState && gun.Bullet?.ammo?.active) {
                 player.ammoMode = gun.Bullet?.ammo?.type || 'finite';
                 player.maxMag = gun.Bullet?.ammo?.amount || 100;
                 player.reloadTime = gun.Bullet?.ammo?.resetTimer !== undefined ? gun.Bullet?.ammo?.resetTimer : (gun.Bullet?.ammo?.reload || 1000);
@@ -1738,6 +1977,12 @@ function startGame() {
             updateUI();
         } catch (err) {
             console.error("Error starting game assets:", err);
+            // Re-show welcome if failed so user can try again
+            welcomeEl.style.display = 'flex';
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.style.display = 'none';
+        } finally {
+            isGameStarting = false;
         }
     })();
 }
@@ -1825,6 +2070,12 @@ function applyEnemyConfig(inst, group) {
     }
 
     // 4. Apply Mode (Angry)
+    // ALWAYS ANGRY OVERRIDE
+    if (group.alwaysAngry || inst.alwaysAngry) {
+        group.mode = 'angry';
+        inst.alwaysAngry = true;
+    }
+
     inst.mode = group.mode || 'normal'; // Store mode for rendering
     if (group.mode === 'angry') {
         const angryStats = config.modeStats.angry;
@@ -1842,9 +2093,13 @@ function applyEnemyConfig(inst, group) {
             if (angryStats.color) inst.color = angryStats.color;
 
             // Angry Timer
-            const duration = inst.angryTime || angryStats.angryTime;
-            if (duration) {
-                inst.angryUntil = Date.now() + duration;
+            if (inst.alwaysAngry) {
+                inst.angryUntil = Infinity;
+            } else {
+                const duration = inst.angryTime || angryStats.angryTime;
+                if (duration) {
+                    inst.angryUntil = Date.now() + duration;
+                }
             }
         }
     }
@@ -1922,6 +2177,17 @@ function spawnEnemies() {
 
         const template = enemyTemplates["ghost"] || { hp: 2000, speed: 1.2, size: 50, type: "ghost" };
         const inst = JSON.parse(JSON.stringify(template));
+        // Inst config
+        if (loreData) {
+            // inst.lore = generateLore(inst);
+            inst.lore = {
+                displayName: "Player Snr",
+                fullName: "Player Snr",
+                nickname: "The Departed",
+                title: "Player Snr"
+            };
+        }
+
 
         // Standard random placement or center
         inst.x = Math.random() * (canvas.width - 60) + 30;
@@ -1953,6 +2219,11 @@ function spawnEnemies() {
 
                     // NEW: Apply Variants, Modes, and Modifiers
                     applyEnemyConfig(inst, group);
+
+                    // ASSIGN LORE
+                    if (loreData) {
+                        inst.lore = generateLore(inst);
+                    }
 
                     // MERGE moveType from Room Config (Override)
                     if (group.moveType) {
@@ -2055,6 +2326,31 @@ function spawnEnemies() {
             enemies.push(inst);
         }
     }
+
+    // --- LATE BINDING: LORE & SPEECH & ANGRY MODE ---
+    enemies.forEach(en => {
+        // 1. Generate Lore if missing
+        if (!en.lore && loreData) {
+            en.lore = generateLore(en);
+        }
+
+        // 2. Global Angry Mode (Boss Killed)
+        if (bossKilled) {
+            en.mode = 'angry';
+            en.alwaysAngry = true;
+            en.angryUntil = Infinity;
+
+            // Apply Angry Stats immediately
+            const angryStats = (gameData.enemyConfig && gameData.enemyConfig.modeStats && gameData.enemyConfig.modeStats.angry) ? gameData.enemyConfig.modeStats.angry : null;
+
+            if (angryStats) {
+                if (angryStats.damage) en.damage = (en.baseStats?.damage || en.damage || 1) * angryStats.damage;
+                if (angryStats.speed) en.speed = (en.baseStats?.speed || en.speed || 1) * angryStats.speed;
+                if (angryStats.color) en.color = angryStats.color;
+            }
+        }
+    });
+
 }
 
 // --- Room Transition Helpers ---
@@ -2088,6 +2384,31 @@ function spawnPlayer(dx, dy, data) {
         player.y = (data.height || 600) - BOUNDARY - SAFE_OFFSET;
         player.x = door.x !== undefined ? door.x : (data.width || 800) / 2;
     }
+    // --- LATE BINDING: LORE & SPEECH & ANGRY MODE ---
+    enemies.forEach(en => {
+        // 1. Generate Lore if missing
+        if (!en.lore && loreData) {
+            en.lore = generateLore(en);
+        }
+
+        // 2. Global Angry Mode (Boss Killed)
+        if (bossKilled) {
+            // Ghosts do NOT get angry
+            if (en.type === 'ghost') return;
+
+            en.mode = 'angry';
+            en.alwaysAngry = true;
+            en.angryUntil = Infinity;
+
+            // Apply Angry Stats immediately
+            const angryStats = gameData.enemyConfig?.modeStats?.angry;
+            if (angryStats) {
+                if (angryStats.damage) en.damage = (en.baseStats?.damage || en.damage || 1) * angryStats.damage;
+                if (angryStats.speed) en.speed = (en.baseStats?.speed || en.speed || 1) * angryStats.speed;
+                if (angryStats.color) en.color = angryStats.color;
+            }
+        }
+    });
 }
 
 function changeRoom(dx, dy) {
@@ -2116,6 +2437,34 @@ function changeRoom(dx, dy) {
             // No survivors? Room is cleared.
             levelMap[currentCoord].savedEnemies = null;
             levelMap[currentCoord].cleared = true;
+        }
+
+        // SAVE BOMBS
+        // Only save unexploded bombs. We save absolute 'explodeAt' so time passes while away.
+        const activeBombs = bombs.filter(b => !b.exploded && b.explodeAt > Date.now());
+        if (activeBombs.length > 0) {
+            levelMap[currentCoord].savedBombs = activeBombs.map(b => ({
+                x: b.x, y: b.y,
+                explodeAt: b.explodeAt, // Save Absolute Time
+                maxTimer: b.maxTimer,
+                damage: b.damage, radius: b.radius,
+                color: b.color,
+                ownerType: b.ownerType,
+                vx: b.vx || 0, vy: b.vy || 0,
+                // Visual Properties
+                type: b.type,
+                timerShow: b.timerShow,
+                image: b.image, // If it has an image
+                canInteract: b.canInteract,
+                openLockedDoors: b.openLockedDoors,
+                openRedDoors: b.openRedDoors,
+                openSecretRooms: b.openSecretRooms,
+                baseR: b.baseR, maxR: b.maxR,
+                explosionDuration: b.explosionDuration
+            }));
+            log(`Saved ${activeBombs.length} bombs in ${currentCoord}`);
+        } else {
+            levelMap[currentCoord].savedBombs = null;
         }
     }
 
@@ -2167,6 +2516,73 @@ function changeRoom(dx, dy) {
 
     bullets = []; // Clear bullets on room entry
     bombs = []; // Clear bombs on room entry
+
+    // RESTORE BOMBS
+    if (levelMap[nextCoord] && levelMap[nextCoord].savedBombs) {
+        const now = Date.now();
+        levelMap[nextCoord].savedBombs.forEach(sb => {
+            // "Keep Ticking" Logic:
+            // If the bomb exploded while we were away (now > explodeAt), do NOT restore it.
+            // (Or restore it as exploding? Usually better to just assume it's gone)
+            if (now > sb.explodeAt) {
+                // SIMULATED EXPLOSION
+                // The bomb exploded while we were away. Check if it should have hit any doors.
+                // We need to access the doors of the room we are ABOUT to enter.
+                // Fortunately, we can access levelMap[nextCoord].roomData
+                const targetRoom = levelMap[nextCoord].roomData;
+                if (targetRoom && targetRoom.doors) {
+                    // Check Logic similar to drawBombs collision
+                    Object.entries(targetRoom.doors).forEach(([dir, door]) => {
+                        let dX = door.x ?? (targetRoom.width || 800) / 2;
+                        let dY = door.y ?? (targetRoom.height || 600) / 2;
+                        if (dir === 'top') dY = 0; if (dir === 'bottom') dY = (targetRoom.height || 600);
+                        if (dir === 'left') dX = 0; if (dir === 'right') dX = (targetRoom.width || 800);
+
+                        // Max Radius (approximate if stored, else default)
+                        const maxR = sb.maxR || 100;
+                        if (Math.hypot(sb.x - dX, sb.y - dY) < maxR + 30) {
+                            if (sb.openLockedDoors && door.locked) {
+                                door.locked = 0;
+                                log(`Simulated Explosion: Unlocked ${dir} door`);
+                            }
+                            if (sb.openRedDoors) {
+                                door.forcedOpen = true;
+                                log(`Simulated Explosion: Blew open ${dir} red door`);
+                            }
+                            if (sb.openSecretRooms && door.hidden) {
+                                door.hidden = false;
+                                door.active = true;
+                                log(`Simulated Explosion: Revealed ${dir} secret door`);
+                            }
+                        }
+                    });
+                }
+                return;
+            }
+
+            bombs.push({
+                x: sb.x, y: sb.y,
+                explodeAt: sb.explodeAt, // Restore absolute
+                maxTimer: sb.maxTimer,
+                damage: sb.damage, radius: sb.radius,
+                color: sb.color,
+                ownerType: sb.ownerType,
+                vx: sb.vx, vy: sb.vy,
+                exploded: false,
+                // Restore Visuals & Props
+                type: sb.type,
+                timerShow: sb.timerShow,
+                image: sb.image,
+                canInteract: sb.canInteract,
+                openLockedDoors: sb.openLockedDoors,
+                openRedDoors: sb.openRedDoors,
+                openSecretRooms: sb.openSecretRooms,
+                baseR: sb.baseR || 15, maxR: sb.maxR || 100,
+                explosionDuration: sb.explosionDuration || 300
+            });
+        });
+        log(`Restored ${bombs.length} bombs in ${nextCoord}`);
+    }
 
     // Check if Ghost should follow
     const ghostConfig = gameData.ghost || { spawn: true, roomGhostTimer: 10000, roomFollow: false };
@@ -2313,6 +2729,8 @@ function changeRoom(dx, dy) {
                 perfectEl.style.color = '#e74c3c'; // Reset
             }, 4000);
         }
+
+
 
         if (!nextEntry.cleared) {
             spawnEnemies();
@@ -2695,6 +3113,9 @@ function reloadWeapon() {
 
 // update loop
 function update() {
+    // 0. STOP updates if loading/initializing OR unlocking to prevent movement during transition
+    if (isInitializing || isUnlocking) return;
+
     // 0. Global Inputs (Restart/Menu from non-play states)
     if (handleGlobalInputs()) return;
 
@@ -2748,6 +3169,7 @@ function update() {
 
     updateRoomLock();
     updateBombDropping();
+    checkRemoteExplosions(); // Check for off-screen booms
     updateBombsPhysics(); // Bomb Physics (Push/Slide)
     updateMovementAndDoors(doors, roomLocked);
 
@@ -3702,13 +4124,7 @@ function updateUse() {
     if (gameState !== STATES.PLAY) return;
 
     // Start the Tron music if it hasn't started yet
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-    // Handle Audio Context
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    // (Handled by startAudio listener now)
 
     const roomLocked = isRoomLocked();
     const doors = roomData.doors || {};
@@ -3779,6 +4195,33 @@ function updateUse() {
 
     // (optional) if you ever add "open but interact" doors, handle here
     log(`${target.dir} door used (already unlocked)`);
+}
+
+function checkRemoteExplosions() {
+    const now = Date.now();
+    // Scan all visited rooms for saved bombs
+    Object.keys(levelMap).forEach(key => {
+        // Skip current room (handled by normal update)
+        if (key === `${player.roomX},${player.roomY}`) return;
+
+        const roomData = levelMap[key];
+        if (roomData && roomData.savedBombs) {
+            roomData.savedBombs.forEach(b => {
+                // Check if exploded remotely and hasn't triggered shake yet
+                if (b.explodeAt && now > b.explodeAt && !b.remoteShakeTriggered) {
+
+                    // Trigger Shake
+                    screenShake.power = 5;
+                    screenShake.endAt = now + 300; // Short shake
+
+                    // Mark as triggered so it doesn't loop forever
+                    b.remoteShakeTriggered = true;
+
+                    log(`Remote Explosion detected in room ${key}!`);
+                }
+            });
+        }
+    });
 }
 
 function updateRestart() {
@@ -3896,7 +4339,7 @@ function updateEnemies() {
         }
 
         // Angry Timer Revert
-        if (en.mode === 'angry' && en.angryUntil && now > en.angryUntil) {
+        if (en.mode === 'angry' && !en.alwaysAngry && en.angryUntil && now > en.angryUntil) {
             en.mode = 'normal';
             if (en.baseStats) {
                 // Revert Stats
@@ -3947,14 +4390,35 @@ function updateEnemies() {
 
                 // 2. Avoid Bombs
                 const AVOID_WEIGHT = 4.0;
-                for (const b of bombs) {
-                    if (b.solid && !b.exploding) {
-                        const bdx = en.x - b.x; const bdy = en.y - b.y;
-                        const bDist = Math.hypot(bdx, bdy);
-                        const safeDist = en.size + (b.baseR || 15) + 50;
-                        if (bDist < safeDist) {
-                            const push = (safeDist - bDist) / safeDist;
-                            if (bDist > 0) { dirX += (bdx / bDist) * push * AVOID_WEIGHT; dirY += (bdy / bDist) * push * AVOID_WEIGHT; }
+                // Heavy enemies (Bosses, Large Variants) don't fear bombs, they kick them.
+                const isHeavy = (en.type === 'boss' || (en.size && en.size >= 35));
+
+                if (!isHeavy) {
+                    for (const b of bombs) {
+                        if (b.solid && !b.exploding) {
+                            const bdx = en.x - b.x; const bdy = en.y - b.y;
+                            const bDist = Math.hypot(bdx, bdy);
+                            const safeDist = en.size + (b.baseR || 15) + 50;
+                            if (bDist < safeDist) {
+                                const push = (safeDist - bDist) / safeDist;
+                                if (bDist > 0) { dirX += (bdx / bDist) * push * AVOID_WEIGHT; dirY += (bdy / bDist) * push * AVOID_WEIGHT; }
+                            }
+                        }
+                    }
+                } else {
+                    // Heavy Enemy Bomb Kicking Logic
+                    for (const b of bombs) {
+                        if (b.solid && !b.exploding) {
+                            const dist = Math.hypot(en.x - b.x, en.y - b.y);
+                            // Check simpler collision radius
+                            if (dist < en.size + (b.baseR || 15)) {
+                                // Kick!
+                                const angle = Math.atan2(b.y - en.y, b.x - en.x);
+                                const force = 8.0; // Strong kick
+                                b.vx = Math.cos(angle) * force;
+                                b.vy = Math.sin(angle) * force;
+                                b.moveable = true; // Ensure it slides
+                            }
                         }
                     }
                 }
@@ -4059,7 +4523,17 @@ function updateEnemies() {
             if (en.gunConfig && !en.gunConfig.error && player.hp > 0) {
                 const dist = Math.hypot(player.x - en.x, player.y - en.y);
                 if (dist < 500) {
-                    const fireRate = (en.gunConfig.Bullet?.fireRate || 1) * 1000;
+                    let fireRate = (en.gunConfig.Bullet?.fireRate || 1) * 1000;
+
+                    // Apply Angry Fire Rate Modifier
+                    if (en.mode === 'angry') {
+                        const config = gameData.enemyConfig || {};
+                        const angryStats = config.modeStats?.angry;
+                        if (angryStats && angryStats.fireRate) {
+                            fireRate *= angryStats.fireRate;
+                        }
+                    }
+
                     if (!en.lastShot || now - en.lastShot > fireRate) {
                         const angle = Math.atan2(player.y - en.y, player.x - en.x);
                         const speed = en.gunConfig.Bullet?.speed || 4;
@@ -4129,6 +4603,9 @@ function updateEnemies() {
                     en.hp -= finalDamage;
                     en.hitTimer = 10;
 
+                    // Speech: Hit
+                    triggerSpeech(en, 'hit');
+
                     // Angry After Hit Logic
                     if (en.angryAfterHit && Math.random() < en.angryAfterHit) {
                         const config = gameData.enemyConfig || {};
@@ -4147,9 +4624,14 @@ function updateEnemies() {
 
                             // If already angry, just extend timer
                             if (en.mode === 'angry') {
-                                const duration = en.angryTime || angryStats.angryTime;
-                                if (duration) {
-                                    en.angryUntil = Date.now() + duration;
+                                if (!en.alwaysAngry && !bossKilled) {
+                                    const duration = en.angryTime || angryStats.angryTime;
+                                    if (duration) {
+                                        en.angryUntil = Date.now() + duration;
+                                    }
+                                } else if (bossKilled) {
+                                    en.alwaysAngry = true;
+                                    en.angryUntil = Infinity;
                                 }
                             } else {
                                 // Become Angry
@@ -4170,14 +4652,21 @@ function updateEnemies() {
                                 if (angryStats.color) en.color = angryStats.color;
 
                                 // Timer
-                                const duration = en.angryTime || angryStats.angryTime;
-                                if (duration) {
-                                    en.angryUntil = Date.now() + duration;
+                                if (en.alwaysAngry) {
+                                    en.angryUntil = Infinity;
+                                } else {
+                                    const duration = en.angryTime || angryStats.angryTime;
+                                    if (duration) {
+                                        en.angryUntil = Date.now() + duration;
+                                    }
                                 }
 
                                 log(`${en.type} became ANGRY!`);
                                 SFX.scream();
                                 spawnFloatingText(en.x, en.y - 30, "RAAAGH!", "red");
+
+                                // Speech: Angry
+                                triggerSpeech(en, 'angry');
                             }
                         }
                     }
@@ -4296,6 +4785,13 @@ function handleLevelComplete() {
     // 1. Next Level?
     if (roomData.nextLevel && roomData.nextLevel.trim() !== "") {
         log("Proceeding to Next Level:", roomData.nextLevel);
+
+        // Save State to LocalStorage (Robust Persistence)
+        localStorage.setItem('rogue_transition', 'true');
+        // Ensure we save a clean copy without circular refs or huge data if any
+        // But player object is simple enough.
+        localStorage.setItem('rogue_player_state', JSON.stringify(player));
+
         // Load next level, Keep Stats
         initGame(true, roomData.nextLevel, true);
         return;
@@ -4316,6 +4812,8 @@ function handleLevelComplete() {
 }
 
 function updateGhost() {
+    if (gameState !== STATES.PLAY) return;
+
     // Check if Ghost should spawn
     const now = Date.now();
     // Use config from gameData, default if missing
@@ -4338,7 +4836,7 @@ function updateGhost() {
     // 2. Not already spawned in this room
     // 3. Time exceeded
     if (ghostConfig.spawn && !ghostSpawned && (now - roomStartTime > ghostConfig.roomGhostTimer)) {
-        // if (player.roomX === 0 && player.roomY === 0) return; // Allow ghost in start room if configured
+        if (player.roomX === 0 && player.roomY === 0) return; // Stop ghost in start room (Fixes welcome screen spawn)
 
         log("THE GHOST APPEARS!");
         ghostSpawned = true;
@@ -4355,6 +4853,14 @@ function updateGhost() {
         };
 
         const inst = JSON.parse(JSON.stringify(template));
+
+        // Assign Name
+        inst.lore = {
+            displayName: "Player Snr",
+            fullName: "Player Snr",
+            nickname: "The Departed",
+            title: "Player Snr"
+        };
 
         // Spawn Location
         if (ghostEntry) {
@@ -4505,6 +5011,8 @@ function drawEnemies() {
             ctx.fillStyle = en.color || "#e74c3c";
         }
 
+
+
         // DRAWING SHAPE
         const shape = en.shape || "circle";
 
@@ -4577,6 +5085,50 @@ function drawEnemies() {
         }
 
         ctx.fill();
+
+        // Draw Name (After Fill to avoid color bleed)
+        if (gameData.ShowEnemyNames !== false && en.lore && en.lore.displayName && !en.isDead) {
+            ctx.save(); // Isolate text styles
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.font = "10px monospace";
+            ctx.fillText(en.lore.displayName, en.x, en.y - en.size - 5);
+            ctx.restore();
+            ctx.restore();
+        }
+
+        // DRAW SPEECH BUBBLE
+        if (en.speech && en.speech.timer > 0) {
+            ctx.save();
+            ctx.font = "bold 12px sans-serif";
+            const text = en.speech.text;
+            const textMetrics = ctx.measureText(text);
+            const w = textMetrics.width + 10;
+            const h = 20;
+            const bX = en.x;
+            const bY = en.y - en.size - 25 - (bounceY || 0); // Above name
+
+            // Bubble Background
+            ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            ctx.strokeStyle = en.speech.color || "white";
+            ctx.lineWidth = 1;
+
+            // Rounded Rect
+            ctx.beginPath();
+            ctx.roundRect(bX - w / 2, bY - h, w, h, 5);
+            ctx.fill();
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = en.speech.color || "white";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, bX, bY - h / 2);
+
+            en.speech.timer--;
+            ctx.restore();
+        }
 
         // DRAW EYES
         ctx.fillStyle = "white";
@@ -4708,6 +5260,10 @@ function drawBombs(doors) {
             b.exploding = true;
             b.explosionStartAt = now;
             SFX.explode(0.3);
+
+            // Local Explosion Shake (Stronger than remote)
+            screenShake.power = 20;
+            screenShake.endAt = now + 500;
         }
 
         if (b.exploding) {
@@ -4736,9 +5292,54 @@ function drawBombs(doors) {
             if (!b.didDamage) {
                 b.didDamage = true;
                 enemies.forEach(en => {
-                    if (Math.hypot(b.x - en.x, b.y - en.y) < b.maxR) {
+                    const distEn = Math.hypot(b.x - en.x, b.y - en.y);
+                    if (distEn < b.maxR) {
                         // FIX: check invulnerability AND Boss Intro
                         if (Date.now() < bossIntroEndTime) return;
+
+                        // --- OCCLUSION CHECK: Is there a solid enemy in the way? ---
+                        let blocked = false;
+                        for (const blocker of enemies) {
+                            if (blocker === en) continue; // Don't block self
+                            if (blocker.isDead) continue; // Dead don't block
+                            if (!blocker.solid) continue; // Only solid blocks
+
+                            // Optimization: Blocker must be closer than the target
+                            const distBlocker = Math.hypot(b.x - blocker.x, b.y - blocker.y);
+                            if (distBlocker >= distEn) continue;
+
+                            // Collision Check: Line Segment (Bomb -> Target) vs Circle (Blocker)
+                            // Project Blocker onto Line Segment
+                            const dx = en.x - b.x;
+                            const dy = en.y - b.y;
+                            const lenSq = dx * dx + dy * dy;
+                            if (lenSq === 0) continue; // Overlap?
+
+                            // t = projection factor
+                            // Vector Bomb->Blocker (bx, by)
+                            const bx = blocker.x - b.x;
+                            const by = blocker.y - b.y;
+
+                            // Dot Product
+                            let t = (bx * dx + by * dy) / lenSq;
+                            t = Math.max(0, Math.min(1, t)); // Clamp to segment
+
+                            // Closest Point on segment
+                            const closestX = b.x + t * dx;
+                            const closestY = b.y + t * dy;
+
+                            // Distance from Blocker Center to Closest Point
+                            const distToLine = Math.hypot(blocker.x - closestX, blocker.y - closestY);
+
+                            if (distToLine < (blocker.size || 25)) {
+                                blocked = true;
+                                log(`Blast Blocked! Target: ${en.type} saved by ${blocker.type}`);
+                                break;
+                            }
+                        }
+
+                        if (blocked) return;
+
                         en.hp -= b.damage;
                         en.hitTimer = 10; // Visual flash
                         // Death Logic
@@ -4779,6 +5380,34 @@ function drawBombs(doors) {
 
             ctx.save(); ctx.globalAlpha = 1 - p; ctx.fillStyle = b.explosionColour;
             ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+            // MASKING: Erase explosion behind solid enemies so they appear to block it
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.globalAlpha = 1.0;
+            enemies.forEach(en => {
+                if (en.solid && !en.isDead) { // Only solid living enemies block view
+                    ctx.beginPath();
+                    const s = en.size || 25;
+                    const shape = en.shape || 'circle';
+
+                    if (shape === 'square') {
+                        ctx.rect(en.x - s, en.y - s, s * 2, s * 2);
+                    } else if (shape === 'triangle') {
+                        // Match drawEnemies triangle roughly
+                        ctx.moveTo(en.x, en.y - s);
+                        ctx.lineTo(en.x + s, en.y + s);
+                        ctx.lineTo(en.x - s, en.y + s);
+                        ctx.closePath();
+                    } else {
+                        // Default Circle
+                        ctx.arc(en.x, en.y, s, 0, Math.PI * 2);
+                    }
+                    ctx.fillStyle = 'black';
+                    ctx.fill();
+                }
+            });
+            ctx.restore();
             if (p >= 1) bombs.splice(i, 1);
         } else {
             // Unexploded bomb glow
@@ -4966,6 +5595,7 @@ function gameWon() {
 
 function gameMenu() {
     gameState = STATES.GAMEMENU;
+    pauseStartTime = Date.now(); // Record Pause Start
     overlay.style.display = 'flex';
     overlayTitle.innerText = "Pause";
 
@@ -4991,6 +5621,14 @@ function goToWelcome() {
 
 function goContinue() {
     overlay.style.display = 'none';
+
+    // Adjust Timer for Pause Duration
+    if (pauseStartTime > 0) {
+        const pausedDuration = Date.now() - pauseStartTime;
+        roomStartTime += pausedDuration; // Shift room start time forward
+        pauseStartTime = 0;
+        log("Resumed. Paused for: " + (pausedDuration / 1000).toFixed(1) + "s. Ghost Timer Adjusted.");
+    }
 
     // If Continuing from Death (Game Over), Revive Player
     if (player.hp <= 0) {
