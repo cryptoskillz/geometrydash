@@ -5260,6 +5260,10 @@ function drawBombs(doors) {
             b.exploding = true;
             b.explosionStartAt = now;
             SFX.explode(0.3);
+
+            // Local Explosion Shake (Stronger than remote)
+            screenShake.power = 20;
+            screenShake.endAt = now + 500;
         }
 
         if (b.exploding) {
