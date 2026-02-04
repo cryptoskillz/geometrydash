@@ -1053,16 +1053,20 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
     log(`initGame called. isRestart=${isRestart}, keepStats=${keepStats}, player.bombType=${player ? player.bombType : 'null'}`);
 
     if (keepStats && player) {
-        savedPlayerStats = {
-            hp: player.hp,
-            maxHp: player.maxHp,
-            inventory: { ...player.inventory },
-            gunType: player.gunType,
-            bombType: player.bombType,
-            speed: player.speed,
-            perfectStreak: perfectStreak // Save Streak
-        };
-        log("Saved Player Stats:", JSON.stringify(savedPlayerStats));
+        // Deep Clone to preserve ALL properties (items, modifiers, etc.)
+        savedPlayerStats = JSON.parse(JSON.stringify(player));
+
+        // Remove volatile runtime state
+        delete savedPlayerStats.x;
+        delete savedPlayerStats.y;
+        delete savedPlayerStats.vx;
+        delete savedPlayerStats.vy;
+        delete savedPlayerStats.roomX;
+        delete savedPlayerStats.roomY;
+        delete savedPlayerStats.invulnUntil;
+        delete savedPlayerStats.frozen;
+
+        log("Saved Complete Player State");
     }
 
     if (!savedPlayerStats) {
@@ -1312,15 +1316,14 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
 
         // Restore Stats if kept
         if (savedPlayerStats) {
-            log("Restoring Stats:", savedPlayerStats);
-            player.hp = savedPlayerStats.hp;
-            player.maxHp = savedPlayerStats.maxHp || player.maxHp;
-            player.inventory = savedPlayerStats.inventory;
-            player.gunType = savedPlayerStats.gunType;
-            player.bombType = savedPlayerStats.bombType;
-            player.speed = savedPlayerStats.speed;
+            log("Restoring Full Player State");
+            // Merge saved state OVER the default template
+            // This ensures we keep new defaults if valid, but restore all our progress
+            Object.assign(player, savedPlayerStats);
+
+            // Explicitly ensure criticals if missing (shouldn't happen with full clone)
             if (savedPlayerStats.perfectStreak !== undefined) {
-                perfectStreak = savedPlayerStats.perfectStreak; // Restore Streak
+                perfectStreak = savedPlayerStats.perfectStreak;
             }
         }
 
@@ -1574,20 +1577,17 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
         }
 
         // AUTO START IF CONFIGURED (After everything is ready)
-        if (gameData.showWelcome === false || isRestart) {
-            startGame();
-        }
-
-    } catch (err) {
-        console.warn("Could not load configurations", err);
-        if (!gameLoopStarted) {
-            gameLoopStarted = true;
-            draw();
-        }
     } finally {
         isInitializing = false;
         const loadingEl = document.getElementById('loading');
         if (loadingEl) loadingEl.style.display = 'none';
+
+        // AUTO START IF CONFIGURED (After everything is ready)
+        // Moved here to ensure isInitializing is false before starting
+        if (gameData.showWelcome === false || isRestart) {
+            // Pass savedPlayerStats existence as keepState flag
+            startGame((savedPlayerStats && Object.keys(savedPlayerStats).length > 0) ? true : false);
+        }
     }
 }
 // Initial Start
