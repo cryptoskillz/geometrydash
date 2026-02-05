@@ -1,8 +1,0 @@
-{
-    "name": "Music",
-    "description": "Unlocks music",
-    "unlock": "music",
-    "json": "game.json",
-    "attr": "music",
-    "value": true
-}

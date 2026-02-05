@@ -1,8 +1,0 @@
-{
-    "name": "Welcome",
-    "description": "Unlocks welcome screen",
-    "unlock": "welcome",
-    "json": "game.json",
-    "attr": "showWelcome",
-    "value": true
-}

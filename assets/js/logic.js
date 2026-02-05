@@ -2137,6 +2137,7 @@ function spawnEnemies() {
             inst.x = saved.x;
             inst.y = saved.y;
             inst.hp = saved.hp;
+            inst.maxHp = saved.maxHp || inst.hp; // Restore Max HP
             if (saved.moveType) inst.moveType = saved.moveType;
             if (saved.solid !== undefined) inst.solid = saved.solid;
             if (saved.indestructible !== undefined) inst.indestructible = saved.indestructible;
@@ -2177,6 +2178,7 @@ function spawnEnemies() {
 
         const template = enemyTemplates["ghost"] || { hp: 2000, speed: 1.2, size: 50, type: "ghost" };
         const inst = JSON.parse(JSON.stringify(template));
+        inst.maxHp = inst.hp; // Ensure Max HP for health bar
         // Inst config
         if (loreData) {
             // inst.lore = generateLore(inst);
@@ -2329,6 +2331,9 @@ function spawnEnemies() {
 
     // --- LATE BINDING: LORE & SPEECH & ANGRY MODE ---
     enemies.forEach(en => {
+        // 0. Ensure MaxHP (for health bars)
+        if (!en.maxHp) en.maxHp = en.hp;
+
         // 1. Generate Lore if missing
         if (!en.lore && loreData) {
             en.lore = generateLore(en);
@@ -3212,6 +3217,12 @@ function updateReload() {
 
 //draw loop
 async function draw() {
+    if (isInitializing) {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(() => { draw(); });
+        return;
+    }
     const aliveEnemies = enemies.filter(en => !en.isDead);
     const roomLocked = isRoomLocked();
     const doors = roomData.doors || {};
@@ -4853,6 +4864,7 @@ function updateGhost() {
         };
 
         const inst = JSON.parse(JSON.stringify(template));
+        inst.maxHp = inst.hp; // Ensure Max HP for health bar
 
         // Assign Name
         inst.lore = {
@@ -5095,6 +5107,22 @@ function drawEnemies() {
             ctx.font = "10px monospace";
             ctx.fillText(en.lore.displayName, en.x, en.y - en.size - 5);
             ctx.restore();
+            ctx.restore();
+        }
+
+        // DRAW HEALTH BAR
+        if (gameData.ShowEnemyHealth !== false && !en.isDead && en.maxHp > 0 && en.hp < en.maxHp) {
+            const barWidth = 30;
+            const barHeight = 4;
+            const yOffset = en.size + 10; // Below enemy
+            const pct = Math.max(0, en.hp / en.maxHp);
+
+            ctx.save();
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(en.x - barWidth / 2, en.y + yOffset, barWidth, barHeight);
+
+            ctx.fillStyle = pct > 0.5 ? "#2ecc71" : (pct > 0.25 ? "#f1c40f" : "#e74c3c");
+            ctx.fillRect(en.x - barWidth / 2, en.y + yOffset, barWidth * pct, barHeight);
             ctx.restore();
         }
 
@@ -6445,7 +6473,7 @@ async function showNextUnlock() {
     try {
         // Handle "victory" specially or just ignore if file missing (user deleted it)
         // If file is missing, fetch throws or returns 404
-        const res = await fetch(`json/unlocks/${key}.json?t=${Date.now()}`);
+        const res = await fetch(`json/rewards/unlocks/${key}.json?t=${Date.now()}`);
         if (res.ok) {
             const data = await res.json();
 

@@ -2,13 +2,13 @@ bugs
     after portal does that level start screen ebfore going to the next one
     pull the player still persissts seems to happen when you pick up an item / spawn an item 
     sometimes when you pick up an item they all despawn
-
+    bomb goes blue when you leave the room and go back in
   
 next up 
     balance3
     sfx & ui updates
         game settings
-            nventory
+            inventory
             stats
             player with modifiers
             unlocked items
@@ -37,14 +37,35 @@ Balance
     so you cna buy the item you want for the next run you can also get really expensice items that are permant upgrades so upgrades are permant and active when you start a new run such as enemy names
 
     peermant unlocks can be purchased for gold coins you collect once you unlock permance mode you can pay to buy any item you unlocked 
+    
+    when you get a bonus (ie rare, uncommon etc trigger then you should only get the highest not multipile items spawned
 
-    enemies have a happy mode where they run around and jump for joy and add hp to you if you hit them 
+    the same item should not drop twice if it should never spaw or spawn a random number of coins (add coins)
+
+    add a destroy for spawned items that turn it into a resources (and add resources)
+
+    drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
+
+    rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
+
+    balance 3 ^ 
+
+    Add a canPickUp flag to enemy Json to steal and use your spawned items and guns 
+    using the follow mechanic, gun modifier, canhurtplayer (set to false) and canhurt enemies (set to true) we can create pets that follow you and shoot at enemies
+
+    Add a charisma stat / item that can be used to turn enemies into pets / friends useful for the pacacifer runs
+
+    add a mechanic for the passiver run the boss room to open the portal i am thinking of standing on tile(s) for a set amount of time and / or in a set sequence
+
+    A sucessful pacacfier run awards you the pacacfier gun that does no damage but could be used to turn enemies into pets / friends
+
+   enemies have a happy mode where they run around and jump for joy and add hp to you if you hit them 
 
     enemies have a dazed mode theres eyes turn to circles and they run away from the player for a few seconds
 
     enemies have a confused mode and they attack each other 
 
-    enemy can randomly be scared and they run away out of the room,  You fimd these enemies in the bnss room explaining their cowardice and they attack in the boss battle which shouting 
+        enemy can randomly be scared and they run away out of the room,  You fimd these enemies in the bnss room explaining their cowardice and they attack in the boss battle which shouting 
     
     "WITNESS ME"
 
@@ -55,30 +76,7 @@ Balance
 
     if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
 
-    it would be good to have a list of text each enemy types says and it picks one randonlu and says some after hit, some minding their own business, some when they are and angry and dead.  The crux of this is to potray the "enemies" as the good guys and we will slowly reveal that the player maybe the bad guy in the game. 
-    
-    when you get a bonus (ie rare, uncommon etc trigger then you should only get the highest not multipile items spawned
 
-    the same item should not drop twice if it should never spaw or spawn a random number of coins (add coins)
-
-    drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
-
-    rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
-
-
-    Add a canPickUp flag to enemy Json to steal and use your spawned items and guns 
-
-    add a destroy for spawned items that turn it into a resources (and add resources)
-
-    Add angry flag to enemies which modify speed, hp & and damage as well as optional other modifiers such as size which can be done randomnly
-
-    using the follow mechanic, gun modifier, canhurtplayer (set to false) and canhurt enemies (set to true) we can create pets that follow you and shoot at enemies
-
-    Add a charisma stat / item that can be used to turn enemies into pets / friends useful for the pacacifer runs
-
-    add a mechanic for the passiver run the boss room to open the portal i am thinking of standing on tile(s) for a set amount of time and / or in a set sequence
-
-    A sucessful pacacfier run awards you the pacacfier gun that does no damage but could be used to turn enemies into pets / friends
 
    sound
 

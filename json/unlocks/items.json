@@ -1,8 +1,0 @@
-{
-    "name": "Items",
-    "description": "Unlocks items",
-    "unlock": "items",
-    "json": "game.json",
-    "attr": "items",
-    "value": true
-}

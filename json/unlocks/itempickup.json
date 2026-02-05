@@ -1,8 +1,0 @@
-{
-    "name": "Item Pickup",
-    "description": "Unlocks item pickup",
-    "unlock": "itempickup",
-    "json": "game.json",
-    "attr": "itemPickup",
-    "value": true
-}

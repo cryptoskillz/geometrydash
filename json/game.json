@@ -94,7 +94,7 @@
     "showRoom": false,
     "showOverlay": false,
     "ShowEnemyNames": true,
-    "ShowEnemyHealth": false,
+    "ShowEnemyHealth": true,
     "ghost": {
         "spawn": false,
         "roomGhostTimer": 10000,
