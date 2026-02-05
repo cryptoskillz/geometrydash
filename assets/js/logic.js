@@ -267,8 +267,6 @@ function convertItemsToScrap(targetX, targetY) {
 
     const currentCoord = `${player.roomX},${player.roomY}`;
 
-    console.log(`Scrap: Checking ${groundItems.length} items for room ${currentCoord}`);
-
     groundItems.forEach(item => {
         // 1. Must be in current room
         if (`${item.roomX},${item.roomY}` !== currentCoord) {
@@ -293,7 +291,7 @@ function convertItemsToScrap(targetX, targetY) {
     // IMPORTANT: Reassigning global variable
     groundItems = keptItems;
 
-    console.log(`Scrap: Kept ${keptItems.length}, Scrapping ${itemsToScrap.length}`);
+    // Removed Log
 
     if (totalScrap > 0) {
         // Add to Player
@@ -725,12 +723,17 @@ async function updateUI() {
     keysEl.innerText = player.inventory.keys;
 
     // check if bomb type is golden and if so set the count colour to gold 
-    if (player.bombType === "golden") {
-        bombsEl.style.color = "gold";
+    if (player.bombType) {
+        if (player.bombType === "golden") {
+            bombsEl.style.color = "gold";
+        } else {
+            bombsEl.style.color = "white";
+        }
+        bombsEl.innerText = player.inventory.bombs;
     } else {
-        bombsEl.style.color = "white";
+        bombsEl.style.color = "gray";
+        bombsEl.innerText = "--";
     }
-    bombsEl.innerText = player.inventory.bombs;
 
     // Ammo Display
     //console.log(gun);
@@ -757,13 +760,14 @@ async function updateUI() {
     }
 
     // Gun Name Display
-    if (gun) {
-        let name = gun.name || "PEASHOOTER";
+    if (player.gunType) {
+        let name = "PEASHOOTER";
+        if (gun && gun.name) name = gun.name;
         // Clean name
         if (name.startsWith("gun_")) name = name.replace("gun_", "");
         gunEl.innerText = name.toUpperCase();
     } else {
-        gunEl.innerText = "--";
+        gunEl.innerText = "UNARMED";
     }
 
 
@@ -1731,7 +1735,7 @@ async function initGame(isRestart = false, nextLevel = null, keepStats = false) 
             }
         } catch (e) { console.error("Gun fetch error:", e); }
 
-        if (!fetchedGun) {
+        if (!fetchedGun && !savedPlayerStats) {
             log("Attempting fallback to 'peashooter'...");
             try {
                 const res = await fetch(`/json/weapons/guns/player/peashooter.json?t=` + Date.now());
@@ -2145,14 +2149,21 @@ function startGame(keepState = false) {
     }
 
     // Async Load Assets then Start
+    // Async Load Assets then Start
     (async () => {
         try {
-            const [gData, bData] = await Promise.all([
-                (player.gunType ? fetch(`/json/weapons/guns/player/${player.gunType}.json?t=` + Date.now()).then(res => res.json()) : Promise.resolve({ Bullet: { NoBullets: true } })),
-                (player.bombType ? fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json()) : Promise.resolve({}))
-            ]);
-            gun = gData;
-            bomb = bData;
+            // FIXED: Only fetch weapons if NOT preserving state. 
+            // If keepState is true, 'gun' and 'bomb' globals retain their runtime modifications (upgrades).
+            if (!keepState) {
+                const [gData, bData] = await Promise.all([
+                    (player.gunType ? fetch(`/json/weapons/guns/player/${player.gunType}.json?t=` + Date.now()).then(res => res.json()) : Promise.resolve({ Bullet: { NoBullets: true } })),
+                    (player.bombType ? fetch(`/json/weapons/bombs/${player.bombType}.json?t=` + Date.now()).then(res => res.json()) : Promise.resolve({}))
+                ]);
+                gun = gData;
+                bomb = bData;
+            } else {
+                log("Keeping existing Weapon State (Gun/Bomb globals preserved)");
+            }
 
             if (loadingEl) loadingEl.style.display = 'none'; // Hide loading when done
 
@@ -5084,10 +5095,8 @@ function updatePortal() {
 
         // SCRAP MECHANIC
         if (!portal.scrapping && !portal.finished) {
-            console.log("Portal: Starting Scrap Check...");
             portal.scrapping = true;
             const scrapped = convertItemsToScrap(portal.x, portal.y);
-            console.log("Portal: Scrapped Value:", scrapped);
 
             if (scrapped > 0) {
                 // Wait for visual effect
@@ -5121,7 +5130,6 @@ function updatePortal() {
 }
 
 function handleLevelComplete() {
-    console.log("Portal: Handling Level Complete...");
     // 1. Next Level?
     if (roomData.nextLevel && roomData.nextLevel.trim() !== "") {
         log("Proceeding to Next Level:", roomData.nextLevel);

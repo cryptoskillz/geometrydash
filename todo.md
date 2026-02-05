@@ -4,7 +4,7 @@ bugs
     bomb goes blue when you leave the room and go back in
   
 next up 
-    balance3
+    balance 4 + room enemies
     sfx & ui updates
         game settings
             inventory
@@ -32,6 +32,10 @@ achivements
 
 
 Balance
+    implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
+    goldent bomb dodnt not stay on the next level went back to -- if you equip bomb at start it stays if you pick it up it doesnt
+    max bukket+1 didnt stay on next level same with pierce , modify etc
+    it says peashooter even if you dont pick it up
     show redshards on welcome screen
     max bombs in player json
     have to go into the portal twice
@@ -41,7 +45,7 @@ Balance
     add event to boss speech (entry and death)
 
 
-    balance 3 ^ 
+    balance 4  ^ 
 
 
 
