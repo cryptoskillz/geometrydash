@@ -611,43 +611,25 @@ async function updateUI() {
         hpEl.innerText = Math.floor(player.hp);
     }
     hpEl.innerText += ` / ${player.maxHp}`;
-    hpEl.innerText += ` / ${player.maxHp}`;
 
     // SHARD UI
-    if (gameData.redShards) {
-        // Create element if missing or assume existing structure? 
-        // User didn't ask for new DOM elements, but "inventory should update".
-        // I will assume I need to hijack an existing element or just append? 
-        // Actually, existing UI has keysEl, bombsEl, ammoEl.
-        // I should probably add them to the stats panel or create new elements if I could.
-        // For now, let's append to keysEl or just assume there are elements?
-        // Wait, I can't assume elements exist. I should probably inject them into the stats panel if they don't exist.
-        // But `updateUI` runs every frame. Creating elements here is bad.
-        // I'll check if elements exist, if not, I might need to create them in init or just append text to an existing container.
-        // Let's look at `index.html`? No, I am restricted to logic.js/inventory.
-        // I will append to the top stats panel text or similar.
-        // Keys element is id='keys'.
-        // Let's try to find if there are other slots.
-        // I will just add text to the existing keys element for now as a quick hack? No, that's ugly.
-        // I'll assume I can render them. 
-        // Actually, looking at the code, keysEl is simple. 
-        // Let's stick to adding them to the keys display for now: "Keys: 0 | R: 10 | G: 5"
-        let shardText = "";
-        if (gameData.redShards) shardText += ` R:${player.redShards}`;
-        if (gameData.greenShards) shardText += ` G:${player.inventory.greenShards}`;
+    const redEl = document.getElementById('red-shards');
+    const greenEl = document.getElementById('green-shards');
 
-        // Find or create shard container? 
-        // Let's just append to keys for visibility as requested "inventory should update".
-        // keysEl.innerText = `${player.inventory.keys} ${shardText}`;
+    if (redEl) {
+        // Use persisted value immediately if available to fix "undefined" start
+        const rVal = (typeof player.redShards !== 'undefined') ? player.redShards : (localStorage.getItem('currency_red') || 0);
+        redEl.innerText = `♦ ${rVal}`;
+        redEl.style.display = gameData.redShards ? 'inline' : 'none';
+    }
+    if (greenEl) {
+        const gVal = player.inventory.greenShards || 0;
+        greenEl.innerText = `◊ ${gVal}`;
+        greenEl.style.display = gameData.greenShards ? 'inline' : 'none';
     }
 
-    // BETTER APPROACH: Check for `shards-display` element. If not, create it once? 
-    // But I can't easily modify HTML. 
-    // I can modify innerText of keysEl to include shards.
-    let keysText = `${player.inventory.keys}`;
-    if (gameData.redShards) keysText += ` | ♦${player.redShards}`;
-    if (gameData.greenShards) keysText += ` | ◊${player.inventory.greenShards}`;
-    keysEl.innerText = keysText;
+    // Keys (Restore original clean display)
+    keysEl.innerText = player.inventory.keys;
 
     // check if bomb type is golden and if so set the count colour to gold 
     if (player.bombType === "golden") {
@@ -4886,6 +4868,23 @@ function updateEnemies() {
             en.isDead = true;
             en.deathTimer = 30;
             log(`Enemy died: ${en.type}`);
+
+            // DROP GREEN SHARDS (Difficulty Based)
+            if (en.type !== 'boss') { // Bosses drop Red Shards separately
+                // Calculate amount based on MaxHP (proxy for difficulty)
+                // e.g. 1 shard per 1 HP? Or 1 shard per 0.5 HP?
+                // Small enemies (0.5hp) -> 1 shard
+                // Large enemies (1.5hp) -> 2-3 shards
+                // Massive (2.0hp) -> 2-4 shards
+                const hp = en.maxHp || 1;
+                const min = Math.ceil(hp);
+                const max = Math.ceil(hp * 2);
+                const amount = Math.floor(min + Math.random() * (max - min + 1));
+
+                if (amount > 0) {
+                    spawnShard(en.x, en.y, 'green', amount);
+                }
+            }
 
             if (en.type === 'boss') {
                 log("BOSS DEFEATED! The Curse Strengthens... Resetting Rooms!");
