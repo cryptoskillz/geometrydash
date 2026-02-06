@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS } from './Constants.js';
-import { log, deepMerge } from './Utils.js';
+import { log, deepMerge, triggerSpeech } from './Utils.js';
 import { SFX, introMusic, unlockAudio } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
 import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts } from './UI.js';
@@ -1561,7 +1561,7 @@ export function isRoomLocked() {
             isLocked = true;
             if (Math.random() < 0.05) {
                 log(`LOCKED! Elapsed: ${Math.round(elapsed)} > Limit: ${limit}`);
-                log(`Diagnostics: Now=${now}, Start=${roomStartTime}, ConfigTimer=${ghostConfig.roomGhostTimer}`);
+                log(`Diagnostics: Now=${now}, Start=${Globals.roomStartTime}, ConfigTimer=${ghostConfig.roomGhostTimer}`);
             }
         }
     }

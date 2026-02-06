@@ -40,6 +40,7 @@ next up
 
 
 refactor 
+    remove autostart = true from index call
     0 to toggle music 
     add r to restart not bound to debug
     ui show correct
@@ -50,6 +51,7 @@ refactor
     items dont keep spawning in next room 
     god mode not working
     debug not working 
+    debug log not working 
     
 
 narartor
