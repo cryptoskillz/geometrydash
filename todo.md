@@ -1,7 +1,21 @@
 bugs
+    add const paths to the json files so we dont require absolute urls as this can lead to errors
+    shield shows when you go into the portal
+    bomb goes blue when you leave the room and go back in
+    going to main menu and starting a new game keeps gun modifiers once you pick up a new gun, you correctly start with the peashooter or unarmed
+    golden bomb statys on level relaod but not red 
+    goldent bomb dodnt not stay on the next level went back to -- if you equip bomb at start it stays if you pick it up it doesnt
+    i took golden bomb from first boss fight (lucky drop) but ti wentback to normal bomb on restart
+    bombs are blue when you leave and reenter a room 
+    is death speech working?
+    add player enter room speech for enemies
+    add event to boss speech (entry and death)
+    max bukket+1 didnt stay on next level same with pierce , modify etc
+    you lose the gun modifies on coplete level but if you pock another gun up the coem abck pn player restart
+    you pick up 360 gun and drop 360 (the name)
     pull the player still persissts seems to happen when you pick up an item / spawn an item 
     sometimes when you pick up an item they all despawn
-    bomb goes blue when you leave the room and go back in
+    dont use the same enmy name in a room
   
 next up 
     balance 4 + room enemies
@@ -23,7 +37,19 @@ next up
     unlocks / permance
     server     
 
+narartor
+    add narrator speech 
 
+    level 0 
+        You can hear me?  go through the portal
+    level 1
+        you found it again, intreting 
+    level 2
+        you will require some help
+    level 3
+        find the secrets
+
+    
 
        
 achivements
@@ -32,60 +58,75 @@ achivements
 
 
 Balance
+
+
+onky spaw itesm that have 
+
+unlocked / active = true in the item josn or it has been unlocked as is in localstorage. 
+
+If it modifyType session then it is not a persistent upgrade so it only activates when you it pick it up during a game if it persistent then you apply it at gameinit
+ 
+    on game over restart get rid of all the session items
+
+    only drop items that ulocked / active / true
+    add unlock rarity to game json and give a unlock if nextlevel is set and the unlock url in room is blank
+    add to the unlock and update the unlock state of the item
+    sound effects on / off
+    add a idele state for player
+    msui fade in / fade out 
+    check gun unified
+    upddate readme 
+    add a proper end game outro (star field with text a game by crypto skillz and a btc qr code)
+    ui should be a fixed height
+    mini map should under ui and bigger
     implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
-    goldent bomb dodnt not stay on the next level went back to -- if you equip bomb at start it stays if you pick it up it doesnt
-    max bukket+1 didnt stay on next level same with pierce , modify etc
-    it says peashooter even if you dont pick it up
-    show redshards on welcome screen
-    max bombs in player json
-    have to go into the portal twice
     make most items locked at the start and you can unlock x items at random everytime you beat a level, 
     add correct enemies to each room
-    tweak speech.json
-    add event to boss speech (entry and death)
+    show redshards on welcome screen
+    max keys in player json
+    max bombs in player json
+    
 
 
-    balance 4  ^ 
 
 
-
-    add a scrap item item 
+    balance 5  ^ 
 
         drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
 
-    rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
+        rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
 
         peermant unlocks can be purchased for gold coins you collect once you unlock permance mode you can pay to buy any item you unlocked 
 
 
         beat the game to unlock permance mode 
-    so you cna buy the item you want for the next run you can also get really expensice items that are permant upgrades so upgrades are permant and active when you start a new run such as enemy names
+        so you cna buy the item you want for the next run you can also get really expensice items that are permant upgrades so upgrades are permant and active when you start a new run such as enemy names
 
-    Add a canPickUp flag to enemy Json to steal and use your spawned items and guns 
-    using the follow mechanic, gun modifier, canhurtplayer (set to false) and canhurt enemies (set to true) we can create pets that follow you and shoot at enemies
+        Add a canPickUp flag to enemy Json to steal and use your spawned items and guns 
+        using the follow mechanic, gun modifier, canhurtplayer (set to false) and canhurt enemies (set to true) we can create pets that follow you and shoot at enemies
 
-    Add a charisma stat / item that can be used to turn enemies into pets / friends useful for the pacacifer runs
+        Add a charisma stat / item that can be used to turn enemies into pets / friends useful for the pacacifer runs
 
-    add a mechanic for the passiver run the boss room to open the portal i am thinking of standing on tile(s) for a set amount of time and / or in a set sequence
+        add a mechanic for the passiver run the boss room to open the portal i am thinking of standing on tile(s) for a set amount of time and / or in a set sequence
 
-    A sucessful pacacfier run awards you the pacacfier gun that does no damage but could be used to turn enemies into pets / friends
+        A sucessful pacacfier run awards you the pacacfier gun that does no damage but could be used to turn enemies into pets / friends
 
-   enemies have a happy mode where they run around and jump for joy and add hp to you if you hit them 
+        enemies have a happy mode where they run around and jump for joy and add hp to you if you hit them 
 
-    enemies have a dazed mode theres eyes turn to circles and they run away from the player for a few seconds
+        enemies have a dazed mode theres eyes turn to circles and they run away from the player for a few seconds
 
-    enemies have a confused mode and they attack each other 
+        enemies have a confused mode and they attack each other 
 
         enemy can randomly be scared and they run away out of the room,  You fimd these enemies in the bnss room explaining their cowardice and they attack in the boss battle which shouting 
     
-    "WITNESS ME"
+        "WITNESS ME"
 
-    to which the boss always responds
+        to which the boss always responds
 
-    "MEDICORE"
+        "MEDICORE"
 
 
-    if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
+        if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
 
 
 
@@ -141,6 +182,10 @@ enemies
 
 
 ghost
+    when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
+
+ another ghost spawens every 10 seconds if you dont kill the first ghost ghost timer should stop when the ghost spawns (only ever spawns max 2 ghosts)
+ghost non solid enmeies should be able to pass through bombs (they dont explode)
 ghost appears when you stay on th ewelcoem screen for 10 seconds stopping ghost from spawining in start room will fix this 
 ghost does not appear in boss rooms
 if you go through multiple room and back track you will see multiple ghosts

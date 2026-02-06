@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>JS Dungeon Crawler</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- ... body content ... -->
+    <div id="loading"
+        style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; z-index: 9999; align-items: center; justify-content: center; font-family: monospace; font-size: 24px;">
+        LOADING...
+    </div>
+    <div id="ui" style="display:none;">
+        <div id="stats-panel">
+            HP: <span id="hp">3</span> |
+            Keys: <span id="keys">0</span><br>
+            Bombs: <span id="bombs">0</span><br>
+            Gun: <span id="gun">--</span> | Ammo: <span id="ammo">--</span><br>
+            Room: [<span id="roomName">...</span>]<br>
+            <div id="shards-container" style="margin-top: 5px; border-top: 1px solid #444; padding-top: 5px;">
+                <span id="red-shards" style="color: #e74c3c;">♦ 0</span> |
+                <span id="green-shards" style="color: #2ecc71;">◊ 0</span>
+            </div>
+        </div>
+        <canvas id="minimapCanvas" width="100" height="100"
+            style="margin-top: 10px; border: 1px solid #444; background: #000; display: block; pointer-events: none;"></canvas>
+        <div id="debug-panel">
+            <div id="debug-editor">
+                <select id="debug-select"></select>
+            </div>
+            <div id="debug-form"></div>
+        </div>
+    </div>
+    <div id="debug-log"
+        style="display:none; position: fixed; bottom: 0; left: 0; width: 100%; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.8); color: #0f0; font-family: monospace; padding: 5px; z-index: 1000; pointer-events: auto;">
+    </div>
+
+    <div id="welcome" style="display:none;">
+        <h1>Geometry Dash</h1>
+        <p>press M to toggle music<br>press any key to start</p>
+    </div>
+    <div id="perfect">Perfect!</div>
+    <div id="overlay">
+        <h1 id="overlayTitle">Game Over</h1>
+        <p id="stats">Rooms Cleared: 0</p>
+        <div class="btn-container">
+            <button id="restartBtn" onclick="restartGame()">(R)estart</button>
+            <button id="menuBtn" onclick="goToWelcome()">(M)ain Menu</button>
+            <button id="continueBtn" onclick="goContinue()" style="display:none;">(Enter) Continue</button>
+        </div>
+    </div>
+
+    <div id="newGameModal"
+        style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; flex-direction: column; z-index: 2000;">
+        <h1
+            style="color: #c0392b; font-family: 'Courier New', monospace; text-shadow: 2px 2px #000; margin-bottom: 20px;">
+            START NEW GAME?</h1>
+        <p
+            style="color: #ecf0f1; font-family: monospace; text-align: center; max-width: 400px; line-height: 1.5; margin-bottom: 30px;">
+            WARNING:<br>This will <span style="color: #e74c3c;">DELETE ALL UNLOCKS</span> and progress.<br>Are you sure?
+        </p>
+        <div class="btn-container" style="gap: 20px;">
+            <button onclick="confirmNewGame()"
+                style="padding: 10px 20px; font-size: 18px; cursor: pointer; background: #c0392b; color: white; border: 2px solid #e74c3c; font-family: monospace;">(D)
+                DELETE</button>
+            <button onclick="cancelNewGame()"
+                style="padding: 10px 20px; font-size: 18px; cursor: pointer; background: #666; color: white; border: 2px solid #888; font-family: monospace;">(ENTER)
+                CONTINUE</button>
+        </div>
+    </div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <script src="assets/js/logic.js?v=93"></script>
+    <script src="assets/js/credits.js?v=44"></script>
+</body>
+
+</html>

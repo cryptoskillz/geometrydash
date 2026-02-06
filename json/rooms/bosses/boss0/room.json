@@ -1,7 +1,8 @@
 {
     "name": "NOTHING HERE ",
     "description": "You should not be here",
-    "keyBonus": 1.0,
+    "hardness": 0,
+    "keyBonus": 0,
     "speedGoal": 0,
     "item": {
         "common": {
@@ -56,5 +57,6 @@
         "startlevel1"
     ],
     "nextLevel": "",
-    "endGame": true
+    "welcomeScreen": true,
+    "completedItMate": false
 }

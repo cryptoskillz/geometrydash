@@ -1,17 +1,17 @@
 {
     "general": [
         "Arghhh",
-        "Die!",
+        "Who is he?",
         "Grrr...",
         "I see you!",
-        "Attack!",
-        "Crush him!"
+        "why shoot us, we are friends!",
+        "I'm scared!"
     ],
     "types": {
         "ghost": [
             "Woooo...",
             "The void calls...",
-            "Join us...",
+            "JUDAS!!!",
             "Fading...",
             "So cold...",
             "Why did you do this to me?"
@@ -97,7 +97,9 @@
         "afraid": [
             "Stay back!",
             "No!",
-            "Mercy!"
+            "Mercy!",
+            "I'm scared!",
+            "We are simple people!"
         ]
     },
     "events": {
@@ -106,19 +108,22 @@
             "Hey!",
             "My face!",
             "That hurt!",
-            "Quit it!"
+            "Quit it!",
+            "What did we do to you?"
         ],
         "death": [
             "Nooo...",
             "Avenge me...",
             "Darkness...",
-            "I fall..."
+            "I fall...",
+            "I'll be back!",
+            "Death becomes me!"
         ],
         "player_die": [
-            "Ha ha ha!",
-            "Weak!",
-            "Another falls.",
-            "Easy."
+            "We got him but he always comes back!",
+            "He is too strong!",
+            "He falls.",
+            "I hope that is the last time we see him!"
         ]
     }
 }

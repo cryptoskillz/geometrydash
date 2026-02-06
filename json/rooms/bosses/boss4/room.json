@@ -41,6 +41,7 @@
     "width": 800,
     "height": 600,
     "unlocks": [],
-    "nextLevel": "json/levels/4.json",
-    "endGame": false
+    "nextLevel": "",
+    "welcomeScreen": false,
+    "completedItMate": true
 }

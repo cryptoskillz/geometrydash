@@ -1,7 +1,8 @@
 {
     "name": "Boss Room 1",
     "description": "",
-    "keyBonus": 1.0,
+    "hardness": 1,
+    "keyBonus": 0,
     "speedGoal": 0,
     "item": {
         "common": {
@@ -36,5 +37,6 @@
         "shards"
     ],
     "nextLevel": "",
-    "endGame": true
+    "welcomeScreen": true,
+    "completedItMate": false
 }
