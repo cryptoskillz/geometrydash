@@ -3404,15 +3404,17 @@ export function drawItems() {
         const bob = Math.sin(Date.now() / 300) * 3;
         Globals.ctx.translate(0, bob);
 
+        const itemType = item.type || (item.data && item.data.type);
+
         // Draw Item Base
-        if (item.type === 'gun') {
+        if (itemType === 'gun') {
             Globals.ctx.fillStyle = '#e74c3c'; // Redish
             Globals.ctx.fillRect(-size / 2, -size / 2, size, size);
             Globals.ctx.fillStyle = 'white';
             Globals.ctx.font = '10px monospace';
             Globals.ctx.textAlign = 'center';
             Globals.ctx.fillText("GUN", 0, 4);
-        } else if (item.type === 'bomb') {
+        } else if (itemType === 'bomb') {
             Globals.ctx.fillStyle = '#f1c40f'; // Yellow
             Globals.ctx.beginPath();
             Globals.ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
@@ -3420,7 +3422,7 @@ export function drawItems() {
             Globals.ctx.fillStyle = 'black';
             Globals.ctx.textAlign = 'center';
             Globals.ctx.fillText("B", 0, 4);
-        } else if (item.type === 'health' || item.type === 'heart') {
+        } else if (itemType === 'health' || itemType === 'heart') {
             Globals.ctx.fillStyle = '#e74c3c';
             Globals.ctx.beginPath();
             Globals.ctx.moveTo(0, size / 3);
@@ -3428,13 +3430,73 @@ export function drawItems() {
             Globals.ctx.arc(size / 4, -size / 6, size / 4, Math.PI, 0);
             Globals.ctx.lineTo(0, size / 2);
             Globals.ctx.fill();
-        } else if (item.type === 'ammo') {
+        } else if (itemType === 'ammo') {
             Globals.ctx.fillStyle = '#2ecc71'; // Green
             Globals.ctx.fillRect(-size / 3, -size / 2, size / 1.5, size);
         } else {
-            // Generic Item
-            Globals.ctx.fillStyle = item.color || (item.data && (item.data.colour || item.data.color)) || '#95a5a6';
+            // Generic Item - Use Type Color
+            Globals.ctx.fillStyle = getItemTypeColor(itemType, item.data) || item.color || '#95a5a6';
             Globals.ctx.fillRect(-size / 2, -size / 2, size, size);
+        }
+
+        // Rarity Effects (Glow/Pulse)
+        const rarity = (item.data && item.data.rarity) ? item.data.rarity.toLowerCase() : 'common';
+        if (rarity !== 'common') {
+            const time = Date.now() / 1000;
+            let glowColor = 'rgba(255, 255, 255, 0.5)';
+            let pulse = 0;
+            let hasBeam = false;
+
+            if (rarity === 'rare') {
+                glowColor = 'rgba(52, 152, 219, 0.6)'; // Blue
+                pulse = Math.sin(time * 2) * 5;
+            } else if (rarity === 'epic') {
+                glowColor = 'rgba(155, 89, 182, 0.8)'; // Purple
+                pulse = Math.sin(time * 4) * 8;
+            } else if (rarity === 'legendary') {
+                glowColor = 'rgba(241, 196, 15, 0.9)'; // Gold
+                pulse = Math.sin(time * 6) * 10;
+                hasBeam = true; // Gravitas!
+
+                // Sparkles for Legendary
+                if (Math.random() < 0.2) { // More sparkles
+                    Globals.particles.push({
+                        x: item.x + (Math.random() - 0.5) * 30,
+                        y: item.y + (Math.random() - 0.5) * 30,
+                        // Float up
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: -Math.random() * 2.0 - 1.0,
+                        life: 1.5,
+                        color: Math.random() < 0.5 ? '#f1c40f' : '#ffffff',
+                        size: Math.random() * 4
+                    });
+                }
+            }
+
+            // GRAVITAS BEAM (Legendary)
+            if (hasBeam) {
+                const beamHeight = 100 + Math.sin(time * 3) * 20;
+                // Beam Core
+                const grad = Globals.ctx.createLinearGradient(0, 0, 0, -beamHeight);
+                grad.addColorStop(0, "rgba(241, 196, 15, 0.4)");
+                grad.addColorStop(1, "rgba(241, 196, 15, 0)");
+                Globals.ctx.fillStyle = grad;
+                Globals.ctx.fillRect(-size / 2, -beamHeight, size, beamHeight);
+                // Beam Outer
+                const grad2 = Globals.ctx.createLinearGradient(0, 0, 0, -beamHeight * 1.5);
+                grad2.addColorStop(0, "rgba(241, 196, 15, 0.1)");
+                grad2.addColorStop(1, "rgba(241, 196, 15, 0)");
+                Globals.ctx.fillStyle = grad2;
+                Globals.ctx.fillRect(-size, -beamHeight * 1.5, size * 2, beamHeight * 1.5);
+            }
+
+            Globals.ctx.shadowBlur = 10 + pulse;
+            Globals.ctx.shadowColor = glowColor;
+            // Redraw border/shape with shadow
+            Globals.ctx.strokeStyle = glowColor;
+            Globals.ctx.lineWidth = 2;
+            Globals.ctx.strokeRect(-size / 2 - 2, -size / 2 - 2, size + 4, size + 4);
+            Globals.ctx.shadowBlur = 0; // Reset
         }
 
         // Label
@@ -3496,4 +3558,23 @@ function calculateShardDrop(type, sourceKey, entity) {
     // Random between min and max, plus bonus
     const base = Math.floor(min + Math.random() * (max - min + 1));
     return base + bonus;
+}
+// Helper for Item Colors based on Type
+function getItemTypeColor(type, data) {
+    if (type === 'gun') return '#e74c3c'; // Red
+    if (type === 'bomb') return '#f1c40f'; // Yellow
+    if (type === 'shard') {
+        if (data && data.shardType === 'red') return '#e74c3c'; // Red Shard
+        return '#2ecc71'; // Green Shard (Default)
+    }
+    if (type === 'health' || type === 'heart') return '#e74c3c';
+    if (type === 'ammo') return '#2ecc71';
+
+    if (type === 'modifier') {
+        const loc = (data && data.location) ? data.location.toLowerCase() : "";
+        if (loc.includes('player')) return '#3498db'; // Blue (Player Mod)
+        if (loc.includes('bullets')) return '#9b59b6'; // Purple (Bullet Mod)
+        return '#2ecc71'; // Green (Inventory/Other)
+    }
+    return null; // Fallback
 }
