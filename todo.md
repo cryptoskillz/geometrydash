@@ -1,4 +1,5 @@
 bugs
+    if you leave the room with a remote bomb it wont detonate with space bar
     add const paths to the json files so we dont require absolute urls as this can lead to errors
     shield shows when you go into the portal
     bomb goes blue when you leave the room and go back in
@@ -42,7 +43,8 @@ next up
 refactor 
 
   
-    guns and bombs working
+    reset health,bombs, hp, keys on reset 
+    hard relaod / first run should reset to base gun and base bomb
     when you hit r is is copying peashooter to base gun in app storage but you still have th current gun (with debug om ut sould not copy only with debug off)
   
     ui show correct

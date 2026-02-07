@@ -359,6 +359,12 @@ export async function dropBomb() {
     // Safety check just in case Globals.bomb is minimal
     const bombConf = Globals.bomb || {};
 
+    // Check Max Drop Limit
+    if (bombConf.maxDrop && Globals.bombs.length >= bombConf.maxDrop) {
+        log("Max bombs reached!");
+        return false;
+    }
+
     if (typeof bombConf.timer === 'object' && bombConf.timer !== null) {
         timerDuration = Number(bombConf.timer.time) || 1000;
         timerShow = bombConf.timer.show !== false;
@@ -963,16 +969,16 @@ export function updateRemoteDetonation() {
 }
 
 export function updateBombInteraction() {
-    if (!keys["Space"]) return;
+    if (!Globals.keys["Space"]) return;
 
     let kicked = false;
     // Find closest kickable bomb
     let closestB = null;
     let minD = Infinity;
 
-    bombs.forEach(b => {
+    Globals.bombs.forEach(b => {
         if (b.canInteract?.active && b.canInteract.type === 'kick') {
-            const d = Math.hypot(b.x - player.x, b.y - player.y);
+            const d = Math.hypot(b.x - Globals.player.x, b.y - Globals.player.y);
             const kickRange = b.canInteract.distance || 60; // Default range
 
             if (d < kickRange && d < minD) {
@@ -984,8 +990,8 @@ export function updateBombInteraction() {
 
     if (closestB) {
         // Calculate kick angle (from player to bomb)
-        const angle = Math.atan2(closestB.y - player.y, closestB.x - player.x);
-        const force = player.physics?.strength || 15; // Kick strength based on player stats
+        const angle = Math.atan2(closestB.y - Globals.player.y, closestB.x - Globals.player.x);
+        const force = Globals.player.physics?.strength || 15; // Kick strength based on player stats
 
         // Apply velocity (physics must be enabled on bomb)
         closestB.vx = Math.cos(angle) * force;
@@ -995,44 +1001,42 @@ export function updateBombInteraction() {
         kicked = true;
     }
 
-    if (kicked) keys["Space"] = false; // Consume input
+    if (kicked) Globals.keys["Space"] = false; // Consume input
 }
 
 
 
 export function updateUse() {
-    if (!keys["Space"]) return;
-
-
+    if (!Globals.keys["Space"]) return;
 
     // consume input so it fires once
-    keys["Space"] = false;
+    Globals.keys["Space"] = false;
 
-    if (gameState !== STATES.PLAY) return;
+    if (Globals.gameState !== STATES.PLAY) return;
 
     // Start the Tron music if it hasn't started yet
     // (Handled by startAudio listener now)
 
-    const roomLocked = isRoomLocked();
-    const doors = roomData.doors || {};
+    const roomLocked = Globals.isRoomLocked();
+    const doors = Globals.roomData.doors || {};
     if (roomLocked) return; // keep your existing rule: can't unlock while enemies alive
 
     // Helper: are we close enough to a door?
     const inRangeTop = (door) => {
-        const doorX = door.x !== undefined ? door.x : canvas.width / 2;
-        return player.y <= BOUNDARY + 5 && player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
+        const doorX = door.x !== undefined ? door.x : Globals.canvas.width / 2;
+        return Globals.player.y <= BOUNDARY + 5 && Globals.player.x > doorX - DOOR_SIZE && Globals.player.x < doorX + DOOR_SIZE;
     };
     const inRangeBottom = (door) => {
-        const doorX = door.x !== undefined ? door.x : canvas.width / 2;
-        return player.y >= canvas.height - BOUNDARY - 5 && player.x > doorX - DOOR_SIZE && player.x < doorX + DOOR_SIZE;
+        const doorX = door.x !== undefined ? door.x : Globals.canvas.width / 2;
+        return Globals.player.y >= Globals.canvas.height - BOUNDARY - 5 && Globals.player.x > doorX - DOOR_SIZE && Globals.player.x < doorX + DOOR_SIZE;
     };
     const inRangeLeft = (door) => {
-        const doorY = door.y !== undefined ? door.y : canvas.height / 2;
-        return player.x <= BOUNDARY + 5 && player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
+        const doorY = door.y !== undefined ? door.y : Globals.canvas.height / 2;
+        return Globals.player.x <= BOUNDARY + 5 && Globals.player.y > doorY - DOOR_SIZE && Globals.player.y < doorY + DOOR_SIZE;
     };
     const inRangeRight = (door) => {
-        const doorY = door.y !== undefined ? door.y : canvas.height / 2;
-        return player.x >= canvas.width - BOUNDARY - 5 && player.y > doorY - DOOR_SIZE && player.y < doorY + DOOR_SIZE;
+        const doorY = door.y !== undefined ? door.y : Globals.canvas.height / 2;
+        return Globals.player.x >= Globals.canvas.width - BOUNDARY - 5 && Globals.player.y > doorY - DOOR_SIZE && Globals.player.y < doorY + DOOR_SIZE;
     };
 
     // Prefer the door the player is "facing" (lastMoveX/lastMoveY), fall back to any nearby door.
@@ -1043,10 +1047,10 @@ export function updateUse() {
     if (doors.right?.active) candidates.push({ dir: "right", door: doors.right, inRange: inRangeRight });
 
     const facingDir =
-        player.lastMoveY === -1 ? "top" :
-            player.lastMoveY === 1 ? "bottom" :
-                player.lastMoveX === -1 ? "left" :
-                    player.lastMoveX === 1 ? "right" : null;
+        Globals.player.lastMoveY === -1 ? "top" :
+            Globals.player.lastMoveY === 1 ? "bottom" :
+                Globals.player.lastMoveX === -1 ? "left" :
+                    Globals.player.lastMoveX === 1 ? "right" : null;
 
     let target = null;
 
@@ -1068,9 +1072,9 @@ export function updateUse() {
 
     // unlock if locked and player has keys
     if (d.locked) {
-        if (player.inventory?.keys > 0) {
-            player.inventory.keys--;
-            keysEl.innerText = player.inventory.keys;
+        if (Globals.player.inventory?.keys > 0) {
+            Globals.player.inventory.keys--;
+            if (Globals.elements.keys) Globals.elements.keys.innerText = Globals.player.inventory.keys;
             d.locked = 0;
             d.unlockedByKey = true;
             log(`${target.dir} door unlocked via USE (Space)`);
@@ -2515,7 +2519,7 @@ export function drawBombs(doors) {
             ctx.fill();
 
             // Draw Timer Text?
-            if (b.timerShow) {
+            if (b.timerShow && isFinite(b.explodeAt)) {
                 ctx.fillStyle = "black"; // High contrast text
                 ctx.font = "bold 12px Arial";
                 ctx.textAlign = "center";

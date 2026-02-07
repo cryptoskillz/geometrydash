@@ -1606,6 +1606,7 @@ export function isRoomLocked() {
     }
     return isLocked;
 }
+Globals.isRoomLocked = isRoomLocked;
 
 export function updateRoomLock() {
     // --- 2. ROOM & LOCK STATUS ---
