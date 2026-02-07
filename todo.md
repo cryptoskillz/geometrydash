@@ -22,10 +22,12 @@ bugs
     when you chnage gun all the modifiers are removed a nice item to unlock would be global gun / bomb modifiers
     is the items folder required now we are all in rewards 
     add bomb to total (when totla bombs is added)
-  
+    if item is persistent then you apply it at gameinit
+
+
 next up 
-    
     balance 5 + room enemies
+    bug fix 6
     sfx & ui updates
         game settings
             inventory
@@ -44,35 +46,35 @@ next up
     unlocks / permance
     server    
 
+balance 6
 
-     balance 6
-
- 
-    red shards for dup items etc as in logic js
-
-onky spaw itesm that have 
-
-unlocked / active = true in the item josn or it has been unlocked as is in localstorage. 
-
-If it modifyType session then it is not a persistent upgrade so it only activates when you it pick it up during a game if it persistent then you apply it at gameinit
- 
-
-    only drop items that ulocked / active / true
-    add unlock rarity to game json and give a unlock if nextlevel is set and the unlock url in room is blank
+    count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
+    fix debug logs
+    fix debug window
+    restart to draw on intro screen remove the debug required
+    add sfx 9 to welcome screen
+    show red shards on welcome screen
+    red shards for dup items etc as in logic js 
+    add level 5
+    only spaw itesm that have unlocked / active = true in the item josn or it has been unlocked as is in localstorage. 
+    If it modifyType session then it is not a persistent upgrade so it only activates when you it pick it up during a game 
+    add unlock rarity to game json and give a unlock if nextlevel is set and the unlocks array in room is blank
     add to the unlock and update the unlock state of the item
-    add a idele state for player
-    check gun unified
     upddate readme 
     implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
     make most items locked at the start and you can unlock x items at random everytime you beat a level, 
     add correct enemies to each room
-    show redshards on welcome screen
     max keys in player json
     max bombs in player json
     
-
-
-
+Levels
+    level 4 standaed boss 
+    Level 5 harder boss (with gun)
+    level 6 is golcen path maze (it will say room name followed by dejavu)
+    level 7 ghost chase
+    level 8 is crazy rooms
+    level 9 is boss rush
+    level 10 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
 
 
    
@@ -99,47 +101,31 @@ achivements
 
 
 Balance
-
-        drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
-
-        rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
-
-        peermant unlocks can be purchased for gold coins you collect once you unlock permance mode you can pay to buy any item you unlocked 
-
-
-        beat the game to unlock permance mode 
-        so you cna buy the item you want for the next run you can also get really expensice items that are permant upgrades so upgrades are permant and active when you start a new run such as enemy names
-
-        Add a canPickUp flag to enemy Json to steal and use your spawned items and guns 
-        using the follow mechanic, gun modifier, canhurtplayer (set to false) and canhurt enemies (set to true) we can create pets that follow you and shoot at enemies
-
-        Add a charisma stat / item that can be used to turn enemies into pets / friends useful for the pacacifer runs
-
-        add a mechanic for the passiver run the boss room to open the portal i am thinking of standing on tile(s) for a set amount of time and / or in a set sequence
-
-        A sucessful pacacfier run awards you the pacacfier gun that does no damage but could be used to turn enemies into pets / friends
-
-        enemies have a happy mode where they run around and jump for joy and add hp to you if you hit them 
-
-        enemies have a dazed mode theres eyes turn to circles and they run away from the player for a few seconds
-
-        enemies have a confused mode and they attack each other 
-
-        enemy can randomly be scared and they run away out of the room,  You fimd these enemies in the bnss room explaining their cowardice and they attack in the boss battle which shouting 
+    add a timer (as unlock and store time for each level)
+        This will be the first thing we store on the server we will store the players name, level and time and have a speed run leaderboard
+    drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
+    rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
+    peermant unlocks can be purchased for red shards you collect once you unlock permance mode you can pay to buy any item you unlocked 
+    beat the game to unlock permance mode 
+    so you cna buy the item you want for the next run you can also get really expensive items that are permanent upgrades so upgrades are permanent and active when you start a new run such as enemy names
+    Add a canPickUp flag to enemy Json to steal and use your spawned items and guns 
+    using the follow mechanic, gun modifier, canhurtplayer (set to false) and canhurt enemies (set to true) we can create pets that follow you and shoot at enemies
+    Add a charisma stat / item that can be used to turn enemies into pets / friends useful for the pacacifer runs
+    add a mechanic for the passiver run the boss room to open the portal i am thinking of standing on tile(s) for a set amount of time and / or in a set sequence
+    enemies have a happy mode where they run around and jump for joy and add hp to you if you hit them 
+    enemies have a dazed mode theres eyes turn to circles and they run away from the player for a few seconds
+    enemies have a confused mode and they attack each other 
+    enemy can randomly be scared and they run away out of the room,  You fimd these enemies in the bnss room explaining their cowardice and they attack in the boss battle which shouting 
     
-        "WITNESS ME"
+    "WITNESS ME"
 
-        to which the boss always responds
+    to which the boss always responds
 
-        "MEDICORE"
+    "MEDICORE"
 
+    if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
 
-        if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
-
-
-
-   sound
-
+sound
     sound effect for portal
     sound effect for bomb
     sound effect for item spswn
@@ -148,12 +134,11 @@ Balance
     add sound effects to button presses 
     sound effect when you go past secret room (add seret room)
     WHNE YOU CNT PIcK UP AN ITEM GIVE A fail SOUND
-    running into an enemy shoul dmake a sound
+    different guns have different sounds
 
 enemies
 
- regular
-
+    regular
         pentagon
         heptagon
         octagon
@@ -164,8 +149,7 @@ enemies
         trapezoid
         kite
 
-        irregular
-
+    irregular
         triangle
         quadrilateral
         pentagon
@@ -175,8 +159,7 @@ enemies
         nonagon
         decagon
 
-        3d
-
+    3d
         sphere
         right circular cone
         ectangular box
@@ -185,48 +168,27 @@ enemies
         pyramid
 
 
-         with even number of sides
+    with even number of sides
 
 
 
 ghost
     when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
-
- another ghost spawens every 10 seconds if you dont kill the first ghost ghost timer should stop when the ghost spawns (only ever spawns max 2 ghosts)
-ghost non solid enmeies should be able to pass through bombs (they dont explode)
-ghost appears when you stay on th ewelcoem screen for 10 seconds stopping ghost from spawining in start room will fix this 
-ghost does not appear in boss rooms
-if you go through multiple room and back track you will see multiple ghosts
-if you leave a room and come back the ghost should be the same place + closer to you basedo on the speed the ghost moves. 
-if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left (with ghost or blowing doors)
-  door is gone
+    another ghost spawens every 10 seconds if you dont kill the first ghost ghost timer should stop when the ghost spawns (only ever spawns max 2 ghosts)
+    ghost non solid enmeies should be able to pass through bombs (they dont explode)
+    ghost appears when you stay on th ewelcoem screen for 10 seconds stopping ghost from spawining in start room will fix this 
+    ghost does not appear in boss rooms
+    if you go through multiple room and back track you will see multiple ghosts
+    if you leave a room and come back the ghost should be the same place + closer to you basedo on the speed the ghost moves. 
+    if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left (with ghost or blowing doors)
+    door is gone
     ghost timer is running when you are on the welcome screen
-    ghpst wont enter a room with an indestrcutible eemies
+    ghost wont enter a room with an indestrcutible eemies
     if an enemy is nor sold (ie ghost) he should nor try to around enemies just go through them
-        solid enemies cant go through each other, player or objects
-        non solid enemies can be shot by bullets
-        solid enemies can be shot by bullets
-        player can alos be solid or non solid    
-
-
-
-level plan
-    on level tooling up if you dont pick up the peashoort or bombs you go into a pacafist run 
-    use item flag unlocked on level 3
-drop items flag on level 3 if not picked up items are never dropped
-    guns items (uses items)
-bombs
-inventory
-bullets 
-player
-level 4 standaed boss 
-level 5 is golcen path maze (it will say room name followed by dejavu)
-level 6 is harder level one
-level 7 ghost chase
-level 8 is crazy rooms
-level 9 is boss rush
-level 10 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
-
+    solid enemies cant go through each other, player or objects
+    non solid enemies can be shot by bullets
+    solid enemies can be shot by bullets
+    player can alos be solid or non solid    
 
 
 
@@ -235,7 +197,7 @@ NPCs
 
 rooms
     number of rooms json change this to per level if used
-change the drop chane from 100% once we are finished testing
+    change the drop chane from 100% once we are finished testing
     if movetype has an x,y start it there
     Boss room
     shop
@@ -278,28 +240,12 @@ enemies
         pattern
 
 
-
-
-
-
-
-
 server
     store game data
     store permaant unlocks 
     store permant modiifers
 
 items
-    dont drop the same item twice
-
-
-    solid false
-    coin item :
-    start room in a 10000 chance to drop a legendary item 
-    room bonus
-    key bonus
-    speedy bonus
-    perfect bonus
     inventory screen
     inventory screen should show the items that are unlocked
     only drop items that are unlocked
@@ -309,12 +255,6 @@ items
     randomstat+
     kick bombs
     speical item is game.json
-
-    guns
-        max ammo
-        ammo
-        reload time
-        chrage time
 
      bombs
         size
@@ -344,9 +284,8 @@ items
         expldoe duration
         max drop
 
-
-
      player
+        add a idle state for player
         speed
         size
         strength
@@ -357,98 +296,51 @@ items
         bounciness
         luck
         solid
-        invuln
-        invulnUntil
-        invulTimer
-        invulColour
         shield hp
         shield maxHp
         shield regenActive
         shield regen
         shield regenTimer
 
-
-
-
     shield
-
-
-        
-     
-
 
      inventory   
     
-
-
-levels
-    
-
 logic
     reload gun / bomb when they pick up a new item
     if you get hit perfect bonus will reset 
-    show gun name in the UI
-    update game.json vars to implemnt various switches   
-
 
 bombs
     add an explode on enemy / anything 
-
-
-level 1
-
-start room
-    if its first time it should just say game complete and unlock door and take you back to the menu
-    implemebt new and save game (use sqllite to store the game data)
-    the second time you will have doors
-    each time you finish the game you will unlock more stuff
 
 player 
     triangle should rotate to be the point the way you are moving
     iron man mode (ooe hit dead, all modifiers reset) (require save first)
     if speed is over 2 x starting speed show a blur effect
-    gemoetry gun shows triangle, square etc
-    peashooter shows peashooter
-    
 
-
-bullets  
+bullets / guns 
     cosine gun
     if no bullets and you press fire you should get a broken gun sound
-
-
-
+    shard gun got from pushing 50 items into portal room 
+    pacifist gun, get by completing the game withoug killing anything 
 
 key binding
     i = inventory
     m = shows full map
     s = stats
     
-
-    
 mini map
     item should show the whole mini map
     item suould shou secret rooms
     item will show boss
     whole mini map should be shown always (is this true we have a button which will show the full map)
-    make rooms go golden if you follow the golden path as a later level will be random rooms that get harder and harder everytime you go off the golden path and enemies respawn in rooms.
     mini map should not show red for static enemies once the room is clear it should go yellow
-
+    when you have killed the boss all rooms go red until you go through them
 
 debug window 
     updateDebugEditor make it update in realtime when something happens in the game
     when you click off of it it should focus back on the game
     add a export json option
-
-
-
-
-
-
-
-
-
-
 
 modifiers
     luck
@@ -456,35 +348,7 @@ modifiers
 
 sratch pad
 
-add a level generation that picks the rooms from the pool of rooms and links them from start to boss and throws in a few random rooms
-    have a level.json that has a pool of rooms and a pool of special items
-    have a level.json that has a pool of boss rooms 
-    have a level.json that has a pool of items
-    have a level.json that has a pool of keys
-    have a level.json that has a pool of bombs
-    have a level.json that has a pool of bombs
-    move the rooms to a level folder and have a level.json that has a pool of rooms
 
-have a perfect mode if you dont waster a bullet (perfects have to be sequential but we could have an item that turns it into no sequential)*
-    x > perfects drop a perfect message*
-    x > perfects drop a perfect item
-   =
-if it is done in under 10 show speedy.
-    in the future have a speed clear var in the room json and this sets the speed clear
-    x > speed clears drops a speed items
-    move this to room.json 
-
-
-player.json
-    unvuk period
-    implemment key pick up 
-    implement bomb item
-    implement bomb pick up
-    implement bomb place
-
-add a timer
-add a heatlh bar
-count the number of dead enemies
 
 
 
