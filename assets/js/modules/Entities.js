@@ -710,7 +710,7 @@ export function fireBullet(direction, speed, vx, vy, angle) {
         if (md.fireSouth) spawn(0, speed);
         if (md.fireWest) spawn(-speed, 0);
         if (md.fire360) {
-            const step = 20;
+            const step = 18; // Changed from 20 to 18 to ensure 90/270 (North/South) are hit (360/18 = 20 bullets)
             for (let d = 0; d < 360; d += step) {
                 const rad = d * (Math.PI / 180);
                 spawn(Math.cos(rad) * speed, Math.sin(rad) * speed);
