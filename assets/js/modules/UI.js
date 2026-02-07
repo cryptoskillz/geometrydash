@@ -477,3 +477,55 @@ export function showCredits() {
     Globals.creditsListener = closeCredits;
     document.addEventListener('keydown', closeCredits);
 }
+
+export function updateGameStats(statType) {
+    if (statType === 'kill') {
+        Globals.killEnemyCount++;
+        Globals.killEnemySessionCount++;
+    }
+    if (statType === 'bossKill') {
+        Globals.killBossCount++;
+        Globals.killBossSessionCount++;
+    }
+    if (statType === 'death') {
+        Globals.playerDeathCount++;
+        Globals.playerDeathSessionCount++;
+    }
+    saveGameStats();
+}
+
+export function getGameStats(won) {
+    const roomsCount = Object.keys(Globals.visitedRooms).length || 1;
+    let rooms = `Rooms Visited: ${roomsCount}`;
+    if (won === 1)
+        rooms = `Rooms Cleared: ${roomsCount}`;
+
+    return `${rooms}\nTotal kills: ${Globals.killEnemySessionCount}\nTotal bosses killed: ${Globals.killBossSessionCount}\nPlayer deaths: ${Globals.playerDeathSessionCount}`;
+}
+
+export function saveGameStats() {
+    const stats = {
+        kills: Globals.killEnemyCount,
+        bossKills: Globals.killBossCount,
+        deaths: Globals.playerDeathCount
+    };
+    localStorage.setItem('rogue_stats', JSON.stringify(stats));
+}
+
+export function loadGameStats() {
+    const saved = localStorage.getItem('rogue_stats');
+    if (saved) {
+        const stats = JSON.parse(saved);
+        Globals.killEnemyCount = stats.kills || 0;
+        Globals.killBossCount = stats.bossKills || 0;
+        Globals.playerDeathCount = stats.deaths || 0;
+    } else {
+        saveGameStats(); // Init if missing
+    }
+}
+
+export function resetSessionStats() {
+    Globals.killEnemySessionCount = 0;
+    Globals.killBossSessionCount = 0;
+    Globals.playerDeathSessionCount = 0;
+}

@@ -3,7 +3,7 @@ import { log, spawnFloatingText, triggerSpeech } from './Utils.js';
 import { SFX } from './Audio.js';
 import { generateLore } from './Utils.js'; // Assuming generateLore is in Utils (or I need to extract it)
 import { CONFIG, STATES, BOUNDARY, DOOR_SIZE } from './Constants.js';
-import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits } from './UI.js';
+import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats } from './UI.js';
 
 // Functions will be appended below
 export function applyEnemyConfig(inst, group) {
@@ -1625,6 +1625,9 @@ export function updateEnemies() {
             // DROP GREEN SHARDS (Difficulty Based)
             if (en.type !== 'boss') { // Bosses drop Red Shards separately
                 const amount = calculateShardDrop('green', 'killEnemy', en);
+                //update kill enemy global counter
+                updateGameStats('kill');
+
                 if (amount > 0) {
                     spawnShard(en.x, en.y, 'green', amount);
                 }
@@ -1636,6 +1639,8 @@ export function updateEnemies() {
 
                 // RED SHARD REWARD
                 const amount = calculateShardDrop('red', 'killBoss', en);
+                //update kill enemy global counter
+                updateGameStats('bossKill');
                 spawnShard(en.x, en.y, 'red', amount);
 
                 Globals.bossKilled = true;

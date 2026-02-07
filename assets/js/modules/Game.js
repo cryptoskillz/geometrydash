@@ -3,7 +3,7 @@ import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS } from
 import { log, deepMerge, triggerSpeech } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
-import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts } from './UI.js';
+import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
 import { renderDebugForm, updateDebugEditor } from './Debug.js';
 import { generateLevel } from './Level.js';
 import {
@@ -23,6 +23,11 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
     if (Globals.isInitializing) return;
     Globals.isInitializing = true;
+
+    // Stats Init
+    loadGameStats();
+    if (!keepStats) resetSessionStats();
+
     console.log("TRACER: initGame Start. isRestart=", isRestart);
 
     // FIX: Enforce Base State on Fresh Run (Reload/Restart)
@@ -1318,7 +1323,7 @@ export function update() {
 
     // 2. TRIGGER GAME OVER
     if (Globals.player.hp <= 0) {
-
+        updateGameStats('death');
         Globals.player.hp = 0; // Prevent negative health
         updateUI();    // Final UI refresh
         gameOver();    // Trigger your overlay function
@@ -1721,8 +1726,7 @@ export function gameOver() {
 
     Globals.elements.overlay.style.display = 'flex';
     // Fix: Count unique visited rooms instead of displacement
-    const roomsCount = Object.keys(Globals.visitedRooms).length || 1;
-    Globals.elements.stats.innerText = "Rooms Visited: " + roomsCount;
+    Globals.elements.stats.innerText = getGameStats(0);
 
     const h1 = document.querySelector('#overlay h1');
     if (Globals.gameState === STATES.WIN) {
@@ -1764,7 +1768,7 @@ export function gameOver() {
 export function gameWon() {
     Globals.gameState = STATES.WIN;
     overlayEl.style.display = 'flex';
-    statsEl.innerText = "Rooms cleared: " + (Math.abs(Globals.player.roomX) + Math.abs(Globals.player.roomY));
+    statsEl.innerText = getGameStats(1);
 
     // Explicitly call gameOver logic to update UI text/buttons sharing logic
     gameOver();
@@ -2018,7 +2022,6 @@ export function saveUnlockOverride(file, attr, value) {
 }
 
 export function confirmNewGame() {
-    // Clear Run State
     localStorage.removeItem('rogue_player_state');
     localStorage.removeItem('rogue_transition');
     localStorage.removeItem('current_gun');
@@ -2026,11 +2029,6 @@ export function confirmNewGame() {
     localStorage.removeItem('current_gun_config');
     localStorage.removeItem('current_bomb_config');
     localStorage.removeItem('base_gun');
-
-    // Clear Unlocks (As per Modal Warning)
-    localStorage.removeItem('game_unlocks');
-    localStorage.removeItem('game_unlocked_ids');
-
     location.reload();
 }
 

@@ -1,4 +1,5 @@
 bugs
+
     speech used to be speech bubbles now it is text on screen
     if you drop a gun with modifers such as homing if you pick it back up it should have those modifiers still
     at end of level / game when you go to the next one you see the room previous room after any key it should go back to the loading screen
@@ -50,6 +51,8 @@ next up
     server    
 
 balance 6
+    update credits with the session and global stats
+    add restarts to the session and global stats
     speech bubbles
     count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
     fix debug logs

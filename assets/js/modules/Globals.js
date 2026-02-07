@@ -25,6 +25,22 @@ export const Globals = {
         debugLog: null
     },
 
+
+
+    //gane counters
+    playerDeathCount: 0,
+    playerDeathSessionCount: 0,
+    //note we could extend this later to hold the number of each type of enemy killed and even their names, to keep the we are the bad 
+    //guy theme going
+    killEnemyCount: 0,
+    killEnemySessionCount: 0,
+    killBossCount: 0,
+    killBossSessionCount: 0,
+
+
+
+
+
     // Audio
     audioCtx: null,
     musicMuted: false,
