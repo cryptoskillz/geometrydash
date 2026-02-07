@@ -56,16 +56,26 @@ export function setupInput(callbacks) {
             // Any other key starts game
             // Any other key starts game
             if (e.code === 'KeyN') {
-                // FORCE NEW GAME (Clear Data)
-                localStorage.removeItem('rogue_player_state');
-                localStorage.removeItem('rogue_transition');
-                localStorage.removeItem('current_gun');
-                localStorage.removeItem('current_bomb');
-                localStorage.removeItem('current_gun_config');
-                localStorage.removeItem('current_bomb_config');
-                localStorage.removeItem('base_gun'); // Optional: Clear base too if we want total reset
-                location.reload();
+                // Show Dedicated New Game Modal
+                const modal = document.getElementById('newGameModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    Globals.isNewGameModalOpen = true;
+                }
                 return;
+            }
+
+            // Handle Modal Inputs
+            if (Globals.isNewGameModalOpen) {
+                if (e.code === 'KeyD') {
+                    // CONFIRM DELETE
+                    if (callbacks.confirmNewGame) callbacks.confirmNewGame();
+                }
+                if (e.code === 'Escape' || e.code === 'Enter') {
+                    // CANCEL
+                    if (callbacks.cancelNewGame) callbacks.cancelNewGame();
+                }
+                return; // Block other inputs while modal is open
             }
 
             if (Globals.beginPlay) Globals.beginPlay();

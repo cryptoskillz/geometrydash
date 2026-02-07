@@ -1881,19 +1881,7 @@ export function goContinue() {
     Globals.gameState = STATES.PLAY;
 }
 
-// --- NEW GAME MODAL HANDLING ---
-export function confirmNewGame() {
-    localStorage.removeItem('game_unlocks');
-    localStorage.removeItem('game_unlocked_ids');
-    log("Save data cleared. Starting fresh.");
 
-    document.getElementById('newGameModal').style.display = 'none';
-    restartGame();
-}
-
-export function cancelNewGame() {
-    document.getElementById('newGameModal').style.display = 'none';
-}
 
 
 
@@ -2028,3 +2016,28 @@ export function saveUnlockOverride(file, attr, value) {
         console.error("Failed to save unlock persistence", e);
     }
 }
+
+export function confirmNewGame() {
+    // Clear Run State
+    localStorage.removeItem('rogue_player_state');
+    localStorage.removeItem('rogue_transition');
+    localStorage.removeItem('current_gun');
+    localStorage.removeItem('current_bomb');
+    localStorage.removeItem('current_gun_config');
+    localStorage.removeItem('current_bomb_config');
+    localStorage.removeItem('base_gun');
+
+    // Clear Unlocks (As per Modal Warning)
+    localStorage.removeItem('game_unlocks');
+    localStorage.removeItem('game_unlocked_ids');
+
+    location.reload();
+}
+
+export function cancelNewGame() {
+    const modal = document.getElementById('newGameModal');
+    if (modal) modal.style.display = 'none';
+    Globals.isNewGameModalOpen = false;
+}
+
+

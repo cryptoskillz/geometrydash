@@ -250,8 +250,8 @@ window.drawCredits = function () {
     const EXIT_T_SCROLL = 0;
     const EXIT_T_TEXT = 1.0;
     const EXIT_T_CUBE = 2.0;
-    const EXIT_T_BAR_EXIT = 2.5; // NEW: Bar scrolls out
-    const EXIT_T_LOGO = 3.5;     // Delayed Logo exit (after bar starts/finishes)
+    const EXIT_T_BAR_EXIT = 0.0; // Bar moves Left immediately
+    const EXIT_T_LOGO = 0.2;     // Logo Up when edge hits (~0.15s)
 
     // 3. JELLY 3D CUBE (CONDITIONAL: 4s After Logo / 2s After Text)
     // HIDE IF EXITING (Old) -> ANIMATE OUT (New)
