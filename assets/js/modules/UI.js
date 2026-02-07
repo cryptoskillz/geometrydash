@@ -101,9 +101,10 @@ export async function updateUI() {
     // Bombs
     // Bombs
     if (Globals.elements.bombs) {
-        Globals.elements.bombs.innerText = `BOMBS: ${Globals.player.inventory.bombs || 0}`;
+        const bombCount = Globals.player.inventory.bombs || 0;
         const bombColor = Globals.bomb.colour || Globals.bomb.color || "white";
-        Globals.elements.bombs.style.color = bombColor;
+        Globals.elements.bombs.style.color = ""; // Reset parent color
+        Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}</span>`;
     }
 
     // Gun & Ammo
