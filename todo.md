@@ -21,6 +21,7 @@ bugs
     dont use the same enmy name in a room
     when you chnage gun all the modifiers are removed a nice item to unlock would be global gun / bomb modifiers
     is the items folder required now we are all in rewards 
+    add bomb to total (when totla bombs is added)
   
 next up 
     refactor
@@ -45,9 +46,7 @@ next up
 
 
 refactor 
-    
-    red and gree shards should update in UI and store in localstorage
-    red shards for dup items etc as in logic js
+    red and green shards should update in UI and store in localstorage red is perma green is session
  
    
     
@@ -74,6 +73,7 @@ achivements
 
 Balance
 
+    red shards for dup items etc as in logic js
 
 onky spaw itesm that have 
 
