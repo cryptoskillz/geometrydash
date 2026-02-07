@@ -130,6 +130,17 @@ export async function updateUI() {
     }
 
     if (Globals.elements.ammo) Globals.elements.ammo.innerText = ammoText;
+
+    // Shards
+    const redShards = Globals.player.inventory.redShards || 0;
+    const maxRed = Globals.player.maxRedShards || 500;
+    const greenShards = Globals.player.inventory.greenShards || 0;
+    const maxGreen = Globals.player.maxGreenShards || 100;
+    const redEl = document.getElementById('red-shards');
+    const greenEl = document.getElementById('green-shards');
+
+    if (redEl) redEl.innerHTML = `<span style="color: #e74c3c">♦</span> ${redShards} / ${maxRed}`;
+    if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen}`;
 }
 
 // ... DEBUG EDITOR ...

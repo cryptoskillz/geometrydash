@@ -40,7 +40,7 @@ export const Globals = {
     // Entities
     player: {
         x: 300, y: 200, speed: 4, hp: 3, roomX: 0, roomY: 0,
-        inventory: { keys: 0 },
+        inventory: { keys: 0, bombs: 0, redShards: 0, greenShards: 0 },
         size: 20
     },
     availablePlayers: [],

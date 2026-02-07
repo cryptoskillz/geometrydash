@@ -2670,11 +2670,14 @@ export async function pickupItem(item, index) {
             const current = Globals.player.inventory.redShards || 0;
             const max = Globals.player.maxRedShards || 500;
             Globals.player.inventory.redShards = Math.min(max, current + amount);
+            localStorage.setItem('currency_red', Globals.player.inventory.redShards);
             spawnFloatingText(Globals.player.x, Globals.player.y - 40, `+${amount} RED`, "#e74c3c");
         } else {
             const current = Globals.player.inventory.greenShards || 0;
             const max = Globals.player.maxGreenShards || 100;
-            Globals.player.inventory.greenShards = Math.min(max, current + amount);
+            const newVal = Math.min(max, current + amount);
+            log(`Picking up Green Shard. Current: ${current}, Max: ${max}, New: ${newVal}`);
+            Globals.player.inventory.greenShards = newVal;
             spawnFloatingText(Globals.player.x, Globals.player.y - 40, `+${amount} GREEN`, "#2ecc71");
         }
         if (Globals.audioCtx.state !== 'suspended' && SFX.coin) SFX.coin();
@@ -2876,8 +2879,11 @@ export async function pickupItem(item, index) {
                 if (Globals.elements.keys) Globals.elements.keys.innerText = Globals.player.inventory.keys;
             }
             else if (target === 'gun') {
-                if (applyModifierToGun(Globals.gun, data)) {
-                    spawnFloatingText(Globals.player.x, Globals.player.y - 40, "+MOD", "#9b59b6");
+                log(`Attempting to apply gun modifier: ${JSON.stringify(data)}`);
+                const applied = applyModifierToGun(Globals.gun, data);
+                log(`Gun modifier applied result: ${applied}`);
+                if (applied) {
+                    spawnFloatingText(Globals.player.x, Globals.player.y - 40, "+GUN MOD", "#9b59b6");
                     // PERSIST CHANGE
                     localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
                 }
@@ -2949,7 +2955,9 @@ export async function pickupItem(item, index) {
 }
 
 export function applyModifierToGun(gunObj, modConfig) {
+    // Fix: Define mods
     const mods = modConfig.modifiers;
+    let appliedAny = false;
     for (const key in mods) {
         let val = mods[key];
         let isRelative = false;
@@ -2985,10 +2993,8 @@ export function applyModifierToGun(gunObj, modConfig) {
                         let old = current[leaf];
                         current[leaf] += value;
                         if (current[leaf] < 0 && leaf !== 'startX' && leaf !== 'startY') current[leaf] = 0.05;
-                        log(`Adjusted ${prop}: ${old} -> ${current[leaf]}`);
                     } else {
                         current[leaf] = value;
-                        log(`Set ${prop}: ${value}`);
                     }
                     return true;
                 }
@@ -2997,47 +3003,44 @@ export function applyModifierToGun(gunObj, modConfig) {
 
             // Standard Flat Prop
             if (obj[prop] !== undefined) {
-                // log(`Applying ${prop} to ${JSON.stringify(obj)}. Rel: ${relative}, Val: ${value}, Old: ${obj[prop]}`);
                 if (relative && typeof obj[prop] === 'number' && typeof value === 'number') {
                     let old = obj[prop];
                     obj[prop] += value;
                     // Prevent negative stats where inappropriate (heuristic)
                     if (obj[prop] < 0 && prop !== 'startX' && prop !== 'startY') obj[prop] = 0.05; // Cap fireRate at 0.05 (20/sec)
-                    log(`Adjusted ${prop}: ${old} -> ${obj[prop]}`);
                 } else {
                     obj[prop] = value;
-                    log(`Set ${prop}: ${value}`);
                 }
                 return true;
             }
             // ALLOW CREATION on Bullet object (for curve, homing, etc)
             if (obj === gunObj.Bullet) {
                 obj[prop] = value;
-                log(`Created/Set ${prop} on Bullet: ${value}`);
                 return true;
             }
             return false;
         };
 
-        // Check Gun Root
-        if (applyTo(gunObj, key, val, isRelative)) continue;
-
-        // Check Bullet
-        if (gunObj.Bullet) {
-            applyTo(gunObj.Bullet, key, val, isRelative);
-        } else {
-            // If no Bullet object, create one?
-            gunObj.Bullet = {};
-            applyTo(gunObj.Bullet, key, val, isRelative);
+        // Try Gun Root
+        if (applyTo(gunObj, key, val, isRelative)) {
+            appliedAny = true;
+            continue;
         }
 
-        // Handle special deep keys if flat (e.g. homing)
+        // Try Bullet
+        if (!gunObj.Bullet) gunObj.Bullet = {};
+        if (applyTo(gunObj.Bullet, key, val, isRelative)) {
+            appliedAny = true;
+            continue;
+        }
+
+        // Catch-all fallbacks for specific keys if not handled above
         if (key === 'homing') {
-            // Ensure homing exists or force it
-            if (!gunObj.Bullet) gunObj.Bullet = {};
             gunObj.Bullet.homing = val;
+            appliedAny = true;
         }
     }
+    return appliedAny;
 }
 // --- UNLOCK SYSTEM ---
 let unlockQueue = [];
