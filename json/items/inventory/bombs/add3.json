@@ -1,7 +1,7 @@
 {
-    "modify": "key",
+    "modify": "player",
     "colour": "#000000",
     "modifiers": {
-        "bombs": "+3"
+        "inventory.bombs": 3
     }
 }

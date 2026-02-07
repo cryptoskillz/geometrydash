@@ -2659,6 +2659,9 @@ export async function pickupItem(item, index) {
         if (idx !== -1) Globals.groundItems.splice(idx, 1);
     };
 
+    // DEBUG TRACE
+    console.log("PickupItem:", { type, data });
+
     // --- SIMPLE ITEMS (Sync) ---
     // Shards are handled in updateItems, but safety check here
     if (type === 'shard') {
