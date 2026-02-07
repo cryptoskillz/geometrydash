@@ -577,7 +577,8 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         colour: bulletConfig.colour || "yellow",
         spinAngle: 0,
         hitEnemies: [],
-        ownerType: ownerType // 'player' or 'enemy'
+        ownerType: ownerType, // 'player' or 'enemy'
+        speed: Math.hypot(vx, vy) // Store initial speed for homing reliability
     };
 
     if (ownerType === 'enemy') {
@@ -810,17 +811,22 @@ export function updateBulletsAndShards(aliveEnemies) {
 
                 // Rotate velocity towards target
                 const targetAngle = Math.atan2(closest.y - b.y, closest.x - b.x);
-                const currentAngle = Math.atan2(b.vy, b.vx);
 
-                // Subtle curve (0.1 strength)
-                b.vx += Math.cos(targetAngle) * 0.5;
-                b.vy += Math.sin(targetAngle) * 0.5;
+                // Steer towards target
+                // 0.1 steer strength is standard, 0.5 is very strong
+                // logic.js used complex turn rate. 
+                // Simple vector addition:
+                const steerStr = 0.5; // Strong homing
+                b.vx += Math.cos(targetAngle) * steerStr;
+                b.vy += Math.sin(targetAngle) * steerStr;
 
-                // Normalize to gun speed so bullets don't accelerate to infinity
-                const speed = Globals.gun.Bullet.speed || 5;
+                // Normalize to bullet's INTRINSIC speed (fixed on spawn)
+                const speed = b.speed || 5;
                 const currMag = Math.hypot(b.vx, b.vy);
-                b.vx = (b.vx / currMag) * speed;
-                b.vy = (b.vy / currMag) * speed;
+                if (currMag > 0) {
+                    b.vx = (b.vx / currMag) * speed;
+                    b.vy = (b.vy / currMag) * speed;
+                }
             } else {
                 // No valid targets? Behave like normal bullet (or curve if set)
                 // Fallthrough to curve check below if we want strict behavior, 
@@ -1643,7 +1649,7 @@ export function updateEnemies() {
                     if (!b.hitEnemies) b.hitEnemies = [];
                     b.hitEnemies.push(ei);
                     b.damage *= 0.5;
-                    if (b.damage <= 0.1) bullets.splice(bi, 1);
+                    if (b.damage <= 0.1) Globals.bullets.splice(bi, 1);
                 } else {
                     Globals.bullets.splice(bi, 1);
                 }

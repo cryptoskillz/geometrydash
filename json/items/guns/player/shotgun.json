@@ -19,7 +19,7 @@
             "shape": "circle",
             "shapes": [],
             "animated": false,
-            "filled": false
+            "filled": true
         },
         "canDamagePlayer": false,
         "speed": 10,
