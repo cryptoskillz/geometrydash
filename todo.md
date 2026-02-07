@@ -24,7 +24,7 @@ bugs
     add bomb to total (when totla bombs is added)
   
 next up 
-    refactor
+    
     balance 5 + room enemies
     sfx & ui updates
         game settings
@@ -45,9 +45,36 @@ next up
     server    
 
 
-refactor 
-    red and green shards should update in UI and store in localstorage red is perma green is session
+     balance 6
+
  
+    red shards for dup items etc as in logic js
+
+onky spaw itesm that have 
+
+unlocked / active = true in the item josn or it has been unlocked as is in localstorage. 
+
+If it modifyType session then it is not a persistent upgrade so it only activates when you it pick it up during a game if it persistent then you apply it at gameinit
+ 
+
+    only drop items that ulocked / active / true
+    add unlock rarity to game json and give a unlock if nextlevel is set and the unlock url in room is blank
+    add to the unlock and update the unlock state of the item
+    add a idele state for player
+    check gun unified
+    upddate readme 
+    implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
+    make most items locked at the start and you can unlock x items at random everytime you beat a level, 
+    add correct enemies to each room
+    show redshards on welcome screen
+    max keys in player json
+    max bombs in player json
+    
+
+
+
+
+
    
     
 
@@ -72,40 +99,6 @@ achivements
 
 
 Balance
-
-    red shards for dup items etc as in logic js
-
-onky spaw itesm that have 
-
-unlocked / active = true in the item josn or it has been unlocked as is in localstorage. 
-
-If it modifyType session then it is not a persistent upgrade so it only activates when you it pick it up during a game if it persistent then you apply it at gameinit
- 
-    on game over restart get rid of all the session items
-
-    only drop items that ulocked / active / true
-    add unlock rarity to game json and give a unlock if nextlevel is set and the unlock url in room is blank
-    add to the unlock and update the unlock state of the item
-    sound effects on / off
-    add a idele state for player
-    msui fade in / fade out 
-    check gun unified
-    upddate readme 
-    add a proper end game outro (star field with text a game by crypto skillz and a btc qr code)
-    ui should be a fixed height
-    mini map should under ui and bigger
-    implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
-    make most items locked at the start and you can unlock x items at random everytime you beat a level, 
-    add correct enemies to each room
-    show redshards on welcome screen
-    max keys in player json
-    max bombs in player json
-    
-
-
-
-
-    balance 5  ^ 
 
         drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
 

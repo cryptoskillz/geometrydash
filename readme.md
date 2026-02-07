@@ -1,4 +1,4 @@
-# JS Dungeon Crawler - Rogue Demo
+# JS Dungeon Crawler - >Geometry Dash
 
 A web-based roguelike dungeon crawler built with JavaScript. Explore procedurally generated rooms, defeat enemies, collect items, and battle bosses!
 

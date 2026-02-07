@@ -11,7 +11,9 @@ window.addEventListener('load', () => {
     setupInput({
         restartGame: () => restartGame(),
         goToWelcome: () => goToWelcome(),
-        goContinue: () => goContinue()
+        goContinue: () => goContinue(),
+        confirmNewGame: () => confirmNewGame(),
+        cancelNewGame: () => cancelNewGame()
     });
 
     // Start Game Initialization

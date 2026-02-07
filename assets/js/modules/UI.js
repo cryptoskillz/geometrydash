@@ -60,31 +60,42 @@ export function updateWelcomeScreen() {
     let charSelectHtml = '';
     // Assume gameData is in Globals
     if (Globals.gameData.showCharacterSelect !== false) {
-        charSelectHtml = `<div id="player-select-ui" style="margin: 20px; padding: 10px; border: 2px solid #555;">
+        charSelectHtml = `<div class="character-select">
             <h2 style="color: ${p.locked ? 'gray' : '#0ff'}">${p.name} ${p.locked ? '(LOCKED)' : ''}</h2>
             <p>${p.Description || "No description"}</p>
-            <p style="font-size: 0.8em; color: #aaa;">Speed: ${p.speed} | HP: ${p.hp}</p>
-            <div style="margin-top: 10px; font-size: 1.2em;">
-                <span>&lt;</span> 
-                <span style="margin: 0 20px;">${Globals.selectedPlayerIndex + 1} / ${Globals.availablePlayers.length}</span> 
-                <span>&gt;</span>
+            <p style="font-size: 0.9em; color: #888;">Speed: ${p.speed} | HP: ${p.hp}</p>
+            <div class="char-nav">
+                <span class="char-arrow">&lt;</span> 
+                <span>${Globals.selectedPlayerIndex + 1} / ${Globals.availablePlayers.length}</span> 
+                <span class="char-arrow">&gt;</span>
             </div>
         </div>`;
     }
 
-    const hasSave = localStorage.getItem('game_unlocks') || localStorage.getItem('game_unlocked_ids');
+
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+    const hasSave = localStorage.getItem('game_unlocks') || unlockedIds.length > 0;
     const startText = hasSave
-        ? 'press any key to continue<br><span style="font-size:0.6em; color:#ff6b6b;">press N for new game (clears data)</span>'
-        : 'press any key to start';
+        ? 'Press any key to continue<br><div style="margin-top:8px; font-size:0.8em; color:#e74c3c;">Press <span class="key-badge">N</span> for new game</div>'
+        : 'Press any key to start';
+
+    // Normalize string array check (case-insensitive)
+    const hasUnlock = (id) => unlockedIds.some(u => u.toLowerCase() === id.toLowerCase());
+
+    // Conditional Instructions
+    let instructions = "";
+    if (Globals.gameData.music || hasUnlock('music')) instructions += `<div>Press <span class="key-badge">0</span> to toggle music</div>`;
+    if (Globals.gameData.soundEffects || hasUnlock('soundeffects')) instructions += `<div>Press <span class="key-badge">9</span> to toggle SFX</div>`;
 
     // Update Welcome Element if exists
     // Globals.elements.welcome is cached
     if (Globals.elements.welcome) {
         Globals.elements.welcome.innerHTML = `
-        <h1>ROUGE DEMO</h1>
+        <h1 class="welcome-title">GEOMETRY DASH</h1>
         ${charSelectHtml}
-        <p>${startText}</p>
-        <p style="font-size: 0.8em; color: #aaa; margin-top: 20px;">v93 | Press a key to start</p>
+        <div class="welcome-instructions">${instructions}</div>
+        <p style="margin-top: 30px; font-size: 1.4rem; animation: blink 1.5s infinite;">${startText}</p>
+        <p style="font-size: 0.8em; color: #555; margin-top: 40px;">v0.93</p>
     `;
     }
 }

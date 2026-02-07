@@ -3065,7 +3065,8 @@ export function spawnRoomRewards(dropConfig, label = null) {
         // Roll for drop
         if (Math.random() < (conf.dropChance || 0)) {
             // Find items of this rarity
-            const candidates = window.allItemTemplates.filter(i => (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() && i.starter === false && i.special !== true);
+            // Fix: Check for null items in template list
+            const candidates = window.allItemTemplates.filter(i => i && (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() && i.starter === false && i.special !== true);
 
             if (candidates.length > 0) {
                 const count = conf.count || 1;
