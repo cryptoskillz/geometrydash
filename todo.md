@@ -19,6 +19,8 @@ bugs
     pull the player still persissts seems to happen when you pick up an item / spawn an item 
     sometimes when you pick up an item they all despawn
     dont use the same enmy name in a room
+    when you chnage gun all the modifiers are removed a nice item to unlock would be global gun / bomb modifiers
+    is the items folder required now we are all in rewards 
   
 next up 
     refactor
@@ -43,7 +45,6 @@ next up
 
 
 refactor 
-    modifiers not working 
     god mode not working
     ui show correct
     red and gree shards should update in UI and store in localstorage
