@@ -298,7 +298,7 @@ export function drawDebugLogs() {
     const maxLines = 20;
 
     // Filter out old logs? No, just show last N
-    const logsToShow = Globals.debugLog.slice(-maxLines);
+    const logsToShow = (Globals.debugLogs || []).slice(-maxLines);
 
     logsToShow.forEach((msg, i) => {
         // Fade out older logs?
