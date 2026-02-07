@@ -4,7 +4,50 @@ import { log } from './Utils.js';
 // Global audio variable (exported for direct access if needed, but managing via helper is better)
 export let introMusic = new Audio('assets/music/tron.mp3');
 introMusic.loop = true;
-introMusic.volume = 0.4;
+introMusic.volume = 0; // Start silent for fade-in
+
+// FADE HELPERS
+export function fadeIn(audio, duration = 2000, targetVol = 0.4) {
+    if (!audio) return;
+    audio.volume = 0;
+    audio.play().catch(e => console.warn("Audio auto-play blocked", e));
+
+    const step = 50; // ms
+    const increment = targetVol / (duration / step);
+
+    // Clear any existing fade interval
+    if (audio.fadeInterval) clearInterval(audio.fadeInterval);
+
+    audio.fadeInterval = setInterval(() => {
+        if (audio.volume < targetVol) {
+            audio.volume = Math.min(targetVol, audio.volume + increment);
+        } else {
+            audio.volume = targetVol;
+            clearInterval(audio.fadeInterval);
+            audio.fadeInterval = null;
+        }
+    }, step);
+}
+
+export function fadeOut(audio, duration = 1000) {
+    if (!audio) return;
+
+    const step = 50; // ms
+    const decrement = audio.volume / (duration / step);
+
+    if (audio.fadeInterval) clearInterval(audio.fadeInterval);
+
+    audio.fadeInterval = setInterval(() => {
+        if (audio.volume > 0) {
+            audio.volume = Math.max(0, audio.volume - decrement);
+        } else {
+            audio.volume = 0;
+            audio.pause();
+            clearInterval(audio.fadeInterval);
+            audio.fadeInterval = null;
+        }
+    }, step);
+}
 
 export function unlockAudio() {
     const audioCtx = Globals.audioCtx;
