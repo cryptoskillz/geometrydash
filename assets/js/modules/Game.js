@@ -1812,7 +1812,7 @@ export function updateSFXToggle() {
 }
 
 export function restartGame(keepItems = false) {
-    resetWeaponState();
+    if (!keepItems) resetWeaponState();
     initGame(true, null, keepItems);
 }
 Globals.restartGame = restartGame;

@@ -617,90 +617,95 @@ export function fireBullet(direction, speed, vx, vy, angle) {
         }
     }
 
-    // --- REFACTORED FIRING LOGIC ---
-    const spawnList = [];
+    // --- REFACTORED FIRING LOGIC (Legacy Port) ---
     const bulletConf = Globals.gun.Bullet || {};
-    // DEBUG LOG
-    log("FireBullet", { name: Globals.gun.name, reverse: bulletConf.reverseFire, number: bulletConf.number });
+    // log("FireBullet", { name: Globals.gun.name, reverse: bulletConf.reverseFire, number: bulletConf.number });
 
     const count = bulletConf.number || 1;
-    const spread = (bulletConf.spreadRate || 10) * (Math.PI / 180); // Convert degrees to radians? Assuming degrees. 
-    // If strict radian usage elsewhere, valid. But spreadRate usually 0.1 etc. Let's assume Degrees for "spreadRate" usually implies integer like 10.
-    // However, if spreadRate is small (0.1), maybe it is radians.
-    // User JSON shows spreadRate: 1. Let's assume 1 degree? Or 1 radian?
-    // User shot gun has spreadRate: 1. 1 radian is HUGE (~57 deg). 1 degree is TINY.
-    // Let's assume it's a multiplier for a base spread? Or maybe it IS radians but usually small?
-    // Let's try flexible: if < 0.2 assume radians, else degrees. 
-    // Actually, traditionally in this code base? 
-    // Looking at previous code: "spreadRate: 1". 
-    // Let's interpret spreadRate as "Fan Angle Step in Degrees".
+    const spreadRate = bulletConf.spreadRate || 0.2; // Default to 0.2 rad if missing? Or use user value directly?
+    // logic.js used: (gun.Bullet?.spreadRate || 0.2)
+    // If user has 1 in JSON, logic.js used 1 radian (~57deg). 
+    // If user intended 1 degree, they should have put ~0.017. 
+    // I will use raw value to match logic.js exactly.
 
-    // Actually logic.js legacy often used radians. 
-    // Let's try: spreadRate = 10 (degrees). 
-    // The user's shotgun json says "spreadRate": 1. 
-    // If that's 1 degree, it's a laser beam.
-    // If that's 1 radian, it's 60 degrees (wide).
-    // Let's stick to (spreadRate * 0.1 or something). 
-    // better: let's hardcode a base spread of 5 degrees * spreadRate.
-    const spreadRad = (bulletConf.spreadRate || 1) * 0.1; // 1 -> 0.1 rad (~5 deg). 
-
-    // 1. Determine Base Aim Angle
-    let baseAngle = 0;
+    // 1. Determine Center Angle
+    let centerAngle = 0;
     if (direction === 0) { // Mouse
-        baseAngle = Math.atan2(vy, vx);
-    } else if (direction === 1) baseAngle = -Math.PI / 2; // North
-    else if (direction === 2) baseAngle = 0;             // East
-    else if (direction === 3) baseAngle = Math.PI / 2;   // South
-    else if (direction === 4) baseAngle = Math.PI;       // West
+        centerAngle = Math.atan2(vy, vx);
+    } else if (direction === 1) centerAngle = -Math.PI / 2; // North
+    else if (direction === 2) centerAngle = 0;             // East
+    else if (direction === 3) centerAngle = Math.PI / 2;   // South
+    else if (direction === 4) centerAngle = Math.PI;       // West
 
-    // 2. Primary Fire (Shotgun / Single)
+    // 2. Loop & Fire
     for (let i = 0; i < count; i++) {
-        // Center the spread
-        // i=0, count=1 -> offset 0
-        // i=0, count=3 -> -1 * spread
-        // i=1, count=3 -> 0
-        // i=2, count=3 -> +1 * spread
-        const offset = (i - (count - 1) / 2) * spreadRad;
-        spawnList.push({ angle: baseAngle + offset });
-    }
+        // Calculate Angle (Legacy Formula)
+        // logic.js: let fanAngle = centerAngle + (count > 1 ? (i - (count - 1) / 2) * spreadRate : 0);
+        let fanAngle = centerAngle + (count > 1 ? (i - (count - 1) / 2) * spreadRate : 0);
 
-    // 3. Reverse Fire (Applicable to primary shots?)
-    if (bulletConf.reverseFire) {
-        // Clone current list and flip 180
-        const reversed = spawnList.map(s => ({ angle: s.angle + Math.PI }));
-        spawnList.push(...reversed);
-    }
-
-    // 4. Multi-Directional Logic (Global)
-    // Needs to fire independent of aim? or relative?
-    // Usually "fireNorth" means absolute North.
-    if (bulletConf.multiDirectional?.active) {
-        const md = bulletConf.multiDirectional;
-        if (md.fireNorth) spawnList.push({ angle: -Math.PI / 2 });
-        if (md.fireEast) spawnList.push({ angle: 0 });
-        if (md.fireSouth) spawnList.push({ angle: Math.PI / 2 });
-        if (md.fireWest) spawnList.push({ angle: Math.PI });
-
-        if (md.fire360) {
-            const step = 20; // 18 bullets
-            for (let d = 0; d < 360; d += step) {
-                spawnList.push({ angle: d * (Math.PI / 180) });
-            }
-        }
-    }
-
-    // 5. Execute Spawns
-    spawnList.forEach(k => {
-        const bvx = Math.cos(k.angle) * speed;
-        const bvy = Math.sin(k.angle) * speed;
+        const bSpeed = bulletConf.speed || 7;
+        const bvx = Math.cos(fanAngle) * bSpeed;
+        const bvy = Math.sin(fanAngle) * bSpeed;
 
         // Spawn calc
         const barrelLength = Globals.player.size + 10;
-        const startX = Globals.player.x + bvx * (barrelLength / speed); // Normalize dir * barrel
-        const startY = Globals.player.y + bvy * (barrelLength / speed);
+        const startX = Globals.player.x + bvx * (barrelLength / bSpeed);
+        const startY = Globals.player.y + bvy * (barrelLength / bSpeed);
 
         spawnBullet(startX, startY, bvx, bvy, Globals.gun, "player");
-    });
+
+        // 3. Reverse Fire (Per Bullet)
+        if (bulletConf.reverseFire) {
+            const revAngle = fanAngle + Math.PI;
+            const rvx = Math.cos(revAngle) * bSpeed;
+            const rvy = Math.sin(revAngle) * bSpeed;
+            const rStartX = Globals.player.x + rvx * (barrelLength / bSpeed);
+            const rStartY = Globals.player.y + rvy * (barrelLength / bSpeed);
+            spawnBullet(rStartX, rStartY, rvx, rvy, Globals.gun, "player");
+        }
+    }
+
+    // 4. Multi-Directional (If active, fire cardinal/360 IN ADDITION to primary?)
+    // In logic.js, this was inside the loop? No, in logic.js 3266 it was separate.
+    // In logic.js 4363 (updateShooting), it called fireBullet(0...).
+    // Inside fireBullet(0) (line 3304 logic.js), it checked multiDirectional.
+    // So YES, for EVERY shot in the shotgun spread, it triggers Multi-Directional?
+    // THAT seems like a lot of bullets. 
+    // If count=3, it runs 3 times.
+    // If inside that logic, it checks multiDirectional...
+    // WAIT. logic.js `fireBullet` (3266) takes `direction`.
+    // `updateShooting` calls `fireBullet(0, ...)` loops `count` times.
+    // `fireBullet` at 3266 checks `direction === 0`.
+    // So YES, it triggers multi-directional logic `count` times.
+    // I will replicate this "flaw/feature" to ensure exact parity.
+
+    if (bulletConf.multiDirectional?.active) {
+        // Handle Multi-Directional (Runs ONCE per fire call in my refactor? 
+        // No, I should run it `count` times if I want exact parity, 
+        // BUT `Entities.js` `fireBullet` is called ONCE per click/key press with `count` handled inside.
+        // So I should run it ONCE here, unless the user WANTS 3x 360 bursts.
+        // logic.js called `fireBullet` `count` times.
+        // My `fireBullet` handles `count`. 
+        // So I should run it ONCE here.
+
+        const md = bulletConf.multiDirectional;
+        const spawn = (dx, dy) => {
+            // simplified spawn
+            spawnBullet(Globals.player.x, Globals.player.y, dx, dy, Globals.gun, "player");
+        };
+
+        if (md.fireNorth) spawn(0, -speed);
+        if (md.fireEast) spawn(speed, 0);
+        if (md.fireSouth) spawn(0, speed);
+        if (md.fireWest) spawn(-speed, 0);
+        if (md.fire360) {
+            const step = 20;
+            for (let d = 0; d < 360; d += step) {
+                const rad = d * (Math.PI / 180);
+                spawn(Math.cos(rad) * speed, Math.sin(rad) * speed);
+            }
+        }
+    }
 
     bulletsInRoom++;
     bulletsInRoom++;
