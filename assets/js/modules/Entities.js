@@ -2685,12 +2685,14 @@ export async function pickupItem(item, index) {
         return;
     }
 
-    if (type === 'health' || type === 'heart') {
+    //note: the type is modifer mayer we haeve to extend the JSON.
+    if (type === 'modifier' && data.modifiers && data.modifiers.hp) {
+        console.log("Picking up health..." + Globals.player.hp + "/" + Globals.player.maxHp);
         if (Globals.player.hp >= Globals.player.maxHp) {
             item.pickingUp = false;
             return; // Full HP
         }
-        Globals.player.hp = Math.min(Globals.player.maxHp, Globals.player.hp + (data.value || 1));
+        Globals.player.hp = Math.min(Globals.player.maxHp, Globals.player.hp + (data.modifiers?.hp ? parseInt(data.modifiers.hp) : (data.value || 1)));
         spawnFloatingText(Globals.player.x, Globals.player.y - 40, "+HP", "red");
         if (SFX && SFX.pickup) SFX.pickup();
         removeItem();
