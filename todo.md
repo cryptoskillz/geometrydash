@@ -1,4 +1,5 @@
 bugs
+    decide if modifiers that are effecvivetly the same as guns want to look the same ie 360 modifier it seems to have different stats to the 360 gun
     gunner should have a fire delay so not all turrerts fire at once if there are many in the room
     turrets should have line of site and only fire if they can see the player
     turrets shoild have range and only fire if you are in range (stealth missions)
@@ -61,14 +62,11 @@ next up
     server    
 
 balance 6
-
-    check 360 modifier it seems to have different stats to the 360 gun
     check the max hp+1 modifier add 1 hp as it maybe blocked as and working the same as addhp+1
     make most items locked at the start and you can unlock x items at random everytime you beat a level, 
     only spaw itesm that have unlocked / active = true in the item josn or it has been unlocked as is in localstorage. 
     add unlock rarity to game json and give a unlock if nextlevel is set and the unlocks array in room is blank
     speech bubbles
-    add correct enemies to each room
     max keys in player json
     max bombs in player json
     red shards for dup items etc as in logic js 
@@ -111,6 +109,8 @@ achivements
 
 
 Balance
+    add correct enemies to each room
+
     implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
     count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
     add a timer (as unlock and store time for each level)
