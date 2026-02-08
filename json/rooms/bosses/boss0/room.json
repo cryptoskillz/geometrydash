@@ -57,7 +57,7 @@
         "startlevel1"
     ],
     "unlockItem": {
-        "active": true,
+        "active": false,
         "count": 1,
         "unlockChance": 1,
         "rarity": "common"

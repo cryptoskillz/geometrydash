@@ -2205,7 +2205,8 @@ export function saveUnlockOverride(file, attr, value) {
 
 export function confirmNewGame() {
     // Clear Persistence to ensure fresh start
-    STORAGE_KEYS.RESET_ON_NEW_GAME.forEach(key => localStorage.removeItem(key));
+    // Clear Persistence to ensure fresh start (Hard Reset)
+    STORAGE_KEYS.HARD_RESET.forEach(key => localStorage.removeItem(key));
 
     location.reload();
 }

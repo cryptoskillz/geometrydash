@@ -482,8 +482,8 @@ export function showCredits() {
                 <p style="font-size: 1.5em; margin: 20px 0; color: #e74c3c;">Art & Assets</p>
                 <p style="color: #ccc;">Generated with AI (thanks Antigravity!)</p>
                 <br>
-                <p style="font-size: 1.5em; margin: 20px 0; color: #2ecc71;">Special Thanks</p>
-                <p style="color: #ccc;">To you for playing!</p>
+                <p style="font-size: 1.5em; margin: 20px 0; color: #2ecc71;">You slaughtered the following innocent creatures</p>
+                <p style="color: #ccc;"></p>
                 <br><br><br>
                 <p style="font-size: 1.2em; color: #f1c40f;">Goodbye, friend :]</p>
                 <br><br><br><br>
@@ -519,7 +519,8 @@ export function showCredits() {
         creditsEl.style.display = 'none';
 
         // Return to Welcome
-        // Do NOT clear persistence here. User must explicit start New Game.
+        // Clear SESSION DATA (Level, Inventory) but KEEP UNLOCKS
+        STORAGE_KEYS.SESSION_WIPE.forEach(key => localStorage.removeItem(key));
 
         // Use Global Helper to Reset State & Go to Welcome
         if (Globals.goToWelcome) {

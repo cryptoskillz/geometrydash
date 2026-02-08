@@ -50,7 +50,16 @@ export const DEBUG_FLAGS = {
 };
 
 export const STORAGE_KEYS = {
-    RESET_ON_NEW_GAME: [
+    SESSION_WIPE: [
+        'rogue_player_state',
+        'rogue_transition',
+        'current_gun',
+        'current_bomb',
+        'current_gun_config',
+        'current_bomb_config',
+        'rogue_current_level'
+    ],
+    HARD_RESET: [
         'rogue_player_state',
         'rogue_transition',
         'current_gun',
@@ -60,6 +69,11 @@ export const STORAGE_KEYS = {
         'rogue_current_level',
         'base_gun',
         'base_bomb',
-        'rogue_stats'
+        'rogue_stats',
+        'game_unlocked_ids',
+        'game_unlocks',
+        'base_gun_config',
+        'base_bomb_config',
+        'currency_red'
     ]
 };

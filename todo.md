@@ -106,6 +106,7 @@ Balance
      add a timer (as unlock and store time for each level)
 
 Balance 7 ^
+
     add correct enemies to each room
 
  implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
