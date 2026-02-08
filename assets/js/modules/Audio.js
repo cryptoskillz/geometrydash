@@ -102,6 +102,26 @@ export const SFX = {
         osc.start();
         osc.stop(Globals.audioCtx.currentTime + 1.0);
     },
+    ghostSpeak: (vol = 0.3) => {
+        if (!Globals.audioCtx || Globals.sfxMuted) return;
+        const osc = Globals.audioCtx.createOscillator();
+        const gain = Globals.audioCtx.createGain();
+        osc.type = 'triangle'; // Clearer "voice"
+
+        // Randomized pitch for "talking" variation
+        const baseFreq = 300 + Math.random() * 200;
+
+        osc.frequency.setValueAtTime(baseFreq, Globals.audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, Globals.audioCtx.currentTime + 0.4); // Drop pitch
+
+        gain.gain.setValueAtTime(vol, Globals.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, Globals.audioCtx.currentTime + 0.4);
+
+        osc.connect(gain);
+        gain.connect(Globals.audioCtx.destination);
+        osc.start();
+        osc.stop(Globals.audioCtx.currentTime + 0.4);
+    },
     scream: (vol = 0.2) => {
         if (!Globals.audioCtx || Globals.sfxMuted) return;
         const osc = Globals.audioCtx.createOscillator();
@@ -116,7 +136,6 @@ export const SFX = {
         osc.start();
         osc.stop(Globals.audioCtx.currentTime + 0.5);
     },
-
     yelp: (vol = 0.2) => playTone(600, 'triangle', 0.1, vol),
     pickup: (vol = 0.2) => playTone(1200, 'sine', 0.1, vol),
     coin: (vol = 0.2) => playTone(1500, 'square', 0.1, vol),

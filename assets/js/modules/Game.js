@@ -1382,7 +1382,7 @@ export function update() {
     }
 
     // 0. Global Inputs (Restart/Menu from non-play states)
-    if (handleGlobalInputs()) return;
+    if (handleGlobalInputs({ restartGame, goToWelcome })) return;
 
     // Music Toggle (Global) - Allow toggling in Start, Play, etc.
     updateMusicToggle();

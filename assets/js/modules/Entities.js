@@ -1214,12 +1214,30 @@ export function updateRestart() {
         // We want to reset HP/Keys/Bombs (initGame(false))
         // BUT if Debug is ON, we want to Keep Weapon (handled in Game.js via resetWeaponState check)
 
-        if (Globals.restartGame) Globals.restartGame(false);
-        const shakePower = 5;
-        Globals.screenShake.power = Math.max(Globals.screenShake.power, shakePower);
-        Globals.screenShake.endAt = Date.now() + 500;
-        Globals.screenShake.teleport = 1; // Trigger Teleport Effect
-        SFX.restart();
+        //check if the ghost is in the room and we are not in debug mode
+        //note the debug flag isnt working but i dont mind that the GHOST is more powerful than the CODE!!!
+        if (Globals.ghostSpawned && !window.DEBUG_WINDOW_ENABLED) {
+            //pick the ghost lore from ghost_restart
+            const ghostLore = Globals.speechData.types?.ghost_restart || ["You cannot escape me!!"];
+            //pick a random line from the ghost lore
+            const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
+
+            // Find the ghost entity
+            const ghost = Globals.enemies.find(e => e.type === 'ghost');
+            if (ghost) {
+                triggerSpeech(ghost, "ghost_restart", ghostLine, true);
+            }
+
+        }
+        else {
+            if (Globals.restartGame) Globals.restartGame(false);
+            const shakePower = 5;
+            Globals.screenShake.power = Math.max(Globals.screenShake.power, shakePower);
+            Globals.screenShake.endAt = Date.now() + 500;
+            Globals.screenShake.teleport = 1; // Trigger Teleport Effect
+            SFX.restart();
+
+        }
         Globals.keys['KeyR'] = false; // consume key
     }
 
