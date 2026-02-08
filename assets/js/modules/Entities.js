@@ -2975,7 +2975,7 @@ export async function pickupItem(item, index) {
                     data: {
                         name: "gun_" + oldName,
                         type: "gun",
-                        location: `rewards/items/guns/player/${oldName}.json`,
+                        location: `${JSON_PATHS.ITEMS_DIR}guns/player/${oldName}.json`,
                         rarity: "common",
                         starter: false, // Old gun is no longer starter?
                         colour: (Globals.gun.Bullet && (Globals.gun.Bullet.colour || Globals.gun.Bullet.color)) || Globals.gun.colour || Globals.gun.color || "gold"
@@ -3057,7 +3057,7 @@ export async function pickupItem(item, index) {
                     data: {
                         name: "bomb_" + oldName,
                         type: "bomb",
-                        location: `rewards/items/bombs/${oldName}.json`,
+                        location: `${JSON_PATHS.ITEMS_DIR}bombs/${oldName}.json`,
                         rarity: "common",
                         starter: false,
                         colour: Globals.bomb.colour || Globals.bomb.color || "white"
