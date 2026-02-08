@@ -104,13 +104,13 @@ when you beat the level unlock something all hame unlocks are session persistnet
     upddate readme 
     add correct enemies to each room
     update credits with the session and global stat
-    add restarts to the session and global stats
  implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
      add a timer (as unlock and store time for each level)
     beat the game to unlock permance mode 
 Balance 7 ^
 
-   
+       add restarts to the session and global stats
+
     count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
         This will be the first thing we store on the server we will store the players name, level and time and have a speed run leaderboard
     drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
@@ -198,6 +198,7 @@ ghost
     solid enemies can be shot by bullets
     player can alos be solid or non solid    
     if you are trapped with the ghost make the room smaller and smaller until you die or the ghost dies
+    add a timer to show you how long you survice
 
 
 NPCsds
