@@ -1,49 +1,26 @@
 bugs
-    check bomb json 
     if yo press 0 or 9 it should update the debug buttons to on / off
-    decide if modifiers that are effecvivetly the same as guns want to look the same ie 360 modifier it seems to have different stats to the 360 gun
-    gunner should have a fire delay so not all turrerts fire at once if there are many in the room
-    turrets should have line of site and only fire if they can see the player
-    turrets shoild have range and only fire if you are in range (stealth missions)
-    gunner should its own enemy type that way we can use small,large,mega etc.
-    gunners can shoot through  enemies
-    enemes spawm outside the room if they are very big
-    many turrts in the room we ahould have a way to define fire rate etc i am not sure the modifierf is working on the gun may require a seperate gun modifer
     drawtutoiral in load roomd
-    add back old ghost gun
-    fix debug logs
-    Game.js:1356 Critical: Room not found in levelMap at 0,-1
-    speech used to be speech bubbles now it is text on screen
-    if you drop a gun with modifers such as homing if you pick it back up it should have those modifiers still
-    at end of level / game when you go to the next one you see the room previous room after any key it should go back to the loading screen
-    debug not working 
     chained explosion should bliw in sequence not all at the same time
     if you leave the room with a remote bomb it wont detonate with space bar
-    add const paths to the json files so we dont require absolute urls as this can lead to errors
-    shield shows when you go into the portal
-    bomb goes blue when you leave the room and go back in
-    going to main menu and starting a new game keeps gun modifiers once you pick up a new gun, you correctly start with the peashooter or unarmed
     golden bomb statys on level relaod but not red 
-    goldent bomb dodnt not stay on the next level went back to -- if you equip bomb at start it stays if you pick it up it doesnt
+    golden bomb does not not stay on the next level went back to -- if you equip bomb at start it stays if you pick it up it doesnt
     i took golden bomb from first boss fight (lucky drop) but ti wentback to normal bomb on restart
-    bombs are blue when you leave and reenter a room 
     is death speech working?
     add player enter room speech for enemies
     add event to boss speech (entry and death)
     max bullet+1 didnt stay on next level same with pierce , modify etc
-    you lose the gun modifies on coplete level but if you pock another gun up the coem abck pn player restart
     you pick up 360 gun and drop 360 (the name)
-    pull the player still persissts seems to happen when you pick up an item / spawn an item 
-    sometimes when you pick up an item they all despawn
-    dont use the same enmy name in a room
-    when you chnage gun all the modifiers are removed a nice item to unlock would be global gun / bomb modifiers
-    is the items folder required now we are all in rewards 
-    add bomb to total (when totla bombs is added)
-    if item is persistent then you apply it at gameinit
+
+    modifiers
+        when you chnage gun all the modifiers are removed a nice item to unlock would be global gun / bomb modifiers
+        you lose the gun modifies on coplete level but if you pock another gun up the coem abck pn player restart
+        if you drop a gun with modifers such as homing if you pick it back up it should have those modifiers still
+     decide if modifiers that are effecvivetly the same as guns want to look the same ie 360 modifier it seems to have different stats to the 360 gun
 
 
 next up 
-  
+  bug fix 6
     sfx & ui updates
         game settings
             inventory
@@ -55,7 +32,7 @@ next up
             unlocked rooms
             unlocked guns
             unlocked bombs
-    bug fix 6
+    
     ghost
     rooms
     items
@@ -63,8 +40,23 @@ next up
     unlocks / permance
     server    
 
-balance 6
-    
+Bug fix 6
+    check bomb json 
+    tweak gubs
+    twweak bombs
+    add more unlocks
+    On the server we dont see the sweet teleport as the screen goes black so either remove this or have the teelport at the start not the end 
+    On the server we are not seeing the last level unlock 
+    wasd during pick up items locks up occasionlllay and pulls in you a random direction for a while, firing seems to fix it. 
+    somme gold doors wont unlock you have to clear the room go out and go back in and its fine
+    remove secnd green shard from ui
+    enemes spawm outside the room if they are very big
+    shield shows when you go into the portal
+    bomb goes blue when you leave the room and go back in
+    dont use the same enmy name in a room
+    add back old ghost gun
+    fix debug logs 
+    bombs are blue when you leave and reenter a room 
 
     
 Levels
@@ -313,8 +305,7 @@ items
      inventory   
     
 logic
-    reload gun / bomb when they pick up a new item
-    if you get hit perfect bonus will reset 
+
 
 bombs
     add an explode on enemy / anything 
@@ -325,6 +316,15 @@ player
     if speed is over 2 x starting speed show a blur effect
 
 bullets / guns 
+    gunner and truuets 
+        gunner should have a fire delay so not all turrerts fire at once if there are many in the room
+        turrets should have line of site and only fire if they can see the player
+        turrets shoild have range and only fire if you are in range (stealth missions)
+        gunner should its own enemy type that way we can use small,large,mega etc.
+        gunners can shoot through  enemies
+        many turrts in the room we ahould have a way to define fire rate etc i am not sure the modifierf is working on the gun may require a seperate gun modifer
+        defualtlaod patterns tl, c, tr, bl, br, tc, bc.  it is middle indent so it does block door
+        if count > 1 place the next one x pixels away until they are all placed
     cosine gun
     if no bullets and you press fire you should get a broken gun sound
     shard gun got from pushing 50 items into portal room 
