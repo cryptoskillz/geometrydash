@@ -197,6 +197,8 @@ ghost
     solid enemies can be shot by bullets
     player can alos be solid or non solid    
     if you are trapped with the ghost make the room smaller and smaller until you die or the ghost dies
+    cant reset in the room once the ghost is dead
+    cant bomb red doors when room is shringing 
 
 
 NPCsds

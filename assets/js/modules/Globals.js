@@ -97,7 +97,6 @@ export const Globals = {
 
     // Logic Flags
     bossKilled: false,
-    ghostKilled: false,
 
     // Lore
     loreData: null,
