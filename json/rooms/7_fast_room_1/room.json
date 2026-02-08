@@ -50,11 +50,11 @@
         {
             "type": "tank",
             "variant": "speedy",
-            "shape": "square",
+            "shape": "small",
             "mode": "normal",
-            "randomiseVariant": true,
+            "randomiseVariant": false,
             "randomiseShape": true,
-            "randomiseColour": true,
+            "randomiseColour": false,
             "modifiers": {},
             "count": 8,
             "moveType": {}

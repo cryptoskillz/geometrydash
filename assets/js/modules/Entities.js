@@ -3151,6 +3151,20 @@ export function spawnRoomRewards(dropConfig, label = null) {
     let anyDropped = false;
     const pendingDrops = [];
 
+    // 0. Fetch Unlock State
+    const unlocks = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
+    const isUnlocked = (item) => {
+        if (!item.unlocked) return true; // Default: Unlocked
+        let isActive = item.unlocked.active; // Default state from JSON
+
+        // Check Persistence Overrides (Keyed by location/path)
+        const stored = unlocks[item.location];
+        if (stored && stored.unlocked && stored.unlocked.active !== undefined) {
+            isActive = stored.unlocked.active;
+        }
+        return isActive;
+    };
+
     // 1. Collect all POTENTIAL drops based on chances
     Object.keys(dropConfig).forEach(rarity => {
         // Skip special keys like "maxDrop"
@@ -3162,8 +3176,14 @@ export function spawnRoomRewards(dropConfig, label = null) {
         // Roll for drop
         if (Math.random() < (conf.dropChance || 0)) {
             // Find items of this rarity
-            // Fix: Check for null items in template list
-            const candidates = window.allItemTemplates.filter(i => i && (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() && i.starter === false && i.special !== true);
+            // Fix: Check for null items in template list AND Unlock Status
+            const candidates = window.allItemTemplates.filter(i =>
+                i &&
+                (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() &&
+                i.starter === false &&
+                i.special !== true &&
+                isUnlocked(i)
+            );
 
             if (candidates.length > 0) {
                 const count = conf.count || 1;

@@ -62,8 +62,6 @@ next up
     server    
 
 balance 6
-    make most items locked at the start and you can unlock x items at random everytime you beat a level, 
-    add unlock rarity to game json and give a unlock if nextlevel is set and the unlocks array in room is blank
     speech bubbles
     max keys in player json
     max bombs in player json
