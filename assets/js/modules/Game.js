@@ -610,12 +610,12 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (available.length === 0 && !Globals.gameData.startRoom && !Globals.gameData.bossRoom) {
             // FALLBACK: Load from old manifest
             try {
-                const m = await fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json());
+                const m = await fetch(JSON_PATHS.MANIFESTS.ROOMS + '?t=' + Date.now()).then(res => res.json());
                 if (m.rooms) {
                     m.rooms.forEach(r => roomProtos.push(loadRoomFile(`rooms/${r}/room.json`, 'normal')));
                     // Also try to load start/boss legacy
-                    roomProtos.push(loadRoomFile('rooms/start/room.json', 'start'));
-                    roomProtos.push(loadRoomFile('rooms/bosses/boss1/room.json', 'boss'));
+                    roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.START_ROOM, 'start'));
+                    roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.BOSS_ROOM, 'boss'));
                 }
             } catch (e) { console.warn("No legacy manifest found"); }
         } else {

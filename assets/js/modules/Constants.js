@@ -18,6 +18,10 @@ export const JSON_PATHS = {
         PLAYERS: "/json/players/manifest.json",
         ROOMS: "json/rooms/manifest.json",
         ITEMS: "json/rewards/items/manifest.json"
+    },
+    DEFAULTS: {
+        START_ROOM: "rooms/special/start/room.json",
+        BOSS_ROOM: "rooms/bosses/boss1/room.json"
     }
 };
 
