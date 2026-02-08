@@ -156,15 +156,19 @@ export async function updateUI() {
     if (Globals.elements.hp) Globals.elements.hp.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
 
     // Keys
-    if (Globals.elements.keys) Globals.elements.keys.innerText = `${Globals.player.inventory.keys || 0}`;
+    if (Globals.elements.keys) {
+        const keyCount = Globals.player.inventory.keys || 0;
+        const maxKeys = Globals.player.inventory.maxKeys || 5;
+        Globals.elements.keys.innerText = `${keyCount}/${maxKeys}`;
+    }
 
-    // Bombs
     // Bombs
     if (Globals.elements.bombs) {
         const bombCount = Globals.player.inventory.bombs || 0;
-        const bombColor = Globals.bomb.colour || Globals.bomb.color || "white";
+        const maxBombs = Globals.player.inventory.maxBombs || 10;
+        const bombColor = (Globals.player.bombType || 'normal') === 'normal' ? '#fff' : '#e74c3c'; // Red for special?
         Globals.elements.bombs.style.color = ""; // Reset parent color
-        Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}</span>`;
+        Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}/${maxBombs}</span>`;
     }
 
     // Gun & Ammo

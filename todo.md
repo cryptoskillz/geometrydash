@@ -62,9 +62,7 @@ next up
     server    
 
 balance 6
-    max keys in player json
-    max bombs in player json
-    add to the unlock and update the unlock state of the item
+    when you beat the level unlock something all hame unlocks are session persistnet must be bought
     upddate readme 
 
     
