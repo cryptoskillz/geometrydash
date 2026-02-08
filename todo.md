@@ -101,19 +101,15 @@ achivements
 
 Balance
 
-
-if (!en.lore && Globals.loreData) {
-            en.lore = generateLore(en);
-
-finishing level 5 should not clear lcocal storage that only happens if you deletet the game
     upddate readme 
-    add correct enemies to each room
     update credits with the session and global stat
- implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
      add a timer (as unlock and store time for each level)
-    beat the game to unlock permance mode 
-Balance 7 ^
 
+Balance 7 ^
+    add correct enemies to each room
+
+ implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
+    beat the game to unlock permance mode 
        add restarts to the session and global stats
 
     count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up

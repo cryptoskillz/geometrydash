@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_PATHS, STORAGE_KEYS } from './Constants.js';
-import { log, deepMerge, triggerSpeech } from './Utils.js';
+import { log, deepMerge, triggerSpeech, generateLore } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
 import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
