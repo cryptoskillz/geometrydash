@@ -1,12 +1,37 @@
 import { Globals } from './Globals.js';
+import { JSON_PATHS } from './Constants.js';
 import { SFX } from './Audio.js'; // Assuming SFX is exported
 import { log } from './Utils.js';
 import { updateUI } from './UI.js';
 
 export function updateDebugEditor() {
-    // Only rebuild if it's the first time or we changed source/room
-    // Simplified trigger logic
-    if (!Globals.elements.debugForm || !Globals.elements.debugSelect) return;
+    const selector = Globals.elements.debugSelect;
+    if (!selector) return;
+
+    // Only populate if empty
+    if (selector.options.length === 0) {
+        const options = [
+            { value: 'player', label: "Local Player" },
+            { value: 'room', label: "Room Data" },
+            { value: 'spawn', label: "Spawn Item" },
+            { value: 'spawnEnemy', label: "Spawn Enemy" },
+            { value: 'spawnRoom', label: "Spawn Room" }
+        ];
+
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.innerText = opt.label;
+            selector.appendChild(el);
+        });
+
+        selector.onchange = () => {
+            renderDebugForm();
+        };
+
+        // Initial Render
+        renderDebugForm();
+    }
 }
 
 export function renderDebugForm() {
@@ -123,14 +148,246 @@ export function renderDebugForm() {
         debugForm.appendChild(container);
         return;
     }
+
+    // SPAWN ENEMY LOGIC
+    // SPAWN ENEMY LOGIC
+    if (type === 'spawnEnemy') {
+        const config = Globals.gameData.enemyConfig || {};
+        const variants = config.variants || [];
+        const shapes = config.shapes || ['circle', 'square'];
+        const colors = config.colors || ['red', 'blue'];
+
+        if (!variants || variants.length === 0) {
+            debugForm.innerText = "No enemy variants found in gameData.";
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.style.padding = "10px";
+
+        // Variant Select
+        const select = document.createElement('select');
+        createInputStyle(select);
+        select.style.height = "auto";
+        select.style.marginBottom = "10px";
+
+        variants.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.innerText = "Variant: " + v.toUpperCase();
+            select.appendChild(opt);
+        });
+        select.selectedIndex = 0;
+
+        // Helper: Create Labelled Input
+        function createLabelledInput(labelText, inputType = 'text', defaultValue = '', options = []) {
+            const wrapper = document.createElement('div');
+            wrapper.style.marginBottom = "5px";
+            wrapper.style.display = "flex";
+            wrapper.style.justifyContent = "space-between";
+            wrapper.style.alignItems = "center";
+
+            const label = document.createElement('label');
+            label.innerText = labelText;
+            label.style.fontSize = "12px";
+            label.style.color = "#aaa";
+            label.style.marginRight = "10px";
+
+            let input;
+            if (inputType === 'select') {
+                input = document.createElement('select');
+                options.forEach(optVal => {
+                    const opt = document.createElement('option');
+                    opt.value = optVal;
+                    opt.innerText = optVal;
+                    input.appendChild(opt);
+                });
+            } else {
+                input = document.createElement('input');
+                input.type = inputType;
+                input.value = defaultValue;
+            }
+
+            input.style.width = "60%";
+            input.style.background = "#222";
+            input.style.border = "1px solid #444";
+            input.style.color = "#fff";
+            input.style.padding = "2px";
+
+            wrapper.appendChild(label);
+            wrapper.appendChild(input);
+            container.appendChild(wrapper);
+            return input;
+        }
+
+        container.appendChild(select);
+
+        const shapeInput = createLabelledInput("Shape", 'select', '', ['random', ...shapes]);
+        const colorInput = createLabelledInput("Color", 'select', '', ['random', ...colors]);
+        const hpInput = createLabelledInput("HP Override", 'number', '');
+        const speedInput = createLabelledInput("Speed Override", 'number', '');
+
+        // Size Dropdown
+        const sizeWrapper = document.createElement('div');
+        sizeWrapper.style.marginBottom = "5px";
+        sizeWrapper.style.display = "flex";
+        sizeWrapper.style.justifyContent = "space-between";
+        sizeWrapper.style.alignItems = "center";
+
+        const sizeLabel = document.createElement('label');
+        sizeLabel.innerText = "Size";
+        sizeLabel.style.fontSize = "12px";
+        sizeLabel.style.color = "#aaa";
+        sizeLabel.style.marginRight = "10px";
+
+        const sizeSelect = document.createElement('select');
+        sizeSelect.style.width = "60%";
+        sizeSelect.style.background = "#222";
+        sizeSelect.style.border = "1px solid #444";
+        sizeSelect.style.color = "#fff";
+        sizeSelect.style.padding = "2px";
+
+        const sizeOptions = [
+            { label: 'Default', value: '' },
+            { label: 'Small (0.5)', value: '0.5' },
+            { label: 'Medium (1.0)', value: '1.0' },
+            { label: 'Large/Big (1.5)', value: '1.5' },
+            { label: 'Massive (2.0)', value: '2.0' }
+        ];
+
+        sizeOptions.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt.value;
+            el.innerText = opt.label;
+            sizeSelect.appendChild(el);
+        });
+
+        sizeWrapper.appendChild(sizeLabel);
+        sizeWrapper.appendChild(sizeSelect);
+        container.appendChild(sizeWrapper);
+
+        // Static Checkbox
+        const staticWrapper = document.createElement('div');
+        staticWrapper.style.marginBottom = "10px";
+        staticWrapper.style.display = "flex";
+        staticWrapper.style.alignItems = "center";
+
+        const staticInput = document.createElement('input');
+        staticInput.type = "checkbox";
+        staticInput.id = "debug-spawn-static";
+        staticInput.style.marginRight = "10px";
+
+        const staticLabel = document.createElement('label');
+        staticLabel.innerText = "Static (No Movement)";
+        staticLabel.setAttribute("for", "debug-spawn-static");
+        staticLabel.style.fontSize = "12px";
+        staticLabel.style.color = "#aaa";
+
+        staticWrapper.appendChild(staticInput);
+        staticWrapper.appendChild(staticLabel);
+        container.appendChild(staticWrapper);
+
+        const spawnBtn = document.createElement('button');
+        spawnBtn.innerText = "SPAWN ENEMY";
+        createInputStyle(spawnBtn);
+        spawnBtn.style.background = "#e74c3c";
+        spawnBtn.style.cursor = "pointer";
+        spawnBtn.style.marginTop = "10px";
+
+        spawnBtn.onclick = () => {
+            spawnBtn.blur();
+            const variant = select.value;
+            if (!variant) return;
+
+            const overrides = {};
+            if (shapeInput.value !== 'random') overrides.shape = shapeInput.value;
+            if (colorInput.value !== 'random') overrides.color = colorInput.value;
+            if (hpInput.value) overrides.hp = parseFloat(hpInput.value);
+            if (speedInput.value) overrides.speed = parseFloat(speedInput.value);
+            if (sizeSelect.value) overrides.size = parseFloat(sizeSelect.value);
+            if (staticInput.checked) overrides.moveType = 'static';
+
+            if (Globals.spawnEnemy) {
+                // Pass overrides to the global handler
+                Globals.spawnEnemy(variant, Globals.player.x + (Math.random() * 200 - 100), Globals.player.y + (Math.random() * 200 - 100), overrides);
+                log("Spawned Enemy:", variant, overrides);
+            } else {
+                console.error("Globals.spawnEnemy not defined.");
+            }
+        };
+
+        container.appendChild(spawnBtn);
+        debugForm.appendChild(container);
+        return;
+    }
+
     // ... Simplified Logic for brevity in plan vs actual code ...
     // I will include the other blocks (spawnRoom, spawnEnemy, edit Logic) 
     // but refactored to use Globals.
 
-    // ... [spawnRoom logic would go here] ...
+
+    // SPAWN ROOM LOGIC
+    if (type === 'spawnRoom') {
+        const rooms = Globals.roomManifest ? Globals.roomManifest.rooms : [];
+        if (!rooms || rooms.length === 0) {
+            debugForm.innerText = "No rooms found in manifest.";
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.style.padding = "10px";
+
+        const label = document.createElement('div');
+        label.innerText = "Select Room:";
+        label.style.color = "#aaa";
+        label.style.marginBottom = "5px";
+        container.appendChild(label);
+
+        const select = document.createElement('select');
+        createInputStyle(select);
+        select.style.height = "auto";
+        select.size = 10;
+
+        rooms.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r;
+            opt.innerText = "Room " + r;
+            select.appendChild(opt);
+        });
+
+        const loadBtn = document.createElement('button');
+        loadBtn.innerText = "GO TO ROOM";
+        createInputStyle(loadBtn);
+        loadBtn.style.background = "#3498db";
+        loadBtn.style.cursor = "pointer";
+        loadBtn.style.marginTop = "10px";
+
+        loadBtn.onclick = () => {
+            loadBtn.blur();
+            const roomId = select.value;
+            if (!roomId) return;
+
+            // Construct Path - assumig standard structure
+            const path = `json/rooms/${roomId}/room.json`;
+            log("Debug Loading Room:", path);
+
+            if (Globals.loadRoom) {
+                // isRestart=true (to reset room state), nextLevel=path, keepStats=true
+                Globals.loadRoom(true, path, true);
+            } else {
+                console.error("Globals.loadRoom not defined.");
+            }
+        };
+
+        container.appendChild(select);
+        container.appendChild(loadBtn);
+        debugForm.appendChild(container);
+        return;
+    }
+
 
     // Edit Object Logic
-    const target = type === 'player' ? Globals.player : Globals.roomData;
+    const target = (type === 'player') ? Globals.player : Globals.roomData;
 
     function createFields(parent, obj, path) {
         for (const key in obj) {
@@ -211,6 +468,5 @@ export function renderDebugForm() {
             }
         }
     }
-
     createFields(debugForm, target, '');
 }

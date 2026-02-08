@@ -31,11 +31,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     console.log("TRACER: initGame Start. isRestart=", isRestart);
 
     // FIX: Enforce Base State on Fresh Run (Reload/Restart)
-    const isDebug = Globals.gameData && (
-        Globals.gameData.showDebugWindow !== undefined
-            ? Globals.gameData.showDebugWindow
-            : (Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true)
-    );
+    const isDebug = Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true;
     if (!keepStats && !isDebug) {
         resetWeaponState();
     }
@@ -266,8 +262,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             DEBUG_FLAGS.START_BOSS = Globals.gameData.debug.startBoss ?? false;
             DEBUG_FLAGS.PLAYER = Globals.gameData.debug.player ?? true;
             DEBUG_FLAGS.GODMODE = Globals.gameData.debug.godMode ?? false;
-            DEBUG_FLAGS.WINDOW = (Globals.gameData.showDebugWindow !== undefined) ? Globals.gameData.showDebugWindow : (Globals.gameData.debug.windowEnabled ?? false);
-            DEBUG_FLAGS.LOG = (Globals.gameData.showDebugLog !== undefined) ? Globals.gameData.showDebugLog : (Globals.gameData.debug.log ?? false);
+            DEBUG_FLAGS.WINDOW = Globals.gameData.debug.windowEnabled ?? false;
+            DEBUG_FLAGS.LOG = Globals.gameData.debug.log ?? false;
 
             if (Globals.gameData.debug.spawn) {
                 DEBUG_FLAGS.SPAWN_ALL_ITEMS = Globals.gameData.debug.spawn.allItems ?? false;
@@ -279,15 +275,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         }
 
-        // Support root-level overrides (regardless of debug object existence)
-        if (Globals.gameData.showDebugWindow !== undefined) DEBUG_FLAGS.WINDOW = Globals.gameData.showDebugWindow;
-        if (Globals.gameData.showDebugLog !== undefined) DEBUG_FLAGS.LOG = Globals.gameData.showDebugLog;
-
         // Apply Debug UI state
         if (Globals.elements.debugPanel) Globals.elements.debugPanel.style.display = DEBUG_FLAGS.WINDOW ? 'flex' : 'none';
         if (Globals.elements.debugLog) Globals.elements.debugLog.style.display = DEBUG_FLAGS.LOG ? 'block' : 'none';
         if (Globals.elements.room) Globals.elements.room.style.display = DEBUG_FLAGS.WINDOW ? 'block' : 'none';
-        if (Globals.elements.debugLog) Globals.elements.debugLog.style.display = DEBUG_FLAGS.LOG ? 'block' : 'none';
+
+        // Populate Debug Dropdown (Fix)
+        updateDebugEditor();
 
         Globals.roomManifest = mData;
 
@@ -621,7 +615,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     m.rooms.forEach(r => roomProtos.push(loadRoomFile(`rooms/${r}/room.json`, 'normal')));
                     // Also try to load start/boss legacy
                     roomProtos.push(loadRoomFile('rooms/start/room.json', 'start'));
-                    roomProtos.push(loadRoomFile('rooms/boss1/room.json', 'boss'));
+                    roomProtos.push(loadRoomFile('rooms/bosses/boss1/room.json', 'boss'));
                 }
             } catch (e) { console.warn("No legacy manifest found"); }
         } else {
@@ -693,6 +687,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
             }
         }
+        else if (nextLevel && (Globals.gameData.tiles || Globals.gameData.enemies)) {
+            console.log("Single Room Mode Detected via nextLevel");
+            Globals.bossCoord = "0,0";
+            Globals.goldenPath = ["0,0"];
+            // Use gData as the room source since nextLevel was merged into it
+            Globals.levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(Globals.gameData)), cleared: false };
+        }
         else {
             generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
         }
@@ -700,6 +701,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         const startEntry = Globals.levelMap["0,0"];
         Globals.roomData = startEntry.roomData;
         Globals.visitedRooms["0,0"] = startEntry;
+
+        // If we loaded a specific room/level (via nextLevel or debug), we need to ensure enemies are spawned
+        // generateLevel usually handles this for procedural levels, but here we might be bypassing it.
+        // We need to re-trigger spawnEnemies for the current room if it wasn't done.
+        // CHECK: generateLevel populates the map. If we injected "0,0" manually (debug), we need to spawn.
+        if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
+            console.log("Debug/Direct Load: Spawning Enemies for 0,0");
+            spawnEnemies(Globals.roomData);
+        }
 
         Globals.canvas.width = Globals.roomData.width || 800;
         Globals.canvas.height = Globals.roomData.height || 600;
@@ -1908,6 +1918,32 @@ export function goContinue() {
 
 Globals.handleUnlocks = handleUnlocks;
 Globals.gameOver = gameOver; // Assign for circular dependency fix
+Globals.spawnEnemy = (type, x, y, overrides = {}) => {
+    // Import dynamically or use the one we imported?
+    // We imported spawnEnemies from Entities.js.
+    // Entities.spawnEnemies(count, type, x, y) signature?
+    // Let's check Entities.js signature.
+    // spawnEnemies(amount, type) -> random pos
+    // We want specific pos. 
+    // Entities.js likely has "spawnEnemy(type, x, y)" or similar helper?
+    // If not, we might need to add one or use a hack.
+    // Looking at Entities.js...
+
+    // For now, let's assume we can reuse spawnEnemies but we need to pass x,y.
+    // If spawnEnemies doesn't support x,y, we should add support or export a single spawn function.
+    // Let's check Entities.js content first.
+    // Wait, I can't check it inside this replace block.
+    // I will assume I need to export a helper from Entities and attach it here.
+    // OR, I can just attach it here if I have access to the class/function.
+
+    // Actually, looking at imports in Game.js:
+    // import { spawnEnemies ... } from './Entities.js';
+
+    // I'll attach a wrapper here.
+    import('./Entities.js').then(m => {
+        m.spawnEnemyAt(type, x, y, overrides);
+    });
+};
 
 export async function handleUnlocks(unlockKeys) {
     if (Globals.isUnlocking) return;
@@ -2051,3 +2087,6 @@ export function cancelNewGame() {
 }
 
 
+
+Globals.restartGame = initGame;
+Globals.loadRoom = initGame; // Alias for clarity

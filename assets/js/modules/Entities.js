@@ -6,6 +6,61 @@ import { CONFIG, STATES, BOUNDARY, DOOR_SIZE, JSON_PATHS } from './Constants.js'
 import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats } from './UI.js';
 
 // Functions will be appended below
+
+// Debug Spawn Helper
+export function spawnEnemyAt(type, x, y, overrides = {}) {
+    if (!Globals.gameData.enemyConfig) return;
+
+    const group = {
+        type: "enemy",
+        variant: type,
+        x: x,
+        y: y
+    };
+
+    // Apply Config & Defaults
+    const inst = {
+        type: 'enemy',
+        x: x, y: y,
+        roomX: Globals.player.roomX,
+        roomY: Globals.player.roomY
+    };
+
+    applyEnemyConfig(inst, group);
+
+    // Ensure Critical Stats
+    inst.hp = overrides.hp || inst.hp || 10;
+    inst.maxHp = inst.hp;
+    inst.size = overrides.size || inst.size || 25;
+    inst.color = overrides.color || inst.color || '#e74c3c';
+    inst.speed = overrides.speed || inst.speed || 1;
+    inst.damage = inst.damage || 1;
+    inst.vx = (Math.random() - 0.5) * inst.speed;
+    inst.vy = (Math.random() - 0.5) * inst.speed;
+    inst.pushback = { x: 0, y: 0 };
+    inst.isDead = false;
+    inst.flashTime = 0;
+
+    // Shape Override
+    if (overrides.shape) inst.shape = overrides.shape;
+
+    // MoveType Override (Static)
+    if (overrides.moveType) {
+        inst.moveType = overrides.moveType;
+        if (inst.moveType === 'static') {
+            inst.speed = 0;
+            inst.vx = 0;
+            inst.vy = 0;
+        }
+    }
+
+    // Assign ID
+    inst.id = Math.random().toString(36).substr(2, 9);
+
+    Globals.enemies.push(inst);
+    log("Debug Spawned Enemy:", type, "at", Math.round(x), Math.round(y));
+}
+
 export function applyEnemyConfig(inst, group) {
     const config = Globals.gameData.enemyConfig || {
         variants: ['speedy', 'small', 'large', 'massive', 'gunner', 'turret', 'medium'],

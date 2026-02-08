@@ -13,6 +13,7 @@ export const JSON_PATHS = {
         LORE_SPEECH: "/json/enemies/lore/speech.json",
         SPECIAL_DIR: "/json/enemies/special/"
     },
+    BOSSES: "/json/rooms/bosses/",
     MANIFESTS: {
         PLAYERS: "/json/players/manifest.json",
         ROOMS: "json/rooms/manifest.json",
