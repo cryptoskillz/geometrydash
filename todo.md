@@ -104,11 +104,8 @@ Balance
 
 if (!en.lore && Globals.loreData) {
             en.lore = generateLore(en);
-        }
 
-        
 finishing level 5 should not clear lcocal storage that only happens if you deletet the game
-when you beat the level unlock something all hame unlocks are session persistnet must be bought
     upddate readme 
     add correct enemies to each room
     update credits with the session and global stat

@@ -519,8 +519,7 @@ export function showCredits() {
         creditsEl.style.display = 'none';
 
         // Return to Welcome
-        // Clear Persistence to ensure fresh start
-        STORAGE_KEYS.RESET_ON_NEW_GAME.forEach(key => localStorage.removeItem(key));
+        // Do NOT clear persistence here. User must explicit start New Game.
 
         // Use Global Helper to Reset State & Go to Welcome
         if (Globals.goToWelcome) {
