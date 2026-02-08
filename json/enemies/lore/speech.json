@@ -29,6 +29,12 @@
             "RESTART, HA HA HA! I AM THE CODE!",
             "DEATH IS THE ONLY ESCAPE!"
         ],
+        "ghost_room_shrink": [
+            "THE ROOM IS SHRINKING!",
+            "NO ESCAPE!",
+            "YOU ARE MINE NOW...",
+            "TRAPPED..."
+        ],
         "boss": [
             "I am the end!",
             "Foolish mortal!",

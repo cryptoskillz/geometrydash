@@ -1538,6 +1538,42 @@ export async function draw() {
         }
     }
 
+    // --- DRAW ROOM SHRINK VOID ---
+    if (Globals.roomShrinkSize > 0) {
+        Globals.ctx.fillStyle = "black";
+        const s = Globals.roomShrinkSize;
+        const w = Globals.canvas.width;
+        const h = Globals.canvas.height;
+
+        // Top
+        Globals.ctx.fillRect(0, 0, w, s);
+        // Bottom
+        Globals.ctx.fillRect(0, h - s, w, s);
+        // Left
+        Globals.ctx.fillRect(0, 0, s, h);
+        // Right
+        Globals.ctx.fillRect(w - s, 0, s, h);
+        if (typeof Globals.ghostRoomShrinkCount !== 'number') Globals.ghostRoomShrinkCount = 0;
+        Globals.ghostRoomShrinkCount++;
+
+        // every 500 frames (approx 8s), ONLY if playing (not Game Over)
+        // using 4 instead of STATES.GAMEOVER (which is likely 4 or 3)
+        // Safest: Check player HP > 0
+        if (Globals.ghostRoomShrinkCount % 500 === 0 && Globals.player.hp > 0) {
+            //make the ghost say something from ghost_room_shrink using lore
+            const ghostLore = Globals.speechData.types?.ghost_room_shrink || ["COME TO ME!"];
+            //pick a random line from the ghost lore
+            const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
+
+            // Find the ghost entity
+            const ghost = Globals.enemies.find(e => e.type === 'ghost');
+            if (ghost) {
+                triggerSpeech(ghost, "ghost_room_shrink", ghostLine, true);
+            }
+
+        }
+    }
+
     drawMinimap();
     if (!DEBUG_FLAGS.TEST_ROOM) drawTutorial();
     drawBossIntro();
@@ -1630,27 +1666,32 @@ export function updateRoomTransitions(doors, roomLocked) {
     // Constraint for center alignment
     // Only allow transition if player is roughly in front of the door
     const doorW = 50; // Half-width tolerance (Total 100px)
+    const shrink = Globals.roomShrinkSize || 0;
 
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
-    if (Globals.player.x < t && doors.left?.active) {
+    // Left Door
+    if (Globals.player.x < t + shrink && doors.left?.active) {
         if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
             if (!doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
             else log("Left Door Blocked: Locked or Room Locked");
         }
     }
-    else if (Globals.player.x > Globals.canvas.width - t && doors.right?.active) {
+    // Right Door
+    else if (Globals.player.x > Globals.canvas.width - t - shrink && doors.right?.active) {
         if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
             if (!doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
             else log("Right Door Blocked: Locked or Room Locked");
         }
     }
-    else if (Globals.player.y < t && doors.top?.active) {
+    // Top Door
+    else if (Globals.player.y < t + shrink && doors.top?.active) {
         if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
             if (!doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
             else log("Top Door Blocked: Locked or Room Locked");
         }
     }
-    else if (Globals.player.y > Globals.canvas.height - t && doors.bottom?.active) {
+    // Bottom Door
+    else if (Globals.player.y > Globals.canvas.height - t - shrink && doors.bottom?.active) {
         if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
             if (!doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
             else log("Bottom Door Blocked: Locked or Room Locked");
@@ -1659,37 +1700,19 @@ export function updateRoomTransitions(doors, roomLocked) {
 }
 
 export function isRoomLocked() {
-    // Alive enemies that are NOT indestructible
     const aliveEnemies = Globals.enemies.filter(en => !en.isDead && !en.indestructible);
-    let isLocked = false;
+
+    // 1. Any normal enemy -> LOCK
     const nonGhostEnemies = aliveEnemies.filter(en => en.type !== 'ghost');
+    if (nonGhostEnemies.length > 0) return true;
 
-    if (nonGhostEnemies.length > 0) {
-        // Normal enemies always lock
-        isLocked = true;
-    } else if (aliveEnemies.length > 0) {
-        // Only ghosts remain
-        const ghostConfig = Globals.gameData.ghost || { spawn: true, roomGhostTimer: 10000 };
-        const now = Date.now();
-        const elapsed = now - Globals.roomStartTime;
-        const limit = ghostConfig.roomGhostTimer * 2;
+    // 2. Ghost enemy -> LOCK only if it has triggered the lock
+    const ghost = aliveEnemies.find(en => en.type === 'ghost');
+    if (ghost && ghost.locksRoom) return true;
 
-        // Debug once per second (approx) to avoid spam
-        if (Math.random() < 0.01) {
-            // log(`Ghost Lock Check: Elapsed ${Math.round(elapsed)} vs Limit ${limit}`);
-        }
-
-        // Lock if time > 2x ghost timer
-        if (elapsed > limit) {
-            isLocked = true;
-            if (Math.random() < 0.05) {
-                log(`LOCKED! Elapsed: ${Math.round(elapsed)} > Limit: ${limit}`);
-                log(`Diagnostics: Now=${now}, Start=${Globals.roomStartTime}, ConfigTimer=${ghostConfig.roomGhostTimer}`);
-            }
-        }
-    }
-    return isLocked;
+    return false;
 }
+
 Globals.isRoomLocked = isRoomLocked;
 
 export function updateRoomLock() {
@@ -1799,10 +1822,12 @@ export function drawDoors() {
 
         Globals.ctx.fillStyle = color;
         const dx = door.x ?? Globals.canvas.width / 2, dy = door.y ?? Globals.canvas.height / 2;
-        if (dir === 'top') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, 0, DOOR_SIZE, DOOR_THICKNESS);
-        if (dir === 'bottom') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, Globals.canvas.height - DOOR_THICKNESS, DOOR_SIZE, DOOR_THICKNESS);
-        if (dir === 'left') Globals.ctx.fillRect(0, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
-        if (dir === 'right') Globals.ctx.fillRect(Globals.canvas.width - DOOR_THICKNESS, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
+        const s = Globals.roomShrinkSize || 0;
+
+        if (dir === 'top') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, 0 + s, DOOR_SIZE, DOOR_THICKNESS);
+        if (dir === 'bottom') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, Globals.canvas.height - DOOR_THICKNESS - s, DOOR_SIZE, DOOR_THICKNESS);
+        if (dir === 'left') Globals.ctx.fillRect(0 + s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
+        if (dir === 'right') Globals.ctx.fillRect(Globals.canvas.width - DOOR_THICKNESS - s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
     });
 }
 

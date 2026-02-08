@@ -121,6 +121,7 @@ export const Globals = {
     // Runtime Counters/Flags
     gameLoopStarted: false,
     ghostSpawned: false,
+    ghostRoomShrinkCount: false,
     wasRoomLocked: false,
     bombsInRoom: 0,
     bombsInRoom: 0,
@@ -128,6 +129,7 @@ export const Globals = {
     hitsInRoom: 0, // Added
     screenShake: { power: 0, endAt: 0, teleport: 0 },
     ghostEntry: null, // Added
+    roomShrinkSize: 0, // Decreases playable area when Ghost is active
 
     // Special Entities
     portal: { active: false, x: 0, y: 0, scrapping: false },

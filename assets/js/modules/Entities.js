@@ -1773,18 +1773,27 @@ export function updateEnemies() {
                 log("Ghost Defeated!");
                 if (Globals.gameData.rewards && Globals.gameData.rewards.ghost) {
                     spawnRoomRewards(Globals.gameData.rewards.ghost, "GHOST BONUS");
-                    perfectEl.innerText = "GHOST BONUS!";
-                    triggerPerfectText();
+
+                    if (Globals.elements.perfect) {
+                        Globals.elements.perfect.innerText = "GHOST BONUS!";
+                        Globals.elements.perfect.classList.add('show');
+                        setTimeout(() => Globals.elements.perfect.classList.remove('show'), 2000);
+                    }
 
                     const specialPath = Globals.gameData.rewards.ghost.special?.item;
                     if (specialPath) {
                         (async () => {
                             try {
-                                const url = "json" + (specialPath.startsWith('/') ? specialPath : '/' + specialPath);
+                                const cleanPath = specialPath.trim();
+                                const url = (cleanPath.startsWith('json') || cleanPath.startsWith('/json'))
+                                    ? cleanPath
+                                    : ("json" + (cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath));
+                                log("Loading Special Ghost Item:", cleanPath, "->", url);
+
                                 const res = await fetch(`${url}?t=${Date.now()}`);
                                 if (res.ok) {
                                     const itemData = await res.json();
-                                    groundItems.push({
+                                    Globals.groundItems.push({
                                         x: en.x, y: en.y,
                                         data: itemData,
                                         roomX: Globals.player.roomX, roomY: Globals.player.roomY,
@@ -2056,10 +2065,43 @@ export function updateGhost() {
         // Ghost specific: pass through walls? (Needs logic update in updateEnemies if so)
         // For now, standard movement
 
+        inst.spawnTime = now; // Track when ghost appeared
         Globals.enemies.push(inst);
         SFX.ghost(); // Spooky sound!
+    } // End Spawn Check
+
+    // --- ROOM SHRINKING LOGIC & LOCKING ---
+    const ghost = Globals.enemies.find(e => e.type === 'ghost' && !e.isDead);
+    if (ghost) {
+        // Use logic from Game Data (roomGhostTimer)
+        const ghostConfig = Globals.gameData.ghost || { roomGhostTimer: 10000 };
+        const delay = ghostConfig.roomGhostTimer;
+        const elapsed = Date.now() - (ghost.spawnTime || 0);
+
+        // 1. LOCK DOORS (after 1 timer cycle)
+        if (elapsed > delay) {
+            ghost.locksRoom = true;
+        } else {
+            ghost.locksRoom = false;
+        }
+
+        // 2. SHRINK ROOM (after 2 timer cycles)
+        if (elapsed > delay * 2) {
+            // Shrink the room!
+            const maxShrink = (Globals.canvas.width / 2) - 60; // Leave a 120px box
+            if (Globals.roomShrinkSize < maxShrink) {
+                Globals.roomShrinkSize += 0.1; // Slow creep
+            }
+        }
+    } else {
+        // Reset if ghost is gone
+        if (Globals.roomShrinkSize > 0) {
+            Globals.roomShrinkSize -= 2.0; // Fast expand
+            if (Globals.roomShrinkSize < 0) Globals.roomShrinkSize = 0;
+        }
     }
 }
+
 
 // --- DAMAGE & SHIELD LOGIC ---
 export function takeDamage(amount) {
@@ -2720,12 +2762,21 @@ export function updateMovementAndDoors(doors, roomLocked) {
             const canPass = door.active && !door.locked && !door.hidden && (!roomLocked || door.forcedOpen);
 
             if (dx !== 0) {
-                const limit = dx < 0 ? BOUNDARY : Globals.canvas.width - BOUNDARY;
                 const nextX = Globals.player.x + dx * Globals.player.speed;
+                // Movement Constraints with Shrink
+                const shrink = Globals.roomShrinkSize || 0;
+                let limit = 0;
+
+                if (dx < 0) { // Moving Left
+                    limit = BOUNDARY + shrink;
+                } else { // Moving Right
+                    limit = Globals.canvas.width - BOUNDARY - shrink;
+                }
+
+                // Restore Bomb Collision (Horizontal)
                 let collided = false;
                 let hitMoveable = false;
 
-                // Bomb Collision (Horizontal)
                 Globals.bombs.forEach(b => {
                     if (b.solid && !b.exploding) {
                         const dist = Math.hypot(nextX - b.x, Globals.player.y - b.y);
@@ -2742,7 +2793,14 @@ export function updateMovementAndDoors(doors, roomLocked) {
                     }
                 });
 
-                if (!collided && ((dx < 0 ? Globals.player.x > limit : Globals.player.x < limit) || (inDoorRange && canPass))) {
+                // Correct logic:
+                // Normal wall: Cannot pass limit.
+                // Door: Can pass limit IF in range.
+
+                // Check if we are trying to cross the limit
+                const crossingLimit = (dx < 0 && nextX < limit) || (dx > 0 && nextX > limit);
+
+                if (!collided && (!crossingLimit || (inDoorRange && canPass))) {
                     Globals.player.x = nextX;
                 } else if (collided && !hitMoveable) {
                     Globals.player.x -= dx * 5; // Knockback only if not pushing
@@ -2771,16 +2829,38 @@ export function updateMovementAndDoors(doors, roomLocked) {
                     }
                 });
 
-                if (!collided && ((dy < 0 ? Globals.player.y > limit : Globals.player.y < limit) || (inDoorRange && canPass))) {
+                // Y-Axis Constraints with Shrink
+                const shrink = Globals.roomShrinkSize || 0;
+                let limitY = 0;
+                if (dy < 0) { // Up
+                    limitY = BOUNDARY + shrink;
+                } else { // Down
+                    limitY = Globals.canvas.height - BOUNDARY - shrink;
+                }
+
+                const crossingLimit = (dy < 0 && nextY < limitY) || (dy > 0 && nextY > limitY);
+
+                if (!collided && (!crossingLimit || (inDoorRange && canPass))) {
                     Globals.player.y = nextY;
                 } else if (collided && !hitMoveable) {
                     Globals.player.y -= dy * 5; // Knockback only if not pushing
-                    Globals.player.y = Math.max(BOUNDARY + Globals.player.size, Math.min(Globals.canvas.height - BOUNDARY - Globals.player.size, Globals.player.y));
+                    Globals.player.y = Math.max(BOUNDARY + Globals.player.size + shrink, Math.min(Globals.canvas.height - BOUNDARY - Globals.player.size - shrink, Globals.player.y));
                 }
             }
         }
     }
 
+    // --- APPLY ROOM SHRINK CONSTRAINT ---
+    if (Globals.roomShrinkSize > 0) {
+        const s = Globals.roomShrinkSize;
+        const p = Globals.player;
+
+        // Push player inward
+        if (p.x < s + p.size) p.x = s + p.size;
+        if (p.x > Globals.canvas.width - s - p.size) p.x = Globals.canvas.width - s - p.size;
+        if (p.y < s + p.size) p.y = s + p.size;
+        if (p.y > Globals.canvas.height - s - p.size) p.y = Globals.canvas.height - s - p.size;
+    }
 }
 export async function pickupItem(item, index) {
 
