@@ -11,7 +11,7 @@
     "special": false,
     "consumed": true,
     "unlocked": {
-        "active": false,
+        "active": true,
         "modifyType": "session"
     },
     "rarity": "uncommon"

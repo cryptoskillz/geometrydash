@@ -62,9 +62,7 @@ next up
     server    
 
 balance 6
-    check the max hp+1 modifier add 1 hp as it maybe blocked as and working the same as addhp+1
     make most items locked at the start and you can unlock x items at random everytime you beat a level, 
-    only spaw itesm that have unlocked / active = true in the item josn or it has been unlocked as is in localstorage. 
     add unlock rarity to game json and give a unlock if nextlevel is set and the unlocks array in room is blank
     speech bubbles
     max keys in player json
