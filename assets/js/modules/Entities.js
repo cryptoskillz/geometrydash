@@ -2942,6 +2942,7 @@ export async function pickupItem(item, index) {
 
     try {
         if (!location) throw new Error("No location definition for complex item");
+        log("Pickup Location Debug:", location, "Root:", JSON_PATHS.ROOT);
 
         const res = await fetch(`${JSON_PATHS.ROOT}${location}?t=${Date.now()}`);
         const config = await res.json();
@@ -3056,7 +3057,7 @@ export async function pickupItem(item, index) {
                     data: {
                         name: "bomb_" + oldName,
                         type: "bomb",
-                        location: `items/bombs/${oldName}.json`,
+                        location: `rewards/items/bombs/${oldName}.json`,
                         rarity: "common",
                         starter: false,
                         colour: Globals.bomb.colour || Globals.bomb.color || "white"

@@ -1,4 +1,5 @@
 bugs
+    check bomb json 
     if yo press 0 or 9 it should update the debug buttons to on / off
     decide if modifiers that are effecvivetly the same as guns want to look the same ie 360 modifier it seems to have different stats to the 360 gun
     gunner should have a fire delay so not all turrerts fire at once if there are many in the room
@@ -197,8 +198,6 @@ ghost
     solid enemies can be shot by bullets
     player can alos be solid or non solid    
     if you are trapped with the ghost make the room smaller and smaller until you die or the ghost dies
-    cant reset in the room once the ghost is dead
-    cant bomb red doors when room is shringing 
 
 
 NPCsds
