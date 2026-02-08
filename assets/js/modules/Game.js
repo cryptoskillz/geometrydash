@@ -1,9 +1,9 @@
 import { Globals } from './Globals.js';
-import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS } from './Constants.js';
+import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_PATHS, STORAGE_KEYS } from './Constants.js';
 import { log, deepMerge, triggerSpeech } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
-import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts } from './UI.js';
+import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
 import { renderDebugForm, updateDebugEditor } from './Debug.js';
 import { generateLevel } from './Level.js';
 import {
@@ -23,14 +23,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
     if (Globals.isInitializing) return;
     Globals.isInitializing = true;
+
+    // Stats Init
+    loadGameStats();
+    if (!keepStats) resetSessionStats();
+
     console.log("TRACER: initGame Start. isRestart=", isRestart);
 
     // FIX: Enforce Base State on Fresh Run (Reload/Restart)
-    const isDebug = Globals.gameData && (
-        Globals.gameData.showDebugWindow !== undefined
-            ? Globals.gameData.showDebugWindow
-            : (Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true)
-    );
+    const isDebug = Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true;
     if (!keepStats && !isDebug) {
         resetWeaponState();
     }
@@ -143,13 +144,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
     try {
         // 1. Load Game Config First
-        let gData = await fetch('/json/game.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 }));
+        let gData = await fetch(JSON_PATHS.GAME + '?t=' + Date.now()).then(res => res.json()).catch(() => ({ perfectGoal: 3, NoRooms: 11 }));
 
         // 1b. Load Lore & Speech Data
         try {
             const [lData, sData] = await Promise.all([
-                fetch('/json/enemies/lore/names.json?t=' + Date.now()).then(r => r.json()).catch(() => null),
-                fetch('/json/enemies/lore/speech.json?t=' + Date.now()).then(r => r.json()).catch(() => null)
+                fetch(JSON_PATHS.ENEMIES.LORE_NAMES + '?t=' + Date.now()).then(r => r.json()).catch(() => null),
+                fetch(JSON_PATHS.ENEMIES.LORE_SPEECH + '?t=' + Date.now()).then(r => r.json()).catch(() => null)
             ]);
             Globals.loreData = lData;
             Globals.speechData = sData;
@@ -184,7 +185,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             const saved = localStorage.getItem('game_unlocks');
             if (saved) {
                 const overrides = JSON.parse(saved);
-                const targetKeys = ['json/game.json', 'game.json', '/json/game.json'];
+                // Target keys might still be old format in storage, so we keep compatibility or just check new
+                const targetKeys = [JSON_PATHS.GAME, 'game.json', '/json/game.json'];
                 targetKeys.forEach(k => {
                     if (overrides[k]) {
                         log("Applying Unlock Overrides for:", k, overrides[k]);
@@ -207,12 +209,19 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // 3. Load Level Specific Data
-        // Use nextLevel if provided, else config startLevel
-        const levelFile = nextLevel || gData.startLevel;
+        // Use nextLevel if provided, else check stored level (Restart/Continue), else defaults
+        const storedLevel = localStorage.getItem('rogue_current_level');
+        const levelFile = nextLevel || storedLevel || gData.startLevel;
         if (levelFile) {
             try {
                 log("Loading Level:", levelFile);
-                const url = levelFile.startsWith('json/') ? levelFile : `json/${levelFile}`;
+                // Normalize path to prevent double prefixing
+                let normalized = levelFile;
+                if (normalized.startsWith('json/')) normalized = normalized.substring(5);
+                if (normalized.startsWith('/json/')) normalized = normalized.substring(6);
+                if (normalized.startsWith('/')) normalized = normalized.substring(1);
+
+                const url = `${JSON_PATHS.ROOT}${normalized}`;
                 const levelRes = await fetch(`${url}?t=${Date.now()}`);
                 if (levelRes.ok) {
                     const levelData = await levelRes.json();
@@ -239,9 +248,9 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         // 3. Load Manifests in Parallel
         const [manData, mData, itemMan] = await Promise.all([
-            fetch('/json/players/manifest.json?t=' + Date.now()).then(res => res.json()),
-            fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] })),
-            fetch('json/rewards/items/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ items: [] }))
+            fetch(JSON_PATHS.MANIFESTS.PLAYERS + '?t=' + Date.now()).then(res => res.json()),
+            fetch(JSON_PATHS.MANIFESTS.ROOMS + '?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] })),
+            fetch(JSON_PATHS.MANIFESTS.ITEMS + '?t=' + Date.now()).then(res => res.json()).catch(() => ({ items: [] }))
         ]);
 
 
@@ -253,8 +262,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             DEBUG_FLAGS.START_BOSS = Globals.gameData.debug.startBoss ?? false;
             DEBUG_FLAGS.PLAYER = Globals.gameData.debug.player ?? true;
             DEBUG_FLAGS.GODMODE = Globals.gameData.debug.godMode ?? false;
-            DEBUG_FLAGS.WINDOW = (Globals.gameData.showDebugWindow !== undefined) ? Globals.gameData.showDebugWindow : (Globals.gameData.debug.windowEnabled ?? false);
-            DEBUG_FLAGS.LOG = (Globals.gameData.showDebugLog !== undefined) ? Globals.gameData.showDebugLog : (Globals.gameData.debug.log ?? false);
+            DEBUG_FLAGS.WINDOW = Globals.gameData.debug.windowEnabled ?? false;
+            DEBUG_FLAGS.LOG = Globals.gameData.debug.log ?? false;
 
             if (Globals.gameData.debug.spawn) {
                 DEBUG_FLAGS.SPAWN_ALL_ITEMS = Globals.gameData.debug.spawn.allItems ?? false;
@@ -266,15 +275,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         }
 
-        // Support root-level overrides (regardless of debug object existence)
-        if (Globals.gameData.showDebugWindow !== undefined) DEBUG_FLAGS.WINDOW = Globals.gameData.showDebugWindow;
-        if (Globals.gameData.showDebugLog !== undefined) DEBUG_FLAGS.LOG = Globals.gameData.showDebugLog;
-
         // Apply Debug UI state
         if (Globals.elements.debugPanel) Globals.elements.debugPanel.style.display = DEBUG_FLAGS.WINDOW ? 'flex' : 'none';
         if (Globals.elements.debugLog) Globals.elements.debugLog.style.display = DEBUG_FLAGS.LOG ? 'block' : 'none';
         if (Globals.elements.room) Globals.elements.room.style.display = DEBUG_FLAGS.WINDOW ? 'block' : 'none';
-        if (Globals.elements.debugLog) Globals.elements.debugLog.style.display = DEBUG_FLAGS.LOG ? 'block' : 'none';
+
+        // Populate Debug Dropdown (Fix)
+        updateDebugEditor();
 
         Globals.roomManifest = mData;
 
@@ -283,7 +290,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (itemMan && itemMan.items) {
             log("Loading Items Manifest:", itemMan.items.length);
             const itemPromises = itemMan.items.map(i =>
-                fetch(`json/rewards/items/${i}.json?t=` + Date.now()).then(r => r.json()).catch(e => {
+                fetch(`${JSON_PATHS.ROOT}rewards/items/${i}.json?t=` + Date.now()).then(r => r.json()).catch(e => {
                     console.error("Failed to load item:", i, e);
                     return null;
                 })
@@ -295,7 +302,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             await Promise.all(allItems.map(async (item) => {
                 if (!item || !item.location) return;
                 try {
-                    const res = await fetch(`json/${item.location}?t=` + Date.now());
+                    const url = item.location.startsWith(JSON_PATHS.ROOT) ? item.location : `${JSON_PATHS.ROOT}${item.location}`;
+                    const res = await fetch(`${url}?t=${Date.now()}`);
                     const config = await res.json();
 
                     // Check Top Level (Bombs/Modifiers) OR Bullet Level (Guns)
@@ -402,7 +410,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             log("Restoring Full Player State");
             // Merge saved state OVER the default template
             // This ensures we keep new defaults if valid, but restore all our progress
-            Object.assign(Globals.player, savedPlayerStats);
+            // Merge saved state OVER the default template (Deep Merge to preserve structure like inventory.maxKeys)
+            deepMerge(Globals.player, savedPlayerStats);
 
             // Explicitly ensure criticals if missing (shouldn't happen with full clone)
             if (savedPlayerStats.perfectStreak !== undefined) {
@@ -433,7 +442,9 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 if (gRes.ok) {
                     fetchedGun = await gRes.json();
                     if (fetchedGun.location) {
-                        const realRes = await fetch(`json/${fetchedGun.location}?t=` + Date.now());
+                        let loc = fetchedGun.location;
+                        if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                        const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
                         if (realRes.ok) fetchedGun = await realRes.json();
                     }
                 } else console.error("Gun fetch failed:", gRes.status, gRes.statusText);
@@ -449,7 +460,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 if (res.ok) {
                     fetchedGun = await res.json();
                     if (fetchedGun.location) {
-                        const realRes = await fetch(`json/${fetchedGun.location}?t=` + Date.now());
+                        // Normalize location path
+                        let loc = fetchedGun.location;
+                        if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                        const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
                         if (realRes.ok) fetchedGun = await realRes.json();
                     }
                     player.gunType = 'peashooter'; // Update player state
@@ -464,7 +478,9 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 if (bRes.ok) {
                     fetchedBomb = await bRes.json();
                     if (fetchedBomb.location) {
-                        const realRes = await fetch(`json/${fetchedBomb.location}?t=` + Date.now());
+                        let loc = fetchedBomb.location;
+                        if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                        const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
                         if (realRes.ok) fetchedBomb = await realRes.json();
                     }
                 }
@@ -595,12 +611,12 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (available.length === 0 && !Globals.gameData.startRoom && !Globals.gameData.bossRoom) {
             // FALLBACK: Load from old manifest
             try {
-                const m = await fetch('json/rooms/manifest.json?t=' + Date.now()).then(res => res.json());
+                const m = await fetch(JSON_PATHS.MANIFESTS.ROOMS + '?t=' + Date.now()).then(res => res.json());
                 if (m.rooms) {
                     m.rooms.forEach(r => roomProtos.push(loadRoomFile(`rooms/${r}/room.json`, 'normal')));
                     // Also try to load start/boss legacy
-                    roomProtos.push(loadRoomFile('rooms/start/room.json', 'start'));
-                    roomProtos.push(loadRoomFile('rooms/boss1/room.json', 'boss'));
+                    roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.START_ROOM, 'start'));
+                    roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.BOSS_ROOM, 'boss'));
                 }
             } catch (e) { console.warn("No legacy manifest found"); }
         } else {
@@ -672,6 +688,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
             }
         }
+        else if (nextLevel && (Globals.gameData.tiles || Globals.gameData.enemies)) {
+            console.log("Single Room Mode Detected via nextLevel");
+            Globals.bossCoord = "0,0";
+            Globals.goldenPath = ["0,0"];
+            // Use gData as the room source since nextLevel was merged into it
+            Globals.levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(Globals.gameData)), cleared: false };
+        }
         else {
             generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
         }
@@ -679,6 +702,57 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         const startEntry = Globals.levelMap["0,0"];
         Globals.roomData = startEntry.roomData;
         Globals.visitedRooms["0,0"] = startEntry;
+
+        // If we loaded a specific room/level (via nextLevel or debug), we need to ensure enemies are spawned
+        // generateLevel usually handles this for procedural levels, but here we might be bypassing it.
+        // We need to re-trigger spawnEnemies for the current room if it wasn't done.
+        // CHECK: generateLevel populates the map. If we injected "0,0" manually (debug), we need to spawn.
+        if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
+            console.log("Debug/Direct Load: Spawning Enemies for 0,0");
+            spawnEnemies(Globals.roomData);
+        }
+
+        // MATRIX ROOM: Spawn ALL Items
+        if (Globals.roomData.item && Globals.roomData.item.matrix) {
+            console.log("MATRIX ROOM DETECTED: Spawning all items...");
+            const items = window.allItemTemplates || Globals.itemTemplates || [];
+            if (items.length > 0) {
+                const cols = 10; // Items per row
+                const spacing = 50;
+                const startX = 100;
+                const startY = 100;
+
+                // Prevent overlap: Clear existing items in this room 0,0 first? 
+                // Or just clear all ground items if this is a "Matrix Mode" load
+                Globals.groundItems = Globals.groundItems.filter(i => i.roomX !== (Globals.roomData.x || 0) || i.roomY !== (Globals.roomData.y || 0));
+
+                items.forEach((itemTemplate, idx) => {
+                    if (!itemTemplate) return;
+
+                    const col = idx % cols;
+                    const row = Math.floor(idx / cols);
+
+                    Globals.groundItems.push({
+                        x: startX + (col * spacing),
+                        y: startY + (row * spacing),
+                        data: JSON.parse(JSON.stringify(itemTemplate)),
+                        roomX: Globals.roomData.x || 0, // Should be 0,0 locally
+                        roomY: Globals.roomData.y || 0,
+                        vx: 0, vy: 0,
+                        solid: true, moveable: true, friction: 0.9, size: 15,
+                        floatOffset: Math.random() * 100
+                    });
+                });
+                console.log(`Spawned ${items.length} items for Matrix Room.`);
+
+                // Move Player to Safe Spot (Bottom Center)
+                if (Globals.player) {
+                    Globals.player.x = 400;
+                    Globals.player.y = 500;
+                    console.log("Moved player to safe spot (400, 500) for Matrix Mode.");
+                }
+            }
+        }
 
         Globals.canvas.width = Globals.roomData.width || 800;
         Globals.canvas.height = Globals.roomData.height || 600;
@@ -1293,8 +1367,8 @@ export function changeRoom(dx, dy) {
     } else {
         console.error("Critical: Room not found in levelMap at", nextCoord);
         // Fallback: stay in current room but reset coords
-        player.roomX -= dx;
-        player.roomY -= dy;
+        Globals.player.roomX -= dx;
+        Globals.player.roomY -= dy;
     }
 }
 // update loop
@@ -1318,7 +1392,7 @@ export function update() {
 
     // 2. TRIGGER GAME OVER
     if (Globals.player.hp <= 0) {
-
+        updateGameStats('death');
         Globals.player.hp = 0; // Prevent negative health
         updateUI();    // Final UI refresh
         gameOver();    // Trigger your overlay function
@@ -1465,7 +1539,7 @@ export async function draw() {
     }
 
     drawMinimap();
-    drawTutorial();
+    if (!DEBUG_FLAGS.TEST_ROOM) drawTutorial();
     drawBossIntro();
     drawPortal();
     drawFloatingTexts(); // Draw notification texts on top
@@ -1721,8 +1795,7 @@ export function gameOver() {
 
     Globals.elements.overlay.style.display = 'flex';
     // Fix: Count unique visited rooms instead of displacement
-    const roomsCount = Object.keys(Globals.visitedRooms).length || 1;
-    Globals.elements.stats.innerText = "Rooms Visited: " + roomsCount;
+    Globals.elements.stats.innerText = getGameStats(0);
 
     const h1 = document.querySelector('#overlay h1');
     if (Globals.gameState === STATES.WIN) {
@@ -1764,7 +1837,7 @@ export function gameOver() {
 export function gameWon() {
     Globals.gameState = STATES.WIN;
     overlayEl.style.display = 'flex';
-    statsEl.innerText = "Rooms cleared: " + (Math.abs(Globals.player.roomX) + Math.abs(Globals.player.roomY));
+    statsEl.innerText = getGameStats(1);
 
     // Explicitly call gameOver logic to update UI text/buttons sharing logic
     gameOver();
@@ -1830,14 +1903,17 @@ export function updateSFXToggle() {
     }
 }
 
-export function restartGame(keepItems = false) {
+export async function restartGame(keepItems = false) {
     const isDebug = Globals.gameData && (
         Globals.gameData.showDebugWindow !== undefined
             ? Globals.gameData.showDebugWindow
             : (Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true)
     );
     if (!keepItems && !isDebug) resetWeaponState();
-    initGame(true, null, keepItems);
+
+    // Wait for init to complete, then auto-start
+    await initGame(true, null, keepItems);
+    startGame(true);
 }
 Globals.restartGame = restartGame;
 
@@ -1888,6 +1964,32 @@ export function goContinue() {
 
 Globals.handleUnlocks = handleUnlocks;
 Globals.gameOver = gameOver; // Assign for circular dependency fix
+Globals.spawnEnemy = (type, x, y, overrides = {}) => {
+    // Import dynamically or use the one we imported?
+    // We imported spawnEnemies from Entities.js.
+    // Entities.spawnEnemies(count, type, x, y) signature?
+    // Let's check Entities.js signature.
+    // spawnEnemies(amount, type) -> random pos
+    // We want specific pos. 
+    // Entities.js likely has "spawnEnemy(type, x, y)" or similar helper?
+    // If not, we might need to add one or use a hack.
+    // Looking at Entities.js...
+
+    // For now, let's assume we can reuse spawnEnemies but we need to pass x,y.
+    // If spawnEnemies doesn't support x,y, we should add support or export a single spawn function.
+    // Let's check Entities.js content first.
+    // Wait, I can't check it inside this replace block.
+    // I will assume I need to export a helper from Entities and attach it here.
+    // OR, I can just attach it here if I have access to the class/function.
+
+    // Actually, looking at imports in Game.js:
+    // import { spawnEnemies ... } from './Entities.js';
+
+    // I'll attach a wrapper here.
+    import('./Entities.js').then(m => {
+        m.spawnEnemyAt(type, x, y, overrides);
+    });
+};
 
 export async function handleUnlocks(unlockKeys) {
     if (Globals.isUnlocking) return;
@@ -2018,18 +2120,8 @@ export function saveUnlockOverride(file, attr, value) {
 }
 
 export function confirmNewGame() {
-    // Clear Run State
-    localStorage.removeItem('rogue_player_state');
-    localStorage.removeItem('rogue_transition');
-    localStorage.removeItem('current_gun');
-    localStorage.removeItem('current_bomb');
-    localStorage.removeItem('current_gun_config');
-    localStorage.removeItem('current_bomb_config');
-    localStorage.removeItem('base_gun');
-
-    // Clear Unlocks (As per Modal Warning)
-    localStorage.removeItem('game_unlocks');
-    localStorage.removeItem('game_unlocked_ids');
+    // Clear Persistence to ensure fresh start
+    STORAGE_KEYS.RESET_ON_NEW_GAME.forEach(key => localStorage.removeItem(key));
 
     location.reload();
 }
@@ -2041,3 +2133,5 @@ export function cancelNewGame() {
 }
 
 
+
+Globals.loadRoom = initGame; // Alias for clarity

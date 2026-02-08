@@ -2,10 +2,65 @@ import { Globals } from './Globals.js';
 import { log, spawnFloatingText, triggerSpeech } from './Utils.js';
 import { SFX } from './Audio.js';
 import { generateLore } from './Utils.js'; // Assuming generateLore is in Utils (or I need to extract it)
-import { CONFIG, STATES, BOUNDARY, DOOR_SIZE } from './Constants.js';
-import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits } from './UI.js';
+import { CONFIG, STATES, BOUNDARY, DOOR_SIZE, JSON_PATHS } from './Constants.js';
+import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats } from './UI.js';
 
 // Functions will be appended below
+
+// Debug Spawn Helper
+export function spawnEnemyAt(type, x, y, overrides = {}) {
+    if (!Globals.gameData.enemyConfig) return;
+
+    const group = {
+        type: "enemy",
+        variant: type,
+        x: x,
+        y: y
+    };
+
+    // Apply Config & Defaults
+    const inst = {
+        type: 'enemy',
+        x: x, y: y,
+        roomX: Globals.player.roomX,
+        roomY: Globals.player.roomY
+    };
+
+    applyEnemyConfig(inst, group);
+
+    // Ensure Critical Stats
+    inst.hp = overrides.hp || inst.hp || 10;
+    inst.maxHp = inst.hp;
+    inst.size = overrides.size || inst.size || 25;
+    inst.color = overrides.color || inst.color || '#e74c3c';
+    inst.speed = overrides.speed || inst.speed || 1;
+    inst.damage = inst.damage || 1;
+    inst.vx = (Math.random() - 0.5) * inst.speed;
+    inst.vy = (Math.random() - 0.5) * inst.speed;
+    inst.pushback = { x: 0, y: 0 };
+    inst.isDead = false;
+    inst.flashTime = 0;
+
+    // Shape Override
+    if (overrides.shape) inst.shape = overrides.shape;
+
+    // MoveType Override (Static)
+    if (overrides.moveType) {
+        inst.moveType = overrides.moveType;
+        if (inst.moveType === 'static') {
+            inst.speed = 0;
+            inst.vx = 0;
+            inst.vy = 0;
+        }
+    }
+
+    // Assign ID
+    inst.id = Math.random().toString(36).substr(2, 9);
+
+    Globals.enemies.push(inst);
+    log("Debug Spawned Enemy:", type, "at", Math.round(x), Math.round(y));
+}
+
 export function applyEnemyConfig(inst, group) {
     const config = Globals.gameData.enemyConfig || {
         variants: ['speedy', 'small', 'large', 'massive', 'gunner', 'turret', 'medium'],
@@ -43,6 +98,26 @@ export function applyEnemyConfig(inst, group) {
         if (group.variant === 'turret' && stats.moveType === 'static') {
             if (!group.moveType) group.moveType = {};
             if (!group.moveType.type) group.moveType.type = 'static';
+        }
+    }
+
+    // 2b. Special Case for Turret Object Schema (New)
+    if (group.turret && group.turret.active) {
+        if (!inst.moveType) inst.moveType = {};
+        // Ensure it's an object if it was a string
+        if (typeof inst.moveType !== 'object') inst.moveType = { type: inst.moveType || 'static' };
+
+        inst.moveType.type = 'static';
+        inst.moveType.x = group.turret.x;
+        inst.moveType.y = group.turret.y;
+
+        // Force static properties
+        inst.speed = 0;
+
+        // Ensure it has a gun if not already assigned (by variant)
+        if (!inst.gun) {
+            const defaults = Globals.gameData.enemyConfig?.turretDefaults;
+            inst.gun = defaults?.gun || "json/rewards/items/guns/enemy/peashooter.json";
         }
     }
 
@@ -535,8 +610,8 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         size: (bulletConfig.size || 5),
         curve: bulletConfig.curve || 0,
         homing: bulletConfig.homing,
-        canDamagePlayer: bulletConfig.canDamagePlayer || false,
-        hasLeftPlayer: false,
+        canDamagePlayer: bulletConfig.canDamagePlayer !== undefined ? bulletConfig.canDamagePlayer : (ownerType === 'enemy'),
+        hasLeftPlayer: ownerType === 'enemy',
         shape: bulletShape,
         animated: bulletConfig.geometry?.animated || false,
         filled: bulletConfig.geometry?.filled !== undefined ? bulletConfig.geometry.filled : true,
@@ -745,6 +820,9 @@ export function updateBulletsAndShards(aliveEnemies) {
         } else {
             // Only check collision if it has safely left the player once
             if (distToPlayer < collisionThreshold) {
+                // Debug Log
+                if (b.canDamagePlayer) console.log("Bullet hitting player! Damage:", b.damage, "canDamagePlayer:", b.canDamagePlayer);
+
                 // Hit Player
                 if (b.canDamagePlayer) {
                     if (!Globals.player.invuln && Date.now() > (Globals.player.invulnUntil || 0)) {
@@ -1426,7 +1504,14 @@ export function updateEnemies() {
             if (en.gun && typeof en.gun === 'string' && !en.gunConfig) {
                 if (!en.gunLoading) {
                     en.gunLoading = true;
-                    fetch(en.gun).then(r => r.json()).then(d => { en.gunConfig = d; en.gunLoading = false; }).catch(e => { en.gunConfig = { error: true }; });
+                    fetch(en.gun + '?t=' + Date.now())
+                        .then(r => r.json())
+                        .then(d => {
+                            en.gunConfig = d;
+                            en.gunLoading = false;
+                            console.log(`Loaded Enemy Gun: ${en.gun}`, d.Bullet?.canDamagePlayer ? "Has Damage" : "NO DAMAGE", d);
+                        })
+                        .catch(e => { en.gunConfig = { error: true }; });
                 }
             }
             if (en.gunConfig && !en.gunConfig.error && Globals.player.hp > 0) {
@@ -1625,6 +1710,9 @@ export function updateEnemies() {
             // DROP GREEN SHARDS (Difficulty Based)
             if (en.type !== 'boss') { // Bosses drop Red Shards separately
                 const amount = calculateShardDrop('green', 'killEnemy', en);
+                //update kill enemy global counter
+                updateGameStats('kill');
+
                 if (amount > 0) {
                     spawnShard(en.x, en.y, 'green', amount);
                 }
@@ -1636,6 +1724,8 @@ export function updateEnemies() {
 
                 // RED SHARD REWARD
                 const amount = calculateShardDrop('red', 'killBoss', en);
+                //update kill enemy global counter
+                updateGameStats('bossKill');
                 spawnShard(en.x, en.y, 'red', amount);
 
                 Globals.bossKilled = true;
@@ -1823,6 +1913,9 @@ function proceedLevelComplete() {
 
         // Save State to LocalStorage (Robust Persistence)
         localStorage.setItem('rogue_transition', 'true');
+        // Save Next Level as the "Current" level for restarts
+        localStorage.setItem('rogue_current_level', Globals.roomData.nextLevel);
+
         // Ensure we save a clean copy without circular refs or huge data if any
         // But player object is simple enough.
         localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
@@ -2647,6 +2740,8 @@ export function updateMovementAndDoors(doors, roomLocked) {
 
 }
 export async function pickupItem(item, index) {
+
+
     if (item.pickingUp) return; // Debounce
     item.pickingUp = true;
 
@@ -2668,13 +2763,13 @@ export async function pickupItem(item, index) {
         const amount = data.amount || 1;
         if (data.shardType === 'red') {
             const current = Globals.player.inventory.redShards || 0;
-            const max = Globals.player.maxRedShards || 500;
+            const max = Globals.player.inventory.maxRedShards || 500;
             Globals.player.inventory.redShards = Math.min(max, current + amount);
             localStorage.setItem('currency_red', Globals.player.inventory.redShards);
             spawnFloatingText(Globals.player.x, Globals.player.y - 40, `+${amount} RED`, "#e74c3c");
         } else {
             const current = Globals.player.inventory.greenShards || 0;
-            const max = Globals.player.maxGreenShards || 100;
+            const max = Globals.player.inventory.maxGreenShards || 100;
             const newVal = Math.min(max, current + amount);
             log(`Picking up Green Shard. Current: ${current}, Max: ${max}, New: ${newVal}`);
             Globals.player.inventory.greenShards = newVal;
@@ -2685,12 +2780,14 @@ export async function pickupItem(item, index) {
         return;
     }
 
-    if (type === 'health' || type === 'heart') {
+    if (type === 'modifier' && data.modifiers && data.modifiers.hp) {
         if (Globals.player.hp >= Globals.player.maxHp) {
             item.pickingUp = false;
+            //play cant pick up sound
+            if (SFX && SFX.cantPickup) SFX.cantPickup();
             return; // Full HP
         }
-        Globals.player.hp = Math.min(Globals.player.maxHp, Globals.player.hp + (data.value || 1));
+        Globals.player.hp = Math.min(Globals.player.maxHp, Globals.player.hp + (data.modifiers?.hp ? parseInt(data.modifiers.hp) : (data.value || 1)));
         spawnFloatingText(Globals.player.x, Globals.player.y - 40, "+HP", "red");
         if (SFX && SFX.pickup) SFX.pickup();
         removeItem();
@@ -2722,7 +2819,7 @@ export async function pickupItem(item, index) {
     try {
         if (!location) throw new Error("No location definition for complex item");
 
-        const res = await fetch(`json/${location}?t=${Date.now()}`);
+        const res = await fetch(`${JSON_PATHS.ROOT}${location}?t=${Date.now()}`);
         const config = await res.json();
 
         if (type === 'gun') {
@@ -2753,7 +2850,7 @@ export async function pickupItem(item, index) {
                     data: {
                         name: "gun_" + oldName,
                         type: "gun",
-                        location: `items/guns/player/${oldName}.json`,
+                        location: `rewards/items/guns/player/${oldName}.json`,
                         rarity: "common",
                         starter: false, // Old gun is no longer starter?
                         colour: (Globals.gun.Bullet && (Globals.gun.Bullet.colour || Globals.gun.Bullet.color)) || Globals.gun.colour || Globals.gun.color || "gold"
@@ -2802,7 +2899,7 @@ export async function pickupItem(item, index) {
             // PERSIST UNLOCKS ONLY (Peashooter)
             try {
                 const saved = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
-                const key = 'json/game.json';
+                const key = JSON_PATHS.GAME;
                 if (!saved[key]) saved[key] = {};
                 if (location.endsWith('peashooter.json')) {
                     saved[key].unlocked_peashooter = true;
@@ -2874,7 +2971,17 @@ export async function pickupItem(item, index) {
                 // Key Pickup
                 const amountProp = (data.modifiers && data.modifiers.keys) ? data.modifiers.keys : "+1";
                 const amount = parseInt(amountProp) || 1;
-                Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + amount;
+
+                const current = Globals.player.inventory.keys || 0;
+                const max = Globals.player.inventory.maxKeys || 5;
+
+                if (current >= max) {
+                    if (SFX && SFX.cantPickup) SFX.cantPickup();
+                    item.pickingUp = false;
+                    return; // Full
+                }
+
+                Globals.player.inventory.keys = Math.min(max, current + amount);
                 spawnFloatingText(Globals.player.x, Globals.player.y - 40, `+${amount} KEY`, "#f1c40f");
                 if (Globals.elements.keys) Globals.elements.keys.innerText = Globals.player.inventory.keys;
             }
@@ -2919,11 +3026,48 @@ export async function pickupItem(item, index) {
                             }
                             if (valid) {
                                 const leaf = parts[parts.length - 1];
+
+                                // SPECIAL CHECK: Max Bombs
+                                if (targetKey === 'inventory.bombs') {
+                                    const maxBombs = Globals.player.inventory.maxBombs || 10;
+                                    const currentBombs = typeof current[leaf] === 'number' ? current[leaf] : 0;
+
+                                    if (currentBombs >= maxBombs && (isRelative ? val > 0 : val > currentBombs)) {
+                                        if (SFX && SFX.cantPickup) SFX.cantPickup();
+                                        item.pickingUp = false;
+                                        return; // Full
+                                    }
+                                }
+
+                                // SPECIAL CHECK: Max Keys
+                                if (targetKey === 'inventory.keys') {
+                                    const maxKeys = Globals.player.inventory.maxKeys || 5;
+                                    const currentKeys = typeof current[leaf] === 'number' ? current[leaf] : 0;
+
+                                    if (currentKeys >= maxKeys && (isRelative ? val > 0 : val > currentKeys)) {
+                                        if (SFX && SFX.cantPickup) SFX.cantPickup();
+                                        item.pickingUp = false;
+                                        return; // Full
+                                    }
+                                }
+
                                 if (isRelative && typeof current[leaf] === 'number') {
                                     current[leaf] += val;
                                 } else {
                                     current[leaf] = val;
                                 }
+
+                                // Clamp Bombs after add (just in case)
+                                if (targetKey === 'inventory.bombs') {
+                                    const maxBombs = Globals.player.inventory.maxBombs || 10;
+                                    if (current[leaf] > maxBombs) current[leaf] = maxBombs;
+                                }
+                                // Clamp Keys after add
+                                if (targetKey === 'inventory.keys') {
+                                    const maxKeys = Globals.player.inventory.maxKeys || 5;
+                                    if (current[leaf] > maxKeys) current[leaf] = maxKeys;
+                                }
+
                                 applied = true;
                                 log(`Player Mod: Set ${targetKey} to ${current[leaf]}`);
                             }
@@ -3054,6 +3198,20 @@ export function spawnRoomRewards(dropConfig, label = null) {
     let anyDropped = false;
     const pendingDrops = [];
 
+    // 0. Fetch Unlock State
+    const unlocks = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
+    const isUnlocked = (item) => {
+        if (!item.unlocked) return true; // Default: Unlocked
+        let isActive = item.unlocked.active; // Default state from JSON
+
+        // Check Persistence Overrides (Keyed by location/path)
+        const stored = unlocks[item.location];
+        if (stored && stored.unlocked && stored.unlocked.active !== undefined) {
+            isActive = stored.unlocked.active;
+        }
+        return isActive;
+    };
+
     // 1. Collect all POTENTIAL drops based on chances
     Object.keys(dropConfig).forEach(rarity => {
         // Skip special keys like "maxDrop"
@@ -3065,8 +3223,14 @@ export function spawnRoomRewards(dropConfig, label = null) {
         // Roll for drop
         if (Math.random() < (conf.dropChance || 0)) {
             // Find items of this rarity
-            // Fix: Check for null items in template list
-            const candidates = window.allItemTemplates.filter(i => i && (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() && i.starter === false && i.special !== true);
+            // Fix: Check for null items in template list AND Unlock Status
+            const candidates = window.allItemTemplates.filter(i =>
+                i &&
+                (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() &&
+                i.starter === false &&
+                i.special !== true &&
+                isUnlocked(i)
+            );
 
             if (candidates.length > 0) {
                 const count = conf.count || 1;

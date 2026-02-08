@@ -1,0 +1,47 @@
+{
+    "name": "Boss Room 5",
+    "description": "",
+    "keyBonus": 1.0,
+    "speedGoal": 10000,
+    "item": {
+        "common": {
+            "count": 1,
+            "dropChance": 0
+        },
+        "uncommon": {
+            "count": 1,
+            "dropChance": 0
+        },
+        "rare": {
+            "count": 1,
+            "dropChance": 0
+        },
+        "legendary": {
+            "count": 1,
+            "dropChance": 0.5
+        },
+        "special": []
+    },
+    "isBoss": true,
+    "enemies": [
+        {
+            "type": "thirdboss",
+            "variant": "normal",
+            "shape": "",
+            "mode": "normal",
+            "randomiseVariant": false,
+            "randomiseShape": false,
+            "randomiseColour": false,
+            "modifiers": {},
+            "count": 1,
+            "moveType": {}
+        }
+    ],
+    "doors": {},
+    "width": 800,
+    "height": 600,
+    "unlocks": [],
+    "nextLevel": "",
+    "welcomeScreen": false,
+    "completedItMate": true
+}

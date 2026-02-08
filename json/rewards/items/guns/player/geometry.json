@@ -1,7 +1,7 @@
 {
     "name": "geometry gun",
     "description": "Maths is fun",
-    "location": "items/guns/player/geometry.json",
+    "location": "rewards/items/guns/player/geometry.json",
     "type": "gun",
     "starter": false,
     "special": false,
@@ -14,5 +14,25 @@
         "active": false,
         "modify": ""
     },
-    "rarity": "uncommon"
+    "rarity": "uncommon",
+    "Bullet": {
+        "speed": 10,
+        "damage": 1,
+        "size": 5,
+        "colour": "#00ff00",
+        "range": 60,
+        "number": 1,
+        "spreadRate": 0,
+        "geometry": {
+            "shape": "random",
+            "shapes": [
+                "circle",
+                "square",
+                "triangle",
+                "hexagon",
+                "diamond",
+                "star"
+            ]
+        }
+    }
 }

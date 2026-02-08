@@ -114,5 +114,22 @@ export const SFX = {
         osc.start();
         osc.stop(Globals.audioCtx.currentTime + 0.5);
     },
-    yelp: (vol = 0.2) => playTone(600, 'triangle', 0.1, vol)
+    yelp: (vol = 0.2) => playTone(600, 'triangle', 0.1, vol),
+    pickup: (vol = 0.2) => playTone(1200, 'sine', 0.1, vol),
+    coin: (vol = 0.2) => playTone(1500, 'square', 0.1, vol),
+    //make this a cannot so / fail sound
+    cantPickup: (vol = 0.2) => {
+        if (!Globals.audioCtx || Globals.sfxMuted) return;
+        const osc = Globals.audioCtx.createOscillator();
+        const gain = Globals.audioCtx.createGain();
+        osc.type = 'sawtooth'; // Buzzer-like
+        osc.frequency.setValueAtTime(150, Globals.audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, Globals.audioCtx.currentTime + 0.2); // Pitch Drop
+        gain.gain.setValueAtTime(vol, Globals.audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, Globals.audioCtx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(Globals.audioCtx.destination);
+        osc.start();
+        osc.stop(Globals.audioCtx.currentTime + 0.2);
+    }
 };

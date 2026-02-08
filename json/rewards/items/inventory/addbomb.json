@@ -1,7 +1,7 @@
 {
     "name": "Bomb +1",
     "description": "Adds a bomb to your inventory",
-    "location": "items/inventory/bombs/add.json",
+    "location": "rewards/items/inventory/addbomb.json",
     "type": "modifier",
     "modify": "player",
     "modifiers": {
@@ -11,8 +11,8 @@
     "special": false,
     "consumed": true,
     "unlocked": {
-        "active": false,
+        "active": true,
         "modifyType": "session"
     },
-    "rarity": "uncommon"
+    "rarity": "common"
 }

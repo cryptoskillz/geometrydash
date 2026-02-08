@@ -4,19 +4,27 @@ export const BOUNDARY = 20;
 export const DOOR_SIZE = 50;
 export const DOOR_THICKNESS = 15;
 
-//json constants
-export const JSON_PATH = "/json/";
+// JSON Paths
+export const JSON_PATHS = {
+    ROOT: "/json/",
+    GAME: "/json/game.json",
+    ENEMIES: {
+        LORE_NAMES: "/json/enemies/lore/names.json",
+        LORE_SPEECH: "/json/enemies/lore/speech.json",
+        SPECIAL_DIR: "/json/enemies/special/"
+    },
+    BOSSES: "/json/rooms/bosses/",
+    MANIFESTS: {
+        PLAYERS: "/json/players/manifest.json",
+        ROOMS: "json/rooms/manifest.json",
+        ITEMS: "json/rewards/items/manifest.json"
+    },
+    DEFAULTS: {
+        START_ROOM: "rooms/special/start/room.json",
+        BOSS_ROOM: "rooms/bosses/boss1/room.json"
+    }
+};
 
-export const JSON_PATH_GAME = "game.json";
-export const JSON_PATH_LEVELS = "levels.json";
-export const JSON_PATH_PLAYER = "player.json";
-export const JSON_PATH_REWARDS = "rewards/";
-export const JSON_PATH_ENEMIES = "enemies/";
-export const JSON_PATH_ITEMS = "items/";
-export const JSON_PATH_BOSSES = "bosses/";
-export const JSON_PATH_UNLOCKS = "unlocks/";
-export const JSON_PATH_LORE = "lore/";
-export const JSON_PATH_SPEECH = "speech/";
 
 export const CONFIG = {
     MAX_DEBUG_LOGS: 1000,
@@ -38,4 +46,26 @@ export const DEBUG_FLAGS = {
     SPAWN_INVENTORY: false,
     SPAWN_MODS_PLAYER: false,
     SPAWN_MODS_BULLET: true
+};
+
+export const STORAGE_KEYS = {
+    RESET_ON_NEW_GAME: [
+        'rogue_player_state',
+        'rogue_transition',
+        'current_gun',
+        'current_bomb',
+        'current_gun_config',
+        'current_bomb_config',
+        'rogue_current_level',
+        'base_gun',
+        'base_bomb',
+        'debugRoomData',
+        'game_unlocked_ids',
+        'game_unlocks',
+        'base_gun',
+        'base_bomb_config',
+        'base_gun_config',
+        'currency_red',
+        'rogue_stats'
+    ]
 };

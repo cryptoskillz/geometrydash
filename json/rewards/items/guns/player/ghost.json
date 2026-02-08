@@ -1,7 +1,7 @@
 {
     "name": "ghost gun",
     "description": "the ghost gun, super powerful",
-    "location": "items/guns/player/ghost.json",
+    "location": "rewards/items/guns/player/ghost.json",
     "type": "gun",
     "starter": false,
     "consumed": true,
@@ -14,5 +14,64 @@
         "active": false,
         "modify": ""
     },
-    "rarity": "common"
+    "rarity": "common",
+    "Bullet": {
+        "particles": {
+            "active": true,
+            "frequency": 0.2,
+            "life": 1.0,
+            "sizeMult": 0.5
+        },
+        "colour": "#ffffff",
+        "ammo": {
+            "active": false,
+            "type": "finite",
+            "resetTimer": 0,
+            "amount": 999,
+            "maxAmount": 999
+        },
+        "geometry": {
+            "shape": "star",
+            "shapes": [],
+            "animated": true,
+            "filled": false
+        },
+        "canDamagePlayer": false,
+        "speed": 12,
+        "size": 15,
+        "damage": 50,
+        "range": 150,
+        "curve": 0,
+        "spread": 0,
+        "spreadRate": 0,
+        "number": 1,
+        "recoil": 5,
+        "homing": true,
+        "fireRate": 0.2,
+        "wallBounce": false,
+        "pierce": true,
+        "reverseFire": false,
+        "frontLocked": false,
+        "NoBullets": false,
+        "critChance": 0.5,
+        "critDamage": 3.0,
+        "freezeChance": 0.0,
+        "freezeDuration": 0,
+        "multiDirectional": {
+            "active": false,
+            "fireNorth": false,
+            "fireEast": false,
+            "fireSouth": false,
+            "fireWest": false,
+            "fire360": false
+        },
+        "Explode": {
+            "active": true,
+            "shards": 12,
+            "size": 4,
+            "damage": 5,
+            "shardRange": 60,
+            "wallExplode": true
+        }
+    }
 }

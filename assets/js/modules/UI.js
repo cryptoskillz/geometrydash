@@ -1,12 +1,21 @@
 import { Globals } from './Globals.js';
-import { STATES, CONFIG } from './Constants.js';
+import { STATES, CONFIG, STORAGE_KEYS } from './Constants.js';
 // Utils might be needed if logging
 import { log } from './Utils.js';
 
 export function updateFloatingTexts() {
     for (let i = Globals.floatingTexts.length - 1; i >= 0; i--) {
         const ft = Globals.floatingTexts[i];
-        ft.y += ft.vy;
+
+        // Follow Target Logic
+        if (ft.target && !ft.target.isDead) {
+            ft.x = ft.target.x;
+            ft.y = ft.target.y - ft.target.size - 20; // Maintain offset
+        } else {
+            // Only drift if no target or target dead
+            ft.y += ft.vy;
+        }
+
         ft.life -= 0.02;
         if (ft.life <= 0) Globals.floatingTexts.splice(i, 1);
     }
@@ -15,10 +24,59 @@ export function updateFloatingTexts() {
 export function drawFloatingTexts() {
     Globals.ctx.save();
     Globals.floatingTexts.forEach(ft => {
-        Globals.ctx.fillStyle = ft.color;
         Globals.ctx.globalAlpha = ft.life;
         Globals.ctx.font = "bold 12px monospace";
-        Globals.ctx.fillText(ft.text, ft.x, ft.y);
+
+        if (ft.type === 'speech') {
+            // Measure text
+            const metrics = Globals.ctx.measureText(ft.text);
+            const w = metrics.width + 10;
+            const h = 20;
+            const x = Math.floor(ft.x - w / 2); // Pixel perfect align
+            const y = Math.floor(ft.y - h);
+
+            Globals.ctx.lineWidth = 2; // Thicker border for 8-bit feel
+            Globals.ctx.strokeStyle = "black";
+            Globals.ctx.fillStyle = "white";
+
+            // Draw Box (Sharp Edges)
+            Globals.ctx.beginPath();
+            Globals.ctx.rect(x, y, w, h);
+            Globals.ctx.fill();
+            Globals.ctx.stroke();
+
+            // Draw Tail (Simple Triangle)
+            Globals.ctx.beginPath();
+            Globals.ctx.moveTo(Math.floor(ft.x), y + h);
+            Globals.ctx.lineTo(Math.floor(ft.x - 5), y + h + 6);
+            Globals.ctx.lineTo(Math.floor(ft.x + 5), y + h);
+            Globals.ctx.stroke(); // Stroke first for outline? No, complex.
+            // Fill tail to hide box stroke overlap
+            Globals.ctx.fill();
+
+            // Re-stroke box bottom segment to clean up? 
+            // Actually, for simple 8-bit, just a small triangle sticking out is fine.
+            // Let's just draw the tail shape filled and stroked.
+
+            Globals.ctx.beginPath();
+            Globals.ctx.moveTo(Math.floor(ft.x), y + h);
+            Globals.ctx.lineTo(Math.floor(ft.x + 4), y + h);
+            Globals.ctx.lineTo(Math.floor(ft.x), y + h + 6); // Pointy bit
+            Globals.ctx.lineTo(Math.floor(ft.x - 4), y + h);
+            Globals.ctx.fill();
+            Globals.ctx.stroke();
+
+            // Draw Text (Black, centered)
+            Globals.ctx.fillStyle = "black";
+            Globals.ctx.textAlign = "center"; // Align to center of bubble
+            Globals.ctx.textBaseline = "middle";
+            Globals.ctx.fillText(ft.text, Math.floor(ft.x), Math.floor(y + h / 2));
+        } else {
+            // Normal Floating Text
+            Globals.ctx.textAlign = "center"; // Ensure normal text is also centered?
+            Globals.ctx.fillStyle = ft.color;
+            Globals.ctx.fillText(ft.text, ft.x, ft.y);
+        }
     });
     Globals.ctx.restore();
 }
@@ -107,15 +165,19 @@ export async function updateUI() {
     if (Globals.elements.hp) Globals.elements.hp.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
 
     // Keys
-    if (Globals.elements.keys) Globals.elements.keys.innerText = `${Globals.player.inventory.keys || 0}`;
+    if (Globals.elements.keys) {
+        const keyCount = Globals.player.inventory.keys || 0;
+        const maxKeys = Globals.player.inventory.maxKeys || 5;
+        Globals.elements.keys.innerText = `${keyCount}/${maxKeys}`;
+    }
 
-    // Bombs
     // Bombs
     if (Globals.elements.bombs) {
         const bombCount = Globals.player.inventory.bombs || 0;
-        const bombColor = Globals.bomb.colour || Globals.bomb.color || "white";
+        const maxBombs = Globals.player.inventory.maxBombs || 10;
+        const bombColor = (Globals.player.bombType || 'normal') === 'normal' ? '#fff' : '#e74c3c'; // Red for special?
         Globals.elements.bombs.style.color = ""; // Reset parent color
-        Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}</span>`;
+        Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}/${maxBombs}</span>`;
     }
 
     // Gun & Ammo
@@ -166,6 +228,9 @@ export function drawTutorial() {
     // Show in start room (0,0) if it is NOT a boss room
     if (Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
         Globals.ctx.save();
+
+        //uodate start room name in the UI
+        if (Globals.elements.roomName) Globals.elements.roomName.innerText = Globals.roomData.name;
 
         // Internal helper for keycaps
         const drawKey = (text, x, y) => {
@@ -220,15 +285,15 @@ export function drawTutorial() {
         if (Globals.gameData.itemPickup) actions.push({ label: "ITEM", key: "⎵" });
         if (Globals.gameData.pause !== false) actions.push({ label: "PAUSE", key: "P" });
         if (Globals.gameData.music) actions.push({ label: "MUSIC", key: "0" });
+        if (Globals.gameData.soundEffects) actions.push({ label: "SFX", key: "9" });
 
         if (Globals.player.bombType) {
             actions.push({ label: "BOMB", key: "B" });
         }
 
-        // Check if Debug Window is enabled (Need to import DEBUG_FLAGS if used, or use Globals.gameData fallback)
-        if (Globals.gameData.showDebugWindow) {
-            actions.push({ label: "RESTART", key: "R" });
-        }
+
+        actions.push({ label: "RESTART", key: "R" });
+
 
         actions.forEach(action => {
             Globals.ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
@@ -455,12 +520,7 @@ export function showCredits() {
 
         // Return to Welcome
         // Clear Persistence to ensure fresh start
-        localStorage.removeItem('rogue_player_state');
-        localStorage.removeItem('rogue_transition');
-        localStorage.removeItem('current_gun');
-        localStorage.removeItem('current_bomb');
-        localStorage.removeItem('current_gun_config');
-        localStorage.removeItem('current_bomb_config');
+        STORAGE_KEYS.RESET_ON_NEW_GAME.forEach(key => localStorage.removeItem(key));
 
         // Use Global Helper to Reset State & Go to Welcome
         if (Globals.goToWelcome) {
@@ -473,4 +533,56 @@ export function showCredits() {
 
     Globals.creditsListener = closeCredits;
     document.addEventListener('keydown', closeCredits);
+}
+
+export function updateGameStats(statType) {
+    if (statType === 'kill') {
+        Globals.killEnemyCount++;
+        Globals.killEnemySessionCount++;
+    }
+    if (statType === 'bossKill') {
+        Globals.killBossCount++;
+        Globals.killBossSessionCount++;
+    }
+    if (statType === 'death') {
+        Globals.playerDeathCount++;
+        Globals.playerDeathSessionCount++;
+    }
+    saveGameStats();
+}
+
+export function getGameStats(won) {
+    const roomsCount = Object.keys(Globals.visitedRooms).length || 1;
+    let rooms = `Rooms Visited: ${roomsCount}`;
+    if (won === 1)
+        rooms = `Rooms Cleared: ${roomsCount}`;
+
+    return `${rooms}\nTotal kills: ${Globals.killEnemySessionCount}\nTotal bosses killed: ${Globals.killBossSessionCount}\nPlayer deaths: ${Globals.playerDeathSessionCount}`;
+}
+
+export function saveGameStats() {
+    const stats = {
+        kills: Globals.killEnemyCount,
+        bossKills: Globals.killBossCount,
+        deaths: Globals.playerDeathCount
+    };
+    localStorage.setItem('rogue_stats', JSON.stringify(stats));
+}
+
+export function loadGameStats() {
+    const saved = localStorage.getItem('rogue_stats');
+    if (saved) {
+        const stats = JSON.parse(saved);
+        Globals.killEnemyCount = stats.kills || 0;
+        Globals.killBossCount = stats.bossKills || 0;
+        Globals.playerDeathCount = stats.deaths || 0;
+    } else {
+        saveGameStats(); // Init if missing
+    }
+}
+
+export function resetSessionStats() {
+    Globals.killEnemySessionCount = 0;
+    Globals.killBossSessionCount = 0;
+    Globals.playerDeathSessionCount = 0;
 }
