@@ -48,7 +48,7 @@
     "height": 800,
     "enemies": [
         {
-            "type": "tank",
+            "type": "grunt",
             "variant": "speedy",
             "shape": "small",
             "mode": "normal",

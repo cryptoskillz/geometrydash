@@ -62,7 +62,6 @@ next up
     server    
 
 balance 6
-    speech bubbles
     max keys in player json
     max bombs in player json
     red shards for dup items etc as in logic js 

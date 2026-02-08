@@ -7,7 +7,7 @@
     "item": {
         "common": {
             "count": 1,
-            "dropChance": 0.1
+            "dropChance": 1
         },
         "uncommon": {
             "count": 1,
