@@ -509,12 +509,12 @@ export function showCredits() {
              
                 <p style="font-size: 1.5em; margin: 20px 0; color: #2ecc71;">You slaughtered the following innocent creatures</p>
                 <div style="color: #ccc; font-family: monospace; text-align: left; display: inline-block; margin: 0 auto;">
-                     <p>Enemies Killed (Session): <span style="color: #e74c3c">${Globals.killEnemySessionCount}</span></p>
-                     <p>Bosses Defeated (Session): <span style="color: #e74c3c">${Globals.killBossSessionCount}</span></p>
+                     <p>Needless Deaths (Session): <span style="color: #e74c3c">${Globals.killEnemySessionCount}</span></p>
+                     <p>"Bosses" Killed (Session): <span style="color: #e74c3c">${Globals.killBossSessionCount}</span></p>
                      <hr style="border-color: #555; margin: 10px 0;">
-                     <p>Total Enemies Killed: <span style="color: #f1c40f">${Globals.killEnemyCount}</span></p>
-                     <p>Total Bosses Defeated: <span style="color: #f1c40f">${Globals.killBossCount}</span></p>
-                     <p>Total Deaths: <span style="color: #95a5a6">${Globals.playerDeathCount}</span></p>
+                     <p>Total Needless Deaths: <span style="color: #f1c40f">${Globals.killEnemyCount}</span></p>
+                     <p>Total "Bosses" Killed: <span style="color: #f1c40f">${Globals.killBossCount}</span></p>
+                     <p>Player Deaths: <span style="color: #95a5a6">${Globals.playerDeathCount}</span></p>
                 </div>
 
                 <p style="font-size: 1.5em; margin: 20px 0; color: #3498db;">Run Statistics</p>
