@@ -227,8 +227,11 @@ export async function updateUI() {
             const minutes = Math.floor(elapsed / 60000);
             const seconds = Math.floor((elapsed % 60000) / 1000);
             const ms = Math.floor((elapsed % 1000) / 10);
-            Globals.elements.timer.innerText =
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+
+            // Direct Span Update (No layout thrashing of container)
+            if (Globals.elements.tMin) Globals.elements.tMin.textContent = minutes.toString().padStart(2, '0');
+            if (Globals.elements.tSec) Globals.elements.tSec.textContent = seconds.toString().padStart(2, '0');
+            if (Globals.elements.tMs) Globals.elements.tMs.textContent = ms.toString().padStart(2, '0');
         } else {
             Globals.elements.timer.style.display = 'none';
         }

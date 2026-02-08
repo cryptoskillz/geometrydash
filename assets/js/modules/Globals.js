@@ -23,7 +23,8 @@ export const Globals = {
         debugForm: null,
         debugPanel: null,
         debugLog: null,
-        timer: null
+        timer: null,
+        tMin: null, tSec: null, tMs: null
     },
 
 
@@ -159,7 +160,8 @@ export const Globals = {
 
         const ids = ['hp', 'keys', 'room', 'overlay', 'welcome', 'ui',
             'stats', 'perfect', 'roomName', 'bombs', 'ammo', 'gun',
-            'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer'];
+            'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer',
+            't-min', 't-sec', 't-ms'];
 
         ids.forEach(id => {
             // camelCase conversion for property name
