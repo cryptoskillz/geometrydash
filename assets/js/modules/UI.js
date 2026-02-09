@@ -213,7 +213,7 @@ export async function updateUI() {
     const greenEl = document.getElementById('green-shards');
 
     if (redEl) redEl.innerHTML = `<span style="color: #e74c3c">♦</span> ${redShards} / ${maxRed}`;
-    if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen}`;
+    if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen} `;
 
     // Timer
     if (Globals.elements.timer) {

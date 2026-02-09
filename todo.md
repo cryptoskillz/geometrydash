@@ -21,7 +21,7 @@ bugs
 
 next up 
   bug fix 6
-    sfx & ui updates
+  sfx & ui updates
         game settings
             inventory
             stats
@@ -41,8 +41,9 @@ next up
     server    
 
 Bug fix 6
+    no route to boss room
     check bomb json 
-    tweak gubs
+    tweak guns
     twweak bombs
     add more unlocks
     On the server we dont see the sweet teleport as the screen goes black so either remove this or have the teelport at the start not the end 
