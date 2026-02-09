@@ -605,6 +605,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             // Ensure global audio is ready
             introMusic.loop = true;
             introMusic.volume = 0.4;
+            Globals.introMusic = introMusic; // Expose for Entities
 
             // This attempts to play immediately.
             // If the browser blocks it, the 'keydown' listener below will catch it.
@@ -2232,6 +2233,19 @@ export async function showNextUnlock() {
             // Save Persistent Override (if applicable)
             if (data.json && data.attr && data.value !== undefined) {
                 saveUnlockOverride(data.json, data.attr, data.value);
+            }
+
+            // SPECIAL: Instant Music Play
+            if (key === 'music') {
+                log("Music Unlocked! Playing immediately...");
+                Globals.musicMuted = false;
+                localStorage.setItem('music_muted', 'false');
+                // Ensure music is enabled in gameData too so toggle works
+                Globals.gameData.music = true;
+
+                if (introMusic) {
+                    if (introMusic.paused) fadeIn(introMusic, 5000);
+                }
             }
 
             // CHECK HISTORY: Skip if already unlocked

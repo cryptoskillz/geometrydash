@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { log, spawnFloatingText, triggerSpeech } from './Utils.js';
-import { SFX } from './Audio.js';
+import { SFX, fadeIn } from './Audio.js';
 import { generateLore } from './Utils.js'; // Assuming generateLore is in Utils (or I need to extract it)
 import { CONFIG, STATES, BOUNDARY, DOOR_SIZE, JSON_PATHS } from './Constants.js';
 import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats } from './UI.js';
@@ -2972,21 +2972,43 @@ export async function pickupItem(item, index) {
         const displayName = (data.name || data.unlockId).toUpperCase().replace(/_/g, ' ');
         spawnFloatingText(Globals.player.x, Globals.player.y - 40, `UNLOCKED: ${displayName}`, "#2ecc71");
 
-        // 3. Instant Trigger (e.g. valid for Timer)
-        if (data.details && data.details.instantTrigger) {
+        const details = data.details || data;
+
+        if (details.instantTrigger) {
+
             // Apply the override immediately
-            if (Globals.saveUnlockOverride && data.details.json && data.details.attr && data.details.value !== undefined) {
-                Globals.saveUnlockOverride(data.details.json, data.details.attr, data.details.value);
-                log(`Instant Unlock Triggered: ${data.details.attr} = ${data.details.value}`);
+            if (Globals.saveUnlockOverride && details.json && details.attr && details.value !== undefined) {
+                Globals.saveUnlockOverride(details.json, details.attr, details.value);
+                log(`Instant Unlock Triggered: ${details.attr} = ${details.value}`);
             }
 
-            // Persistence for Instant ID is handled by Step 1 (history.push)
-            // But let's double check specific "unlock" ID from details if different?
-            const detailID = data.details.unlock;
+            // Persistence for Instant ID
+            const detailID = details.unlock || data.unlockId;
             if (detailID && !history.includes(detailID)) {
                 history.push(detailID);
                 localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
                 log(`Instant Unlock Detail ID Saved: ${detailID}`);
+            }
+
+            // SPECIAL: Instant Music Play
+            if (detailID === 'music') {
+                console.log("Music Unlocked via Pickup! key=" + detailID);
+
+                Globals.musicMuted = false;
+                localStorage.setItem('music_muted', 'false');
+                Globals.gameData.music = true;
+
+                if (Globals.introMusic) {
+                    console.log("Starting Music Playback...");
+                    if (Globals.introMusic.paused) {
+                        fadeIn(Globals.introMusic, 2000, 0.4);
+                    } else {
+                        // already playing? ensure volume
+                        Globals.introMusic.volume = 0.4;
+                    }
+                } else {
+                    console.error("Globals.introMusic is missing!");
+                }
             }
         }
 
