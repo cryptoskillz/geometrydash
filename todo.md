@@ -41,6 +41,9 @@ next up
     server    
 
 Bug fix 6
+    draw tutorail check room name and if  is not start room dont draw it
+    spwanable unlocks should show the  unlock name and unlaock like normal items, no logner the unlocked screen, boss kill unlocks should stay on the unlocked screen
+    timer should not reset on each level on from welcome screen
     no route to boss room
     check bomb json 
     tweak guns
@@ -50,7 +53,6 @@ Bug fix 6
     On the server we are not seeing the last level unlock 
     wasd during pick up items locks up occasionlllay and pulls in you a random direction for a while, firing seems to fix it. 
     somme gold doors wont unlock you have to clear the room go out and go back in and its fine
-    remove secnd green shard from ui
     enemes spawm outside the room if they are very big
     shield shows when you go into the portal
     bomb goes blue when you leave the room and go back in

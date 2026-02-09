@@ -248,7 +248,8 @@ export async function updateUI() {
 export function drawTutorial() {
     // --- Start Room Tutorial Text ---
     // Show in start room (0,0) if it is NOT a boss room
-    if (Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
+
+    if (Globals.roomData.name != "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
         Globals.ctx.save();
 
         //uodate start room name in the UI

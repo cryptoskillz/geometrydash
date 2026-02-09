@@ -806,8 +806,11 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // Start Run Timer
-        Globals.runStartTime = Date.now();
-        Globals.runElapsedTime = 0;
+        //on restart if its a new game
+        if (!isRestart) {
+            Globals.runStartTime = Date.now();
+            Globals.runElapsedTime = 0;
+        }
 
         // AUTO START IF CONFIGURED (After everything is ready)
     } finally {
