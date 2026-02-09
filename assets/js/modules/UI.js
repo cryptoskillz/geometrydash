@@ -164,6 +164,9 @@ export async function updateUI() {
     // HP
     if (Globals.elements.hp) Globals.elements.hp.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
 
+    // Room Name (Ensure it persists)
+    if (Globals.elements.roomName && Globals.roomData) Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
+
     // Keys
     if (Globals.elements.keys) {
         const keyCount = Globals.player.inventory.keys || 0;
@@ -249,7 +252,7 @@ export function drawTutorial() {
     // --- Start Room Tutorial Text ---
     // Show in start room (0,0) if it is NOT a boss room
 
-    if (Globals.roomData.name != "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
+    if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
         Globals.ctx.save();
 
         //uodate start room name in the UI

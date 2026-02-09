@@ -2958,44 +2958,35 @@ export async function pickupItem(item, index) {
     }
 
     if (type === 'unlock') {
-        const isBossDrop = data.isBossDrop === true;
+        // UNIFY ALL UNLOCKS TO BE IMMEDIATE
+        // Original "Queue for Portal" logic is deprecated in favor of immediate gratification.
 
-        if (isBossDrop) {
-            // Queue it for Portal Exit (Legacy Behavior)
-            if (!Globals.foundUnlocks) Globals.foundUnlocks = [];
-            Globals.foundUnlocks.push(data.unlockId);
-            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "UNLOCK FOUND!", "gold");
-        } else {
-            // IMMEDIATE UNLOCK (Spawnable/Debug)
-            // 1. Persist
-            const history = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-            if (!history.includes(data.unlockId)) {
-                history.push(data.unlockId);
-                localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
+        // 1. Persist
+        const history = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        if (!history.includes(data.unlockId)) {
+            history.push(data.unlockId);
+            localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
+        }
+
+        // 2. Notification
+        const displayName = (data.name || data.unlockId).toUpperCase().replace(/_/g, ' ');
+        spawnFloatingText(Globals.player.x, Globals.player.y - 40, `UNLOCKED: ${displayName}`, "#2ecc71");
+
+        // 3. Instant Trigger (e.g. valid for Timer)
+        if (data.details && data.details.instantTrigger) {
+            // Apply the override immediately
+            if (Globals.saveUnlockOverride && data.details.json && data.details.attr && data.details.value !== undefined) {
+                Globals.saveUnlockOverride(data.details.json, data.details.attr, data.details.value);
+                log(`Instant Unlock Triggered: ${data.details.attr} = ${data.details.value}`);
             }
 
-            // 2. Fetch Name for nice UI? 
-            // We might not have the name loaded if we didn't fetch the manifest, but we can try fetching specific file?
-            // Or just use a generic text + ID if specific name is missing in data.
-            // Actually, spawnUnlockItem puts 'name' in data but it's "Unlock Reward". 
-            // Let's try to fetch the item details to get the Real Name if we really want it, 
-            // OR just rely on "UNLOCKED: <ID>" calls if we want speed.
-            // The implementation plan suggested fetching.
-
-            // Let's float the ID formatted nicely if we can't get the real name easily synchronous.
-            // But wait, we can make this async or just fire and forget.
-            // The name is now fetched in spawnUnlockItem strings are formatted there
-            const displayName = (data.name || data.unlockId).toUpperCase().replace(/_/g, ' ');
-            spawnFloatingText(Globals.player.x, Globals.player.y - 40, `UNLOCKED: ${displayName}`, "#2ecc71");
-
-            // 3. Instant Trigger (e.g. valid for Timer)
-            if (data.details && data.details.instantTrigger && Globals.saveUnlockOverride) {
-                // Apply the override immediately
-                // data.details has json, attr, value
-                if (data.details.json && data.details.attr && data.details.value !== undefined) {
-                    Globals.saveUnlockOverride(data.details.json, data.details.attr, data.details.value);
-                    log(`Instant Unlock Triggered: ${data.details.attr} = ${data.details.value}`);
-                }
+            // Persistence for Instant ID is handled by Step 1 (history.push)
+            // But let's double check specific "unlock" ID from details if different?
+            const detailID = data.details.unlock;
+            if (detailID && !history.includes(detailID)) {
+                history.push(detailID);
+                localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
+                log(`Instant Unlock Detail ID Saved: ${detailID}`);
             }
         }
 
@@ -3290,6 +3281,7 @@ export async function pickupItem(item, index) {
         log("Error equipping item");
     }
 }
+
 
 export function applyModifierToGun(gunObj, modConfig) {
     // Fix: Define mods

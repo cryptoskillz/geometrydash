@@ -632,7 +632,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     if (type) data._type = type;
 
                     // Store
-                    // Store
+                    // SAFETY CHECK: Don't overwrite a 'start' room with a 'normal' one (Race condition fix)
+                    if (Globals.roomTemplates[id] && Globals.roomTemplates[id]._type === 'start' && type !== 'start') {
+                        // We already have a definitive Start Room for this ID. Don't downgrade it.
+                        // However, we might want to store it by path still?
+                        Globals.roomTemplates[path] = data; // Store path variant anyway
+                        log(`Skipping override of Start Room ${id} with normal variant.`);
+                        return;
+                    }
+
                     Globals.roomTemplates[id] = data;
                     // Also store by full path just in case
                     Globals.roomTemplates[path] = data;
@@ -665,9 +673,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         // C. Explicit Start Room
         if (Globals.gameData.startRoom) {
-            console.log(Globals.gameData.startRoom);
-            console.log(Globals.gameData.bossRoom);
-
             roomProtos.push(loadRoomFile(Globals.gameData.startRoom, 'start'));
         }
 
@@ -983,6 +988,11 @@ export function startGame(keepState = false) {
 
                 const statsPanel = document.getElementById('stats-panel');
                 if (statsPanel) statsPanel.style.display = (Globals.gameData.showUI !== false) ? 'block' : 'none';
+
+                // FORCE UI UPDATE for Room Name
+                if (Globals.elements.roomName) {
+                    Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
+                }
             }     // Show Level Title
             if (Globals.gameData.name) {
                 showLevelTitle(Globals.gameData.name);
@@ -2031,7 +2041,7 @@ export async function restartGame(keepItems = false) {
 
     // Wait for init to complete, then auto-start
     await initGame(true, null, keepItems);
-    startGame(true);
+    // startGame is called by initGame internal logic (via shouldAutoStart)
 }
 Globals.restartGame = restartGame;
 
@@ -2235,6 +2245,22 @@ export function saveUnlockOverride(file, attr, value) {
 
         localStorage.setItem('game_unlocks', JSON.stringify(store));
         log(`Saved Unlock Override: ${file} -> ${attr} = ${value}`);
+
+        // IMMEDIATE UPDATE: If this is for game.json, update Globals.gameData too!
+        if (file === 'game.json' || file === 'game') {
+            if (Globals.gameData) {
+                // handle nested? For now, attr is usually top level like "showTimer"
+                // But could be "ghost.spawn".
+                const parts = attr.split('.');
+                let current = Globals.gameData;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (!current[parts[i]]) current[parts[i]] = {};
+                    current = current[parts[i]];
+                }
+                current[parts[parts.length - 1]] = value;
+                log(`Updated Globals.gameData.${attr} = ${value}`);
+            }
+        }
     } catch (e) {
         console.error("Failed to save unlock persistence", e);
     }

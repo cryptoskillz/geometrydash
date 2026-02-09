@@ -1,4 +1,5 @@
 bugs
+pause restart does not show sweet teleport
     if you pick it up the portal unlock screen is not required (should it active immediately?)
     if yo press 0 or 9 it should update the debug buttons to on / off
     drawtutoiral in load roomd
@@ -42,13 +43,11 @@ next up
     server    
 
 Bug fix 6
- 
-    
-    no route to boss room
     check bomb json 
     tweak guns
     twweak bombs
     add more unlocks
+    no route to boss room
     On the server we dont see the sweet teleport as the screen goes black so either remove this or have the teelport at the start not the end 
     On the server we are not seeing the last level unlock 
     wasd during pick up items locks up occasionlllay and pulls in you a random direction for a while, firing seems to fix it. 
