@@ -1,4 +1,5 @@
 bugs
+matrix room does not spawn untik after first boss
 pause restart does not show sweet teleport
     if you pick it up the portal unlock screen is not required (should it active immediately?)
     if yo press 0 or 9 it should update the debug buttons to on / off
@@ -46,6 +47,7 @@ Bug fix 6
     check bomb json 
     tweak guns
     twweak bombs
+    make spawnable itesm solid and boucne off one another just like the player w
     add more unlocks
     no route to boss room
     On the server we dont see the sweet teleport as the screen goes black so either remove this or have the teelport at the start not the end 

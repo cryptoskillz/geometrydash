@@ -1,7 +1,7 @@
 {
     "name": "Stats Panel",
     "description": "Unlocks Stats Panel",
-    "unlock": "ui",
+    "unlock": "statsPanel",
     "json": "game.json",
     "attr": "showStatsPanel",
     "value": true,

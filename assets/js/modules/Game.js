@@ -304,7 +304,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // 2. Spawnable Unlocks
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        let unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+
+        // MIGRATION: 'ui' was renamed to 'statsPanel'
+        if (unlockedIds.includes('ui')) {
+            unlockedIds = unlockedIds.filter(id => id !== 'ui');
+            if (!unlockedIds.includes('statsPanel')) unlockedIds.push('statsPanel');
+            localStorage.setItem('game_unlocked_ids', JSON.stringify(unlockedIds));
+            log("Migrated unlock: ui -> statsPanel");
+        }
         if (unlockedIds.length > 0) {
             log(`Checking ${unlockedIds.length} unlocks for spawnables...`);
             const unlockPromises = unlockedIds.map(id =>
@@ -312,12 +320,41 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     .then(r => r.json())
                     .then(async data => {
                         if (data.spawnable && data.json) {
+                            let item;
                             const path = data.json;
-                            // Ensure path logic matches other loaders
-                            const res = await fetch(`${JSON_PATHS.ROOT}${path}?t=` + Date.now());
-                            if (res.ok) {
-                                const item = await res.json();
-                                item._isUnlock = true; // Tag it debug
+
+                            // Special Handling for Config Unlocks (game.json)
+                            if (path === 'game.json' || path.endsWith('game.json')) {
+                                item = {
+                                    name: data.name || "Unknown Unlock",
+                                    type: "unlock",
+                                    rarity: "special", // Don't spawn randomly
+                                    location: data.json,
+                                    colour: "#fdcb6e", // Goldish
+                                    size: 15,
+                                    description: data.description,
+                                    // Metadata for pickup logic
+                                    instantTrigger: data.instantTrigger,
+                                    unlockId: data.unlock,
+                                    json: data.json,
+                                    attr: data.attr,
+                                    value: data.value
+                                };
+                            } else {
+                                // Normal Item File
+                                const res = await fetch(`${JSON_PATHS.ROOT}${path}?t=` + Date.now());
+                                if (res.ok) {
+                                    item = await res.json();
+                                }
+                            }
+
+                            if (item) {
+                                item._isUnlock = true;
+                                // Merge metadata if not present
+                                if (data.instantTrigger) item.instantTrigger = true;
+                                if (data.unlock) item.unlockId = data.unlock;
+                                if (data.attr) item.attr = data.attr;
+                                if (data.value) item.value = data.value;
                                 return item;
                             }
                         }
@@ -769,8 +806,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             console.log("MATRIX ROOM DETECTED: Spawning all items...");
             const items = window.allItemTemplates || Globals.itemTemplates || [];
             if (items.length > 0) {
-                const cols = 10; // Items per row
-                const spacing = 50;
+                const cols = 9; // Items per row
+                const spacing = 75;
                 const startX = 100;
                 const startY = 100;
 
