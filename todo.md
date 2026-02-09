@@ -184,6 +184,7 @@ enemies
 
 
 ghost
+    should the ghsot change colour when hes hit, the invul colour is not used
     when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
     ghost non solid enmeies should be able to pass through bombs (they dont explode)
     ghost should be able to pass through solid enemies 
