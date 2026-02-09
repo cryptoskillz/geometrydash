@@ -597,7 +597,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (Globals.gameData.music || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('music')) {
             // Force enable if unlocked (override default config)
             Globals.gameData.music = true;
-            Globals.musicMuted = false;
+            // Respect previous state or load from storage
+            if (Globals.musicMuted === undefined) {
+                Globals.musicMuted = localStorage.getItem('music_muted') === 'true';
+            }
             // --- 1. INSTANT AUDIO SETUP ---
             // Ensure global audio is ready
             introMusic.loop = true;
@@ -753,7 +756,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         // 5. Generate Level
         const urlParams = new URLSearchParams(window.location.search);
-        const isDebugRoom = urlParams.get('debugRoom') === 'true';
+        const isDebugRoom = DEBUG_FLAGS.TEST_ROOM || urlParams.get('debugRoom') === 'true';
         DEBUG_FLAGS.TEST_ROOM = isDebugRoom;
 
         if (DEBUG_FLAGS.START_BOSS) {
@@ -1785,6 +1788,7 @@ export function updateMusicToggle() {
                 fadeIn(introMusic, 5000); // Smooth fade in
             }
         }
+        localStorage.setItem('music_muted', Globals.musicMuted);
     }
 
 }
@@ -1879,7 +1883,8 @@ export function updateRoomLock() {
         // Default to 5000 if undefined, but explicit 0 means 0 (no bonus)
         const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 5000;
 
-        if (speedyLimitMs > 0 && timeTakenMs <= speedyLimitMs) {
+        // Fix: check timeTakenMs > 0 to avoid triggering during negative freeze time
+        if (speedyLimitMs > 0 && timeTakenMs > 0 && timeTakenMs <= speedyLimitMs) {
             if (Globals.gameData.rewards && Globals.gameData.rewards.speedy) {
                 const dropped = spawnRoomRewards(Globals.gameData.rewards.speedy);
                 if (dropped) {
