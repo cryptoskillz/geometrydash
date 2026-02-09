@@ -1643,6 +1643,49 @@ export function updateReload() {
     }
 }
 
+// --- MATRIX RAIN GLOBAL EFFECT ---
+function drawMatrixRain() {
+    // Lazy Init Columns
+    if (!Globals.matrixDrops || Globals.matrixDrops.length !== Math.floor(Globals.canvas.width / 20)) {
+        const cols = Math.floor(Globals.canvas.width / 20);
+        Globals.matrixDrops = Array.from({ length: cols }, () => ({
+            y: Math.random() * Globals.canvas.height, // Random start
+            speed: Math.random() * 5 + 3, // Fast fall (3-8)
+            chars: "01"
+        }));
+    }
+
+    Globals.ctx.save();
+    Globals.ctx.font = '15px monospace';
+    // Use semi-transparent context for trails? No, clearRect kills it.
+    // Instead simulate trails by drawing head + tail segments
+
+    Globals.matrixDrops.forEach((d, i) => {
+        // Draw Head (Bright)
+        Globals.ctx.fillStyle = '#0f0';
+        const char = Math.random() > 0.5 ? "1" : "0";
+        Globals.ctx.fillText(char, i * 20, d.y);
+
+        // Draw Tail (Faint)
+        Globals.ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+        Globals.ctx.fillText(Math.random() > 0.5 ? "1" : "0", i * 20, d.y - 15);
+        Globals.ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+        Globals.ctx.fillText(Math.random() > 0.5 ? "1" : "0", i * 20, d.y - 30);
+
+        // Move
+        if (Math.random() > 0.98) d.y = 0; // Random Reset
+        d.y += d.speed;
+
+        // Wrap
+        if (d.y > Globals.canvas.height) {
+            d.y = 0;
+            d.speed = Math.random() * 5 + 3;
+        }
+    });
+
+    Globals.ctx.restore();
+}
+
 //draw loop
 export async function draw() {
     if (Globals.isInitializing) {
@@ -1656,6 +1699,11 @@ export async function draw() {
     const doors = Globals.roomData.doors || {};
     await updateUI();
     Globals.ctx.clearRect(0, 0, Globals.canvas.width, Globals.canvas.height);
+
+    // Global Matrix Effect (Background)
+    if (Globals.roomData && Globals.roomData.name === "Guns Lots of Guns") {
+        drawMatrixRain();
+    }
     drawShake()
     drawDoors()
     drawBossSwitch() // Draw switch underneath entities

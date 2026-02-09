@@ -4001,6 +4001,39 @@ export function updateItems() {
             item.vy += Math.sin(angle) * pushForce;
         }
 
+        // 3.5 Item-Item Collision (Bounce off each other)
+        for (let j = i - 1; j >= 0; j--) {
+            const other = Globals.groundItems[j];
+            const dx = item.x - other.x;
+            const dy = item.y - other.y;
+            const dist = Math.hypot(dx, dy);
+            const minD = (item.size || 15) + (other.size || 15);
+
+            if (dist < minD) {
+                const angle = Math.atan2(dy, dx);
+                const overlap = minD - dist;
+
+                // Push apart (half each)
+                const pushX = Math.cos(angle) * overlap * 0.5;
+                const pushY = Math.sin(angle) * overlap * 0.5;
+
+                item.x += pushX;
+                item.y += pushY;
+                other.x -= pushX;
+                other.y -= pushY;
+
+                // Bounce (add velocity away from center)
+                const kick = 0.2; // Small bounce
+                const kvx = Math.cos(angle) * kick;
+                const kvy = Math.sin(angle) * kick;
+
+                item.vx += kvx;
+                item.vy += kvy;
+                other.vx -= kvx;
+                other.vy -= kvy;
+            }
+        }
+
         // Decrement Cooldown
         if (item.pickupCooldown > 0) item.pickupCooldown--;
 
