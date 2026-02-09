@@ -10,7 +10,7 @@
     "angryTime": 1000,
     "speed": 1.2,
     "size": 50,
-    "color": "rgba(231, 76, 60, 0.8)",
+    "color": "#F8F8FF",
     "hitColor": "#ffffff",
     "deathType": "fadeaway",
     "deathDuration": 30,
