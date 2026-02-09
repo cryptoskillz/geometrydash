@@ -44,12 +44,12 @@ next up
     server    
 
 Bug fix 6
+    make spawnable itesm solid and boucne off one another just like the player w
+    ghost music when he locks the doors
     particle effect around ghost room
-    matrix room unlocks look different
     check bomb json 
     tweak guns
     twweak bombs
-    make spawnable itesm solid and boucne off one another just like the player w
     add more unlocks
     no route to boss room
     On the server we dont see the sweet teleport as the screen goes black so either remove this or have the teelport at the start not the end 

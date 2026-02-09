@@ -6,5 +6,6 @@
     "attr": "showMinimap",
     "value": true,
     "spawnable": true,
-    "instantTrigger": true
+    "instantTrigger": true,
+    "rarity": "legendary"
 }

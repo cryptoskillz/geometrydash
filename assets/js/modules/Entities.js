@@ -3505,8 +3505,22 @@ export function spawnRoomRewards(dropConfig, label = null) {
         log("Matrix Room: Spawning ALL items...");
         if (window.allItemTemplates) {
             window.allItemTemplates.forEach(item => {
+                // Determine Rarity (since it's not bucketed here)
+                let rarity = item.rarity || 'common';
+
+                // If it's an Item/Unlock without rarity, assume it's valuable
+                if (!item.rarity) {
+                    // Check MULTIPLE properties for Unlocks
+                    if (item.unlock || item.unlockId || item.type === 'unlock' || item.name === 'Minimap') {
+                        rarity = 'legendary'; // Upgrade to Legendary (Gold)
+                        log(`SpawnRoomRewards: Forcing LEGENDARY rarity for ${item.name} (Unlock ID: ${item.unlockId || item.unlock})`);
+                    }
+                    else if (item.type === 'gun') rarity = 'rare';     // Guns are decent
+                    else if (item.type === 'bomb') rarity = 'common';
+                }
+
                 // Spawn EVERYTHING without filtering
-                pendingDrops.push({ item: item, rarity: 'matrix' });
+                pendingDrops.push({ item: item, rarity: rarity });
             });
         }
     }
@@ -3680,7 +3694,7 @@ export function spawnRoomRewards(dropConfig, label = null) {
 
         Globals.groundItems.push({
             x: dropX, y: dropY,
-            data: item,
+            data: { ...item, rarity: drop.rarity }, // Inject rarity from bucket/logic
             roomX: Globals.player.roomX, roomY: Globals.player.roomY,
             vx: (Math.random() - 0.5) * 5,
             vy: (Math.random() - 0.5) * 5,
@@ -4048,6 +4062,19 @@ export function drawItems() {
         const bob = Math.sin(Date.now() / 300) * 3;
         Globals.ctx.translate(0, bob);
 
+        // Check Matrix Theme (from room config or name)
+        const isMatrix = (Globals.roomData && (Globals.roomData.name === "Guns Lots of Guns" || (Globals.roomData.item && Globals.roomData.item.matrix))) || (item.data && item.data.rarity === 'matrix');
+
+        if (isMatrix) {
+            // Matrix Digital Rain Effect (Mini) around item
+            Globals.ctx.fillStyle = `rgba(0, 255, 0, ${Math.random() * 0.5 + 0.2})`;
+            Globals.ctx.font = '10px monospace';
+            // Draw random 0s and 1s floating
+            if (Math.random() > 0.8) {
+                Globals.ctx.fillText(Math.random() > 0.5 ? "1" : "0", (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30);
+            }
+        }
+
         const itemType = item.type || (item.data && item.data.type);
 
         // Draw Item Base
@@ -4084,7 +4111,13 @@ export function drawItems() {
         }
 
         // Rarity Effects (Glow/Pulse)
-        const rarity = (item.data && item.data.rarity) ? item.data.rarity.toLowerCase() : 'common';
+        let rarity = (item.data && item.data.rarity) ? item.data.rarity.toLowerCase() : 'common';
+
+        // Auto-Upgrade Unlocks to Legendary (for visual effects)
+        if (item.data && (item.data.name === 'Minimap' || item.data.unlock || item.data.unlockId || item.data.type === 'unlock')) {
+            if (rarity === 'common' || rarity === 'special') rarity = 'legendary';
+        }
+
         if (rarity !== 'common') {
             const time = Date.now() / 1000;
             let glowColor = 'rgba(255, 255, 255, 0.5)';
@@ -4213,6 +4246,8 @@ function getItemTypeColor(type, data) {
     }
     if (type === 'health' || type === 'heart') return '#e74c3c';
     if (type === 'ammo') return '#2ecc71';
+
+    if (type === 'unlock' || (data && (data.unlock || data.unlockId))) return '#f1c40f'; // Gold for Unlocks (Legendary)
 
     if (type === 'modifier') {
         const loc = (data && data.location) ? data.location.toLowerCase() : "";
