@@ -5,6 +5,6 @@
     "json": "game.json",
     "attr": "showTimer",
     "value": true,
-    "spawnable": false,
+    "spawnable": true,
     "instantTrigger": true
 }

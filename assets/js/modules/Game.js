@@ -313,9 +313,16 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             localStorage.setItem('game_unlocked_ids', JSON.stringify(unlockedIds));
             log("Migrated unlock: ui -> statsPanel");
         }
-        if (unlockedIds.length > 0) {
-            log(`Checking ${unlockedIds.length} unlocks for spawnables...`);
-            const unlockPromises = unlockedIds.map(id =>
+        // Load ALL potential unlocks so they exist for Matrix room testing
+        // Standard "drop" logic in Entities.js will filter out locked ones based on localStorage.
+        if (true) {
+            const unlockManRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/manifest.json?t=` + Date.now());
+            const unlockMan = await unlockManRes.json();
+            const allUnlockIds = unlockMan.unlocks || [];
+
+            log(`Loading ${allUnlockIds.length} potential unlocks from manifest...`);
+
+            const unlockPromises = allUnlockIds.map(id =>
                 fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=` + Date.now())
                     .then(r => r.json())
                     .then(async data => {
@@ -349,7 +356,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                             }
 
                             if (item) {
-                                item._isUnlock = true;
+                                // Entities.js isUnlocked() + localStorage('game_unlocks') handles status.
                                 // Merge metadata if not present
                                 if (data.instantTrigger) item.instantTrigger = true;
                                 if (data.unlock) item.unlockId = data.unlock;
@@ -806,8 +813,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             console.log("MATRIX ROOM DETECTED: Spawning all items...");
             const items = window.allItemTemplates || Globals.itemTemplates || [];
             if (items.length > 0) {
-                const cols = 9; // Items per row
-                const spacing = 75;
+                const cols = 8; // Items per row
+                const spacing = 85;
                 const startX = 100;
                 const startY = 100;
 

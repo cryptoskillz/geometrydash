@@ -3449,6 +3449,17 @@ export function spawnRoomRewards(dropConfig, label = null) {
     let anyDropped = false;
     const pendingDrops = [];
 
+    // MATRIX ROOM SPECIAL LOGIC
+    if (dropConfig.matrix === true) {
+        log("Matrix Room: Spawning ALL items...");
+        if (window.allItemTemplates) {
+            window.allItemTemplates.forEach(item => {
+                // Spawn EVERYTHING without filtering
+                pendingDrops.push({ item: item, rarity: 'matrix' });
+            });
+        }
+    }
+
     // 0. Fetch Unlock State
     const unlocks = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
     const isUnlocked = (item) => {
