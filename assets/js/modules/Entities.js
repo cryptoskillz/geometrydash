@@ -1237,17 +1237,15 @@ export function updateRestart() {
         //check if the ghost is in the room and we are not in debug mode
         //note the debug flag isnt working but i dont mind that the GHOST is more powerful than the CODE!!!
         if (Globals.ghostSpawned && !window.DEBUG_WINDOW_ENABLED) {
-            //pick the ghost lore from ghost_restart
-            const ghostLore = Globals.speechData.types?.ghost_restart || ["You cannot escape me!!"];
-            //pick a random line from the ghost lore
-            const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
-
             // Find the ghost entity
             const ghost = Globals.enemies.find(e => e.type === 'ghost');
             if (ghost) {
+                //pick the ghost lore from ghost_restart
+                const ghostLore = Globals.speechData.types?.ghost_restart || ["You cannot escape me!!"];
+                //pick a random line from the ghost lore
+                const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
                 triggerSpeech(ghost, "ghost_restart", ghostLine, true);
             }
-
         }
         else {
             if (Globals.restartGame) Globals.restartGame(false);

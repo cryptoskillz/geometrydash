@@ -1597,7 +1597,6 @@ export function update() {
         if (Globals.ghostSpawned) {
             // Find the ghost entity
             const ghost = Globals.enemies.find(e => e.type === 'ghost');
-            console.log("Ghost found:", ghost);
             if (ghost) {
                 const ghostLore = Globals.speechData.types?.ghost_pause || ["You cannot escape me!!"];
                 //pick a random line from the ghost lore
