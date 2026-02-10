@@ -1,9 +1,9 @@
 {
     "name": "3 Keys",
-    "description": "Unlocks 3 keys",
+    "description": "Unlocks 3 keys for start",
     "unlock": "add3keys",
     "json": "player.json",
-    "attr": "inventory.key",
+    "attr": "inventory.keys",
     "value": 3,
     "spawnable": true,
     "instantTrigger": false

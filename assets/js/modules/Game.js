@@ -352,8 +352,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                                 let item;
                                 const path = data.json;
 
-                                // Special Handling for Config Unlocks (game.json)
-                                if (path === 'game.json' || path.endsWith('game.json')) {
+                                // Special Handling for Config Unlocks (game.json / player.json)
+                                if (path === 'game.json' || path.endsWith('game.json') || path === 'player.json' || path.endsWith('player.json')) {
                                     item = {
                                         name: data.name || "Unknown Unlock",
                                         type: "unlock",

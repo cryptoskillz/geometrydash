@@ -3,7 +3,7 @@
     "description": "add max hp by 1",
     "unlock": "addMaxhp",
     "json": "player.json",
-    "attr": "inventory.maxHp",
+    "attr": "maxHp",
     "value": 1,
     "spawnable": true,
     "instantTrigger": false
