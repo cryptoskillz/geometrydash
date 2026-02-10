@@ -1,5 +1,6 @@
 bugs
-
+the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
+make bomb explosion look moer lke. wave
 you ca move bobs into other bombs that are solid
 I fixed the issue where some unlocks (like the Minimap and Timer) were missing the Legendary particle effects.
 The logs revealed that these items had a rarity of "special" (instead of "common"), which my previous auto-upgrade logic was ignoring. I have updated the code to automatically upgrade both "common" and "special" rarity unlocks to Legendary.

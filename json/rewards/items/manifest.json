@@ -11,6 +11,7 @@
         "bombs/golden",
         "bombs/red",
         "bombs/remote",
+        "bombs/ghostbomb",
         "modifiers/player/addhp",
         "modifiers/player/addmaxhp",
         "modifiers/player/shield",

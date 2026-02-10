@@ -2740,12 +2740,35 @@ export function drawBombs(doors) {
             }
 
             // Draw Explosion
-            ctx.fillStyle = b.explosionColour || "white";
-            ctx.globalAlpha = 1 - p;
+            // Draw Explosion (Shockwave + Core)
+            const color = b.explosionColour || "white";
+
+            // 1. Central Flash (Initial Bang) - Rapid Fade White
+            if (p < 0.2) {
+                const flashP = p * 5; // 0 to 1 over 0.2s
+                ctx.fillStyle = "white";
+                ctx.globalAlpha = 1 - flashP;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, r * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 2. Shockwave Ring (Expanding Outline)
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 15 * (1 - p); // Starts thick, thins out
+            ctx.globalAlpha = Math.max(0, (1 - p)); // Linear fade
             ctx.beginPath();
             ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 3. Inner Blast (Core Fume)
+            ctx.fillStyle = color;
+            ctx.globalAlpha = Math.max(0, (1 - p) * 0.4); // Subtle fill
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, r * 0.9, 0, Math.PI * 2);
             ctx.fill();
-            ctx.globalAlpha = 1;
+
+            ctx.globalAlpha = 1; // Reset
 
             if (p >= 1) {
                 // Remove bomb
