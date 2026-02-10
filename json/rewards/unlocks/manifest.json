@@ -19,6 +19,11 @@
         "victory",
         "welcome",
         "shotgun",
-        "timer"
+        "timer",
+        "addMaxhp",
+        "add5keys",
+        "add5bombs",
+        "add3keys",
+        "add3bombs"
     ]
 }
