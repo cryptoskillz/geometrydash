@@ -2805,12 +2805,25 @@ export function drawBombs(doors) {
 
             // Draw Timer Text?
             if (b.timerShow && isFinite(b.explodeAt)) {
-                ctx.fillStyle = "black"; // Contrast Text
-                ctx.font = "bold 14px Arial"; // Larger
+                ctx.fillStyle = "black";
+                ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 const remaining = Math.max(0, ((b.explodeAt - now) / 1000).toFixed(1));
-                ctx.fillText(remaining, 0, 5); // Slightly lower
+                ctx.fillText(remaining, 0, 5);
+            }
+
+            // Draw Remote Key Indicator (in center)
+            if (b.remoteDenoate && b.remoteDenoate.active) { // Typo in property 'remoteDenoate' preserved
+                const key = (b.remoteDenoate.key || "SPACE").toUpperCase();
+                ctx.fillStyle = "white";
+                ctx.font = "bold 12px monospace";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                // Center it (override timer if timer hidden, or stack?)
+                // Usually remote bombs have hidden timer. If both, stack.
+                const y = (b.timerShow && isFinite(b.explodeAt)) ? -8 : 0;
+                ctx.fillText(`[${key}]`, 0, y);
             }
 
             ctx.restore();

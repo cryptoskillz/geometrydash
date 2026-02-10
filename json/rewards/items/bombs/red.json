@@ -4,7 +4,7 @@
     "drawType": "arc",
     "playerDraw": "arc",
     "size": 30,
-    "colour": "#ffffff",
+    "colour": "#FF0000",
     "range": 70,
     "damage": 2,
     "fireRate": 0.1,
@@ -24,12 +24,13 @@
     },
     "remoteDenoate": {
         "active": false,
+        "detonateAll": false,
         "key": "space"
     },
     "explosion": {
         "radius": 100,
         "explosionDuration": 1000,
-        "explosionColour": "#FF0000",
+        "explosionColour": "#ffffff",
         "canDamagePlayer": true
     },
     "doors": {

@@ -24,6 +24,7 @@
     },
     "remoteDenoate": {
         "active": false,
+        "detonateAll": false,
         "key": "space"
     },
     "explosion": {

@@ -1,11 +1,11 @@
 {
-    "name": "golden bomb",
-    "description": "the biggest bomb we have",
+    "name": "Golden Bomb",
+    "description": "the biggest bomb we have. Press SPACE to detonate.",
     "drawType": "arc",
     "playerDraw": "arc",
     "size": 40,
     "colour": "#EFBF04",
-    "range": 70,
+    "range": 100,
     "damage": 5,
     "fireRate": 0.1,
     "canShoot": false,
@@ -36,7 +36,7 @@
     "remoteDenoate": {
         "active": false,
         "detonateAll": false,
-        "key": "space"
+        "key": "SPACE"
     },
     "canInteract": {
         "active": false,

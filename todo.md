@@ -1,5 +1,6 @@
 bugs
 
+you ca move bobs into other bombs that are solid
 I fixed the issue where some unlocks (like the Minimap and Timer) were missing the Legendary particle effects.
 The logs revealed that these items had a rarity of "special" (instead of "common"), which my previous auto-upgrade logic was ignoring. I have updated the code to automatically upgrade both "common" and "special" rarity unlocks to Legendary.
 This means all unlock items—whether Minimap, Timer, or Keys—will now correctly display the Gold Light Beam and Sparkles, matching the Shotgun's appearance. Please check it out!
@@ -50,7 +51,6 @@ next up
     server    
 
 Bug fix  7
-    the json relod black scren.
     check bomb json 
     tweak guns
     twweak bombs
