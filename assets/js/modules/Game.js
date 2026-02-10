@@ -435,6 +435,9 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     if (color) {
                         item.colour = color;
                     }
+                    if (config.rarity) {
+                        item.rarity = config.rarity;
+                    }
                 } catch (e) {
                     // console.warn("Could not load config for color:", item.name);
                 }

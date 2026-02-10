@@ -22,7 +22,7 @@
             "life": 0.5,
             "sizeMult": 0.1
         },
-        "colour": "#ff0000",
+        "colour": "",
         "ammo": {
             "active": true,
             "type": "recharge",

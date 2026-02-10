@@ -638,13 +638,31 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         hasLeftPlayer: ownerType === 'enemy',
         shape: bulletShape,
         animated: bulletConfig.geometry?.animated || false,
-        filled: bulletConfig.geometry?.filled !== undefined ? bulletConfig.geometry.filled : true,
-        colour: bulletConfig.colour || "yellow",
+        animated: bulletConfig.geometry?.animated || false,
+        animated: bulletConfig.geometry?.animated || false,
+        filled: bulletConfig.geometry?.filled === 'random' ? (Math.random() < 0.5) : (bulletConfig.geometry?.filled !== undefined ? bulletConfig.geometry.filled : true),
+        colour: null, // Placeholder, calculated below
         spinAngle: 0,
         hitEnemies: [],
         ownerType: ownerType, // 'player' or 'enemy'
         speed: Math.hypot(vx, vy) // Store initial speed for homing reliability
     };
+
+    // Calculate Color based on Rarity (if not overridden)
+    let bColor = bulletConfig.colour;
+    if (!bColor) {
+        const rarity = (weaponSource && weaponSource.rarity) ? weaponSource.rarity.toLowerCase() : 'common';
+        if (rarity === 'common') bColor = 'yellow';
+        else if (rarity === 'uncommon') bColor = '#2ecc71'; // Green
+        else if (rarity === 'rare') bColor = '#e74c3c'; // Red
+        else if (rarity === 'legendary') {
+            bColor = 'yellow'; // Base color
+            b.sparkly = true; // Flag for particle effect
+        } else {
+            bColor = 'yellow';
+        }
+    }
+    b.colour = bColor;
 
     if (ownerType === 'enemy') {
         b.hasLeftPlayer = true; // No safety buffer needed for player
@@ -4039,12 +4057,112 @@ export function drawBulletsAndShards() {
         Globals.ctx.beginPath();
         if (b.shape === 'triangle') { Globals.ctx.moveTo(s, 0); Globals.ctx.lineTo(-s, s); Globals.ctx.lineTo(-s, -s); Globals.ctx.closePath(); }
         else if (b.shape === 'square') Globals.ctx.rect(-s, -s, s * 2, s * 2);
+        else if (b.shape === 'hexagon') {
+            // 6 sides
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3;
+                const hx = s * Math.cos(angle);
+                const hy = s * Math.sin(angle);
+                if (i === 0) Globals.ctx.moveTo(hx, hy);
+                else Globals.ctx.lineTo(hx, hy);
+            }
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'diamond') {
+            // 4 points, rotated square
+            Globals.ctx.moveTo(s, 0);
+            Globals.ctx.lineTo(0, s);
+            Globals.ctx.lineTo(-s, 0);
+            Globals.ctx.lineTo(0, -s);
+            Globals.ctx.closePath();
+        }
+        else if (['pentagon', 'heptagon', 'octagon', 'nonagon', 'decagon'].includes(b.shape)) {
+            const sides = { pentagon: 5, heptagon: 7, octagon: 8, nonagon: 9, decagon: 10 }[b.shape];
+            for (let i = 0; i < sides; i++) {
+                const angle = (i * 2 * Math.PI / sides) - Math.PI / 2; // Start at top
+                const px = s * Math.cos(angle);
+                const py = s * Math.sin(angle);
+                if (i === 0) Globals.ctx.moveTo(px, py);
+                else Globals.ctx.lineTo(px, py);
+            }
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'parallelogram') {
+            // Skewed Rectangle
+            Globals.ctx.moveTo(-s, -s / 2);
+            Globals.ctx.lineTo(s / 2, -s / 2);
+            Globals.ctx.lineTo(s, s / 2);
+            Globals.ctx.lineTo(-s / 2, s / 2);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'trapezoid') {
+            // Narrow top, wide bottom
+            Globals.ctx.moveTo(-s / 2, -s / 2);
+            Globals.ctx.lineTo(s / 2, -s / 2);
+            Globals.ctx.lineTo(s, s / 2);
+            Globals.ctx.lineTo(-s, s / 2);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'kite') {
+            // 4 points, long tail
+            Globals.ctx.moveTo(0, -s);
+            Globals.ctx.lineTo(s / 2, 0);
+            Globals.ctx.lineTo(0, s * 1.5);
+            Globals.ctx.lineTo(-s / 2, 0);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'rhombus') {
+            // Basically a diamond but maybe we just treat it same
+            Globals.ctx.moveTo(0, -s);
+            Globals.ctx.lineTo(s * 0.7, 0);
+            Globals.ctx.lineTo(0, s);
+            Globals.ctx.lineTo(-s * 0.7, 0);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'star') {
+            // 5 points
+            const spikes = 5;
+            const outerRadius = s;
+            const innerRadius = s / 2;
+            let rotAngle = Math.PI / 2 * 3;
+            let cx = 0; let cy = 0;
+            let step = Math.PI / spikes;
+
+            Globals.ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                let x = cx + Math.cos(rotAngle) * outerRadius;
+                let y = cy + Math.sin(rotAngle) * outerRadius;
+                Globals.ctx.lineTo(x, y);
+                rotAngle += step;
+
+                x = cx + Math.cos(rotAngle) * innerRadius;
+                y = cy + Math.sin(rotAngle) * innerRadius;
+                Globals.ctx.lineTo(x, y);
+                rotAngle += step;
+            }
+            Globals.ctx.lineTo(cx, cy - outerRadius);
+            Globals.ctx.closePath();
+        }
         else Globals.ctx.arc(0, 0, s, 0, Math.PI * 2);
 
         if (b.filled) Globals.ctx.fill();
         else Globals.ctx.stroke();
 
         Globals.ctx.restore();
+
+        // SPARKLY EFFECT (Legendary)
+        if (b.sparkly && Math.random() < 0.3) {
+            Globals.particles.push({
+                x: b.x + (Math.random() - 0.5) * 5,
+                y: b.y + (Math.random() - 0.5) * 5,
+                vx: (Math.random() - 0.5) * 1,
+                vy: (Math.random() - 0.5) * 1,
+                life: 0.5,
+                maxLife: 0.5,
+                size: 2,
+                color: 'gold'
+            });
+        }
     });
 }
 
@@ -4372,9 +4490,7 @@ export function drawItems() {
             if (DisplayName.startsWith("gun_")) DisplayName = DisplayName.replace("gun_", "");
             if (DisplayName.startsWith("bomb_")) DisplayName = DisplayName.replace("bomb_", "");
 
-            // Append Type Indicator
-            if (itemType === 'gun') DisplayName += " (G)";
-            else if (itemType === 'bomb') DisplayName += " (B)";
+
 
             Globals.ctx.fillStyle = 'white';
             Globals.ctx.font = '10px monospace';

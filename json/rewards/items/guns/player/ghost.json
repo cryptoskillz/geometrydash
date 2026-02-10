@@ -14,7 +14,7 @@
         "active": false,
         "modify": ""
     },
-    "rarity": "common",
+    "rarity": "legendary",
     "Bullet": {
         "particles": {
             "active": true,
@@ -34,7 +34,7 @@
             "shape": "star",
             "shapes": [],
             "animated": true,
-            "filled": false
+            "filled": 2
         },
         "canDamagePlayer": false,
         "speed": 12,
