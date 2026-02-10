@@ -1,0 +1,9 @@
+{
+    "name": "Geometry Gun",
+    "description": "Unlocks geometry gun",
+    "unlock": "geometrygun",
+    "json": "rewards/items/guns/player/geometry.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}
