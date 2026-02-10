@@ -1,0 +1,9 @@
+{
+    "name": "Red Bomb",
+    "description": "Unlocks red bomb",
+    "unlock": "redbomb",
+    "json": "rewards/items/bombs/red.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}

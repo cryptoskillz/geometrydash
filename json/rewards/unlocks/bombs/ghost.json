@@ -1,0 +1,9 @@
+{
+    "name": "Ghost Bomb",
+    "description": "Unlocks ghost bomb",
+    "unlock": "ghostbomb",
+    "json": "rewards/items/bombs/ghost.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}

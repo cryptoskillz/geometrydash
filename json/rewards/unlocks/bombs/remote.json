@@ -1,0 +1,9 @@
+{
+    "name": "Remote Bomb",
+    "description": "Unlocks remote bomb",
+    "unlock": "remotebomb",
+    "json": "rewards/items/bombs/remote.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}
