@@ -50,11 +50,11 @@
     "width": 800,
     "height": 600,
     "unlocks": [
-        "text",
-        "victory",
-        "welcome",
-        "rooms",
-        "startlevel1"
+        "/game/visual/text",
+        "/game/visual/victory",
+        "/game/visual/welcome",
+        "/game/rooms/rooms",
+        "/game/rooms/startlevel1"
     ],
     "unlockItem": {
         "active": false,

@@ -253,12 +253,23 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         }
 
-        // 3. Load Manifests in Parallel
-        const [manData, mData, itemMan] = await Promise.all([
-            fetch(JSON_PATHS.MANIFESTS.PLAYERS + '?t=' + Date.now()).then(res => res.json()),
-            fetch(JSON_PATHS.MANIFESTS.ROOMS + '?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] })),
-            fetch(JSON_PATHS.MANIFESTS.ITEMS + '?t=' + Date.now()).then(res => res.json()).catch(() => ({ items: [] }))
-        ]);
+        // 3. Load Manifests in Parallel (Cached to prevent black screen on restart)
+        let manData, mData, itemMan;
+        if (!Globals.CACHE) Globals.CACHE = {};
+
+        if (Globals.CACHE.manifests) {
+            manData = Globals.CACHE.manifests.manData;
+            mData = Globals.CACHE.manifests.mData;
+            itemMan = Globals.CACHE.manifests.itemMan;
+            log("Using Cached Manifests (Instant Load)");
+        } else {
+            [manData, mData, itemMan] = await Promise.all([
+                fetch(JSON_PATHS.MANIFESTS.PLAYERS + '?t=' + Date.now()).then(res => res.json()),
+                fetch(JSON_PATHS.MANIFESTS.ROOMS + '?t=' + Date.now()).then(res => res.json()).catch(() => ({ rooms: [] })),
+                fetch(JSON_PATHS.MANIFESTS.ITEMS + '?t=' + Date.now()).then(res => res.json()).catch(() => ({ items: [] }))
+            ]);
+            Globals.CACHE.manifests = { manData, mData, itemMan };
+        }
 
 
 
@@ -297,116 +308,148 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         Globals.groundItems = [];
         let allItems = [];
 
-        // 1. Manifest Items
-        if (itemMan && itemMan.items) {
-            log("Loading Items Manifest:", itemMan.items.length);
-            const itemPromises = itemMan.items.map(i =>
-                fetch(`${JSON_PATHS.ROOT}rewards/items/${i}.json?t=` + Date.now())
-                    .then(r => r.json())
-                    .catch(e => {
-                        console.error("Failed to load item:", i, e);
-                        return null;
-                    })
-            );
-            const manifestItems = await Promise.all(itemPromises);
-            allItems = allItems.concat(manifestItems);
-        }
+        // 1. Manifest Items & Unlock Loading (Cached Check to prevent reload lag)
+        if (!Globals.CACHE.itemTemplates) {
+            // 1. Manifest Items
+            if (itemMan && itemMan.items) {
+                log("Loading Items Manifest:", itemMan.items.length);
+                const itemPromises = itemMan.items.map(i =>
+                    fetch(`${JSON_PATHS.ROOT}rewards/items/${i}.json?t=` + Date.now())
+                        .then(r => r.json())
+                        .catch(e => {
+                            console.error("Failed to load item:", i, e);
+                            return null;
+                        })
+                );
+                const manifestItems = await Promise.all(itemPromises);
 
-        // 2. Spawnable Unlocks
-        let unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+                // Avoid duplicates if manifest overlaps with hardcoded or other load steps (though this is the first step)
+                // Just concat to allItems (which is empty here)
+                allItems = allItems.concat(manifestItems.filter(i => i !== null));
+            }
 
-        // MIGRATION: 'ui' was renamed to 'statsPanel'
-        if (unlockedIds.includes('ui')) {
-            unlockedIds = unlockedIds.filter(id => id !== 'ui');
-            if (!unlockedIds.includes('statsPanel')) unlockedIds.push('statsPanel');
-            localStorage.setItem('game_unlocked_ids', JSON.stringify(unlockedIds));
-            log("Migrated unlock: ui -> statsPanel");
-        }
-        // Load ALL potential unlocks so they exist for Matrix room testing
-        // Standard "drop" logic in Entities.js will filter out locked ones based on localStorage.
-        if (true) {
-            const unlockManRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/manifest.json?t=` + Date.now());
-            const unlockMan = await unlockManRes.json();
-            const allUnlockIds = unlockMan.unlocks || [];
+            // 2. Spawnable Unlocks
+            let unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
 
-            log(`Loading ${allUnlockIds.length} potential unlocks from manifest...`);
+            // MIGRATION: 'ui' was renamed to 'statsPanel'
+            if (unlockedIds.includes('ui')) {
+                unlockedIds = unlockedIds.filter(id => id !== 'ui');
+                if (!unlockedIds.includes('statsPanel')) unlockedIds.push('statsPanel');
+                localStorage.setItem('game_unlocked_ids', JSON.stringify(unlockedIds));
+                log("Migrated unlock: ui -> statsPanel");
+            }
+            // Load ALL potential unlocks so they exist for Matrix room testing
+            // Standard "drop" logic in Entities.js will filter out locked ones based on localStorage.
+            if (true) {
+                const unlockManRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/manifest.json?t=` + Date.now());
+                const unlockMan = await unlockManRes.json();
+                const allUnlockIds = unlockMan.unlocks || [];
 
-            const unlockPromises = allUnlockIds.map(id =>
-                fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=` + Date.now())
-                    .then(r => r.json())
-                    .then(async data => {
-                        if (data.spawnable && data.json) {
-                            let item;
-                            const path = data.json;
+                log(`Loading ${allUnlockIds.length} potential unlocks from manifest...`);
 
-                            // Special Handling for Config Unlocks (game.json)
-                            if (path === 'game.json' || path.endsWith('game.json')) {
-                                item = {
-                                    name: data.name || "Unknown Unlock",
-                                    type: "unlock",
-                                    rarity: "special", // Don't spawn randomly
-                                    location: data.json,
-                                    colour: "#fdcb6e", // Goldish
-                                    size: 15,
-                                    description: data.description,
-                                    // Metadata for pickup logic
-                                    instantTrigger: data.instantTrigger,
-                                    unlockId: data.unlock,
-                                    json: data.json,
-                                    attr: data.attr,
-                                    value: data.value
-                                };
-                            } else {
-                                // Normal Item File
-                                const res = await fetch(`${JSON_PATHS.ROOT}${path}?t=` + Date.now());
-                                if (res.ok) {
-                                    item = await res.json();
+                const unlockPromises = allUnlockIds.map(id =>
+                    fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=` + Date.now())
+                        .then(r => r.json())
+                        .then(async data => {
+                            if (data.spawnable && data.json) {
+                                let item;
+                                const path = data.json;
+
+                                // Special Handling for Config Unlocks (game.json / player.json)
+                                if (path === 'game.json' || path.endsWith('game.json') || path === 'player.json' || path.endsWith('player.json')) {
+                                    item = {
+                                        name: data.name || "Unknown Unlock",
+                                        type: "unlock",
+                                        rarity: "special", // Don't spawn randomly
+                                        location: data.json,
+                                        colour: "#fdcb6e", // Goldish
+                                        size: 15,
+                                        description: data.description,
+                                        // Metadata for pickup logic
+                                        instantTrigger: data.instantTrigger,
+                                        unlockId: data.unlock,
+                                        json: data.json,
+                                        attr: data.attr,
+                                        value: data.value,
+                                        isUnlockWrapper: true, // Flag for renderer
+                                        spawnable: data.spawnable
+                                    };
+                                } else {
+                                    // Normal Item File
+                                    // wrapper so it renders as an UNLOCK (Gold/Square) not the item itself
+                                    item = {
+                                        name: data.name || "Unlock Reward",
+                                        type: "unlock", // FORCE TYPE TO UNLOCK
+                                        rarity: "legendary",
+                                        location: data.json, // The file it unlocks
+                                        colour: "#fdcb6e", // Goldish
+                                        size: 20,
+                                        description: data.description,
+                                        // Metadata
+                                        instantTrigger: data.instantTrigger,
+                                        unlockId: data.unlock,
+                                        json: data.json,
+                                        attr: data.attr,
+                                        value: data.value,
+                                        isUnlockWrapper: true, // Flag for renderer
+                                        spawnable: data.spawnable
+                                    };
+                                }
+
+                                if (item) {
+                                    // Entities.js isUnlocked() + localStorage('game_unlocks') handles status.
+                                    // Merge metadata if not present
+                                    if (data.instantTrigger) item.instantTrigger = true;
+                                    if (data.unlock) item.unlockId = data.unlock;
+                                    if (data.attr) item.attr = data.attr;
+                                    if (data.value) item.value = data.value;
+                                    return item;
                                 }
                             }
-
-                            if (item) {
-                                // Entities.js isUnlocked() + localStorage('game_unlocks') handles status.
-                                // Merge metadata if not present
-                                if (data.instantTrigger) item.instantTrigger = true;
-                                if (data.unlock) item.unlockId = data.unlock;
-                                if (data.attr) item.attr = data.attr;
-                                if (data.value) item.value = data.value;
-                                return item;
-                            }
-                        }
-                        return null;
-                    })
-                    .catch(e => {
-                        // console.warn("Failed to load unlock:", id); // Expected for non-item unlocks
-                        return null;
-                    })
-            );
-            const unlockedItems = await Promise.all(unlockPromises);
-            const valid = unlockedItems.filter(i => i);
-            log(`Loaded ${valid.length} spawnable unlocks.`);
-            allItems = allItems.concat(valid);
-        }
-        window.allItemTemplates = allItems; // Expose for room drops
-
-        // ENHANCE: Fetch color from target config
-        await Promise.all(allItems.map(async (item) => {
-            if (!item || !item.location) return;
-            try {
-                const url = item.location.startsWith(JSON_PATHS.ROOT) ? item.location : `${JSON_PATHS.ROOT}${item.location}`;
-                const res = await fetch(`${url}?t=${Date.now()}`);
-                const config = await res.json();
-
-                // Check Top Level (Bombs/Modifiers) OR Bullet Level (Guns)
-                const color = config.colour || config.color ||
-                    (config.Bullet && (config.Bullet.colour || config.Bullet.color));
-
-                if (color) {
-                    item.colour = color;
-                }
-            } catch (e) {
-                // console.warn("Could not load config for color:", item.name);
+                            return null;
+                        })
+                        .catch(e => {
+                            // console.warn("Failed to load unlock:", id); // Expected for non-item unlocks
+                            return null;
+                        })
+                );
+                const unlockedItems = await Promise.all(unlockPromises);
+                const valid = unlockedItems.filter(i => i);
+                log(`Loaded ${valid.length} spawnable unlocks.`);
+                allItems = allItems.concat(valid);
             }
-        }));
+            window.allItemTemplates = allItems; // Expose for room drops
+
+            // ENHANCE: Fetch color from target config
+            await Promise.all(allItems.map(async (item) => {
+                if (!item || !item.location) return;
+                try {
+                    const url = item.location.startsWith(JSON_PATHS.ROOT) ? item.location : `${JSON_PATHS.ROOT}${item.location}`;
+                    const res = await fetch(`${url}?t=${Date.now()}`);
+                    const config = await res.json();
+
+                    // Check Top Level (Bombs/Modifiers) OR Bullet Level (Guns)
+                    const color = config.colour || config.color ||
+                        (config.Bullet && (config.Bullet.colour || config.Bullet.color));
+
+                    if (color) {
+                        item.colour = color;
+                    }
+                    if (config.rarity) {
+                        item.rarity = config.rarity;
+                    }
+                } catch (e) {
+                    // console.warn("Could not load config for color:", item.name);
+                }
+            }));
+            if (!Globals.CACHE) Globals.CACHE = {};
+            Globals.CACHE.itemTemplates = allItems;
+        } else {
+            // Use Cache
+            allItems = Globals.CACHE.itemTemplates;
+            log("Using Cached Items (Size:" + allItems.length + ")");
+        }
+        window.allItemTemplates = allItems;
 
         // Filter starters
         // Legacy: Previously spawned all 'starter:false' items.

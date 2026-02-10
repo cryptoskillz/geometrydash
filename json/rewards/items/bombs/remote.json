@@ -4,7 +4,7 @@
     "drawType": "arc",
     "playerDraw": "arc",
     "size": 30,
-    "colour": "#ffffff",
+    "colour": "#008000",
     "range": 70,
     "damage": 2,
     "fireRate": 0.1,
@@ -16,7 +16,7 @@
     },
     "maxDrop": 3,
     "solid": true,
-    "moveable": true,
+    "moveable": false,
     "physics": {
         "friction": 0.9,
         "mass": 1.5,
@@ -24,6 +24,7 @@
     },
     "remoteDenoate": {
         "active": true,
+        "detonateAll": true,
         "key": "space"
     },
     "explosion": {

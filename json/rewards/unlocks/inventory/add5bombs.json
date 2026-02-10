@@ -1,0 +1,10 @@
+{
+    "name": "5 Bombs",
+    "description": "Unlocks 5 bombs",
+    "unlock": "add5bombs",
+    "json": "game.json",
+    "attr": "inventory.bombs",
+    "value": 5,
+    "spawnable": true,
+    "instantTrigger": false
+}

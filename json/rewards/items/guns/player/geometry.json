@@ -14,15 +14,22 @@
         "active": false,
         "modify": ""
     },
-    "rarity": "uncommon",
+    "rarity": "legendary",
     "Bullet": {
-        "speed": 10,
-        "damage": 1,
-        "size": 5,
-        "colour": "#00ff00",
-        "range": 60,
-        "number": 1,
-        "spreadRate": 0,
+        "particles": {
+            "active": false,
+            "frequency": 0.5,
+            "life": 0.5,
+            "sizeMult": 0.1
+        },
+        "colour": "",
+        "ammo": {
+            "active": false,
+            "type": "recharge",
+            "resetTimer": 1500,
+            "amount": 5,
+            "maxAmount": 25
+        },
         "geometry": {
             "shape": "random",
             "shapes": [
@@ -31,8 +38,56 @@
                 "triangle",
                 "hexagon",
                 "diamond",
-                "star"
-            ]
+                "star",
+                "pentagon",
+                "heptagon",
+                "octagon",
+                "nonagon",
+                "decagon",
+                "parallelogram",
+                "rhombus",
+                "trapezoid",
+                "kite"
+            ],
+            "animated": true,
+            "filled": "random"
+        },
+        "canDamagePlayer": false,
+        "speed": 8,
+        "size": 12,
+        "damage": 4,
+        "range": 55,
+        "curve": 0,
+        "spread": 0,
+        "spreadRate": 0.5,
+        "number": 1,
+        "recoil": 1,
+        "homing": false,
+        "fireRate": 0.4,
+        "wallBounce": false,
+        "pierce": false,
+        "reverseFire": false,
+        "frontLocked": false,
+        "NoBullets": false,
+        "critChance": 0.05,
+        "critDamage": 2.0,
+        "freezeChance": 0.0,
+        "freezeDuration": 0,
+        "multiDirectional": {
+            "active": false,
+            "fireNorth": false,
+            "fireEast": false,
+            "fireSouth": false,
+            "fireWest": false,
+            "fire360": false
+        },
+        "Explode": {
+            "active": true,
+            "shards": 4,
+            "size": 2,
+            "damage": 0.1,
+            "shardRange": 20,
+            "wallExplode": false
         }
     }
 }

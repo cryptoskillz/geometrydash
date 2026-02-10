@@ -638,13 +638,31 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         hasLeftPlayer: ownerType === 'enemy',
         shape: bulletShape,
         animated: bulletConfig.geometry?.animated || false,
-        filled: bulletConfig.geometry?.filled !== undefined ? bulletConfig.geometry.filled : true,
-        colour: bulletConfig.colour || "yellow",
+        animated: bulletConfig.geometry?.animated || false,
+        animated: bulletConfig.geometry?.animated || false,
+        filled: bulletConfig.geometry?.filled === 'random' ? (Math.random() < 0.5) : (bulletConfig.geometry?.filled !== undefined ? bulletConfig.geometry.filled : true),
+        colour: null, // Placeholder, calculated below
         spinAngle: 0,
         hitEnemies: [],
         ownerType: ownerType, // 'player' or 'enemy'
         speed: Math.hypot(vx, vy) // Store initial speed for homing reliability
     };
+
+    // Calculate Color based on Rarity (if not overridden)
+    let bColor = bulletConfig.colour;
+    if (!bColor) {
+        const rarity = (weaponSource && weaponSource.rarity) ? weaponSource.rarity.toLowerCase() : 'common';
+        if (rarity === 'common') bColor = 'yellow';
+        else if (rarity === 'uncommon') bColor = '#2ecc71'; // Green
+        else if (rarity === 'rare') bColor = '#e74c3c'; // Red
+        else if (rarity === 'legendary') {
+            bColor = 'yellow'; // Base color
+            b.sparkly = true; // Flag for particle effect
+        } else {
+            bColor = 'yellow';
+        }
+    }
+    b.colour = bColor;
 
     if (ownerType === 'enemy') {
         b.hasLeftPlayer = true; // No safety buffer needed for player
@@ -1762,6 +1780,21 @@ export function updateEnemies() {
                 if (amount > 0) {
                     spawnShard(en.x, en.y, 'green', amount);
                 }
+
+                // UNLOCK ITEM DROP (New Logic for Normal Enemies)
+                const unlockCfg = en.gunConfig?.unlockItem || en.unlockItem;
+                if (unlockCfg && unlockCfg.active) {
+                    const chance = unlockCfg.unlockChance || 0; // Default 0 for normal enemies unless configured
+                    if (Math.random() <= chance) {
+                        const count = unlockCfg.count || 1;
+                        let finalFilter = (typeof unlockCfg.rarity === 'object') ? unlockCfg.rarity : null;
+                        if (typeof unlockCfg.rarity === 'string') finalFilter = { [unlockCfg.rarity]: true };
+
+                        for (let i = 0; i < count; i++) {
+                            spawnUnlockItem(en.x + (i * 20), en.y, false, finalFilter);
+                        }
+                    }
+                }
             }
 
             if (en.type === 'boss') {
@@ -1776,21 +1809,31 @@ export function updateEnemies() {
 
                 Globals.bossKilled = true;
 
-                // UNLOCK ITEM DROP
-                if (Globals.roomData.unlockItem && Globals.roomData.unlockItem.active) {
-                    const chance = Globals.roomData.unlockItem.unlockChance || 1;
-                    log(`Boss Defeated! Checking unlock drop. Chance: ${chance}`);
+                // UNLOCK ITEM DROP (New Logic for Enemies & Bosses)
+                const unlockCfg = en.gunConfig?.unlockItem || en.unlockItem || Globals.roomData.unlockItem;
+                // Note: en.unlockItem comes from enemy JSON (e.g. Grunt/Tank)
+
+                if (unlockCfg && unlockCfg.active) {
+                    const chance = unlockCfg.unlockChance || 1;
+                    log(`Enemy/Boss Defeated! Checking unlock drop. Chance: ${chance}`);
+
                     if (Math.random() <= chance) {
-                        const count = Globals.roomData.unlockItem.count || 1;
-                        log(`Roll Success! Spawning ${count} unlock items.`);
+                        const count = unlockCfg.count || 1;
+                        const rarityFilter = (typeof unlockCfg.rarity === 'object') ? unlockCfg.rarity : null;
+                        // If rarity is a string "common", convert to filter? 
+                        // Legacy support: if rarity is string, make object { [str]: true }
+                        let finalFilter = rarityFilter;
+                        if (typeof unlockCfg.rarity === 'string') {
+                            finalFilter = { [unlockCfg.rarity]: true };
+                        }
+
+                        log(`Roll Success! Spawning ${count} unlock items. Filter:`, finalFilter);
                         for (let i = 0; i < count; i++) {
-                            spawnUnlockItem(en.x + (i * 20), en.y, true);
+                            spawnUnlockItem(en.x + (i * 20), en.y, en.type === 'boss', finalFilter);
                         }
                     } else {
                         log("Unlock Roll Failed.");
                     }
-                } else {
-                    log("Unlock Config Missing or Inactive:", Globals.roomData.unlockItem);
                 }
 
                 // Clear Rooms
@@ -2740,12 +2783,35 @@ export function drawBombs(doors) {
             }
 
             // Draw Explosion
-            ctx.fillStyle = b.explosionColour || "white";
-            ctx.globalAlpha = 1 - p;
+            // Draw Explosion (Shockwave + Core)
+            const color = b.explosionColour || "white";
+
+            // 1. Central Flash (Initial Bang) - Rapid Fade White
+            if (p < 0.2) {
+                const flashP = p * 5; // 0 to 1 over 0.2s
+                ctx.fillStyle = "white";
+                ctx.globalAlpha = 1 - flashP;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, r * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 2. Shockwave Ring (Expanding Outline)
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 15 * (1 - p); // Starts thick, thins out
+            ctx.globalAlpha = Math.max(0, (1 - p)); // Linear fade
             ctx.beginPath();
             ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 3. Inner Blast (Core Fume)
+            ctx.fillStyle = color;
+            ctx.globalAlpha = Math.max(0, (1 - p) * 0.4); // Subtle fill
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, r * 0.9, 0, Math.PI * 2);
             ctx.fill();
-            ctx.globalAlpha = 1;
+
+            ctx.globalAlpha = 1; // Reset
 
             if (p >= 1) {
                 // Remove bomb
@@ -2760,26 +2826,70 @@ export function drawBombs(doors) {
             const pulse = 1 + Math.sin(now / 100) * 0.1;
             ctx.scale(pulse, pulse);
 
-            // Draw Body
-            ctx.fillStyle = b.colour || b.color || "yellow"; // Support both spellings
+            // Draw Body (Geometric Sphere)
+            const mainColor = b.colour || b.color || "#333";
+            ctx.fillStyle = mainColor;
             ctx.beginPath();
             ctx.arc(0, 0, b.baseR, 0, Math.PI * 2);
             ctx.fill();
 
-            // Draw Fuse / Detail?
-            ctx.fillStyle = b.colour || b.color || "yellow"; // Match bomb color (no black hole)
+            // Shine (Top Left)
+            ctx.fillStyle = "rgba(255,255,255,0.4)";
             ctx.beginPath();
-            ctx.arc(0, 0, b.baseR * 0.4, 0, Math.PI * 2);
+            ctx.arc(-b.baseR * 0.3, -b.baseR * 0.3, b.baseR * 0.25, 0, Math.PI * 2);
             ctx.fill();
+
+            // Cap (Top Rect)
+            const capW = b.baseR * 0.6;
+            const capH = b.baseR * 0.3;
+            const capY = -b.baseR * 0.9;
+            ctx.fillStyle = "#555";
+            ctx.fillRect(-capW / 2, capY - capH, capW, capH);
+
+            // Fuse (Bezier Curve)
+            ctx.strokeStyle = "#8e44ad"; // Darker Fuse
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, capY - capH);
+            const fuseTipX = capW * 0.8;
+            const fuseTipY = capY - capH - (b.baseR * 0.6);
+            ctx.quadraticCurveTo(0, capY - capH - 10, fuseTipX, fuseTipY);
+            ctx.stroke();
+
+            // Spark (Flickering Star) at Fuse Tip
+            if (now % 200 < 100) { // Flicker based on time
+                ctx.fillStyle = "#f1c40f"; // Yellow Spark
+                ctx.beginPath();
+                ctx.arc(fuseTipX, fuseTipY, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#e67e22"; // Orange Core
+                ctx.beginPath();
+                ctx.arc(fuseTipX, fuseTipY, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             // Draw Timer Text?
             if (b.timerShow && isFinite(b.explodeAt)) {
-                ctx.fillStyle = "black"; // High contrast text
-                ctx.font = "bold 12px Arial";
+                ctx.fillStyle = "black";
+                ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 const remaining = Math.max(0, ((b.explodeAt - now) / 1000).toFixed(1));
-                ctx.fillText(remaining, 0, 0);
+                ctx.fillText(remaining, 0, 5);
+            }
+
+            // Draw Remote Key Indicator (in center)
+            if (b.remoteDenoate && b.remoteDenoate.active) { // Typo in property 'remoteDenoate' preserved
+                const key = (b.remoteDenoate.key || "SPACE").toUpperCase();
+                ctx.fillStyle = "white";
+                ctx.font = "bold 12px monospace";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                // Center it (override timer if timer hidden, or stack?)
+                // Usually remote bombs have hidden timer. If both, stack.
+                const y = (b.timerShow && isFinite(b.explodeAt)) ? -8 : 0;
+                ctx.fillText(`[${key}]`, 0, y);
             }
 
             ctx.restore();
@@ -3104,12 +3214,14 @@ export async function pickupItem(item, index) {
     const location = data.location;
     log(`Picking up ${data.name}...`);
 
+    // Simplified: Use existing data as config, fetch only if minimal ref
+    let config = data;
     try {
-        if (!location) throw new Error("No location definition for complex item");
-        log("Pickup Location Debug:", location, "Root:", JSON_PATHS.ROOT);
-
-        const res = await fetch(`${JSON_PATHS.ROOT}${location}?t=${Date.now()}`);
-        const config = await res.json();
+        if (location && (!config.damage && !config.modifiers && !config.timer && !config.value)) {
+            log("Fetching full config from location:", location);
+            const res = await fetch(`${JSON_PATHS.ROOT}${location}?t=${Date.now()}`);
+            config = await res.json();
+        }
 
         if (type === 'gun') {
             // Drop Helper
@@ -3479,7 +3591,7 @@ export function applyModifierToGun(gunObj, modConfig) {
 // --- UNLOCK SYSTEM ---
 let unlockQueue = [];
 // Helper to spawn unlock item
-export async function spawnUnlockItem(x, y, isBossDrop = false) {
+export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = null) {
     try {
         // 1. Fetch Manifest
         const res = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/manifest.json?t=${Date.now()}`);
@@ -3499,8 +3611,35 @@ export async function spawnUnlockItem(x, y, isBossDrop = false) {
             return;
         }
 
-        // 3. Pick Random
-        const nextUnlockId = available[Math.floor(Math.random() * available.length)];
+        // 3. Pick Random (Filter Spawnable logic + Rarity)
+        // We need to fetch details to check spawnable property BEFORE picking
+        const candidates = [];
+        for (const id of available) {
+            try {
+                const dRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=${Date.now()}`);
+                if (dRes.ok) {
+                    const d = await dRes.json();
+
+                    // Filter: Spawnable Check
+                    if (d.spawnable === false) continue;
+
+                    // Filter: Rarity Check (if filter provided)
+                    if (rarityFilter) {
+                        const r = d.rarity || 'common'; // Default to common if missing?
+                        if (!rarityFilter[r]) continue; // Skip if rarity not enabled
+                    }
+
+                    candidates.push(id);
+                }
+            } catch (e) { }
+        }
+
+        if (candidates.length === 0) {
+            spawnShard(x, y, 'red', 25);
+            return;
+        }
+
+        const nextUnlockId = candidates[Math.floor(Math.random() * candidates.length)];
         log("Spawning Unlock Item:", nextUnlockId);
 
         // Fetch Unlock Details to get Real Name
@@ -3559,6 +3698,9 @@ export function spawnRoomRewards(dropConfig, label = null) {
         log("Matrix Room: Spawning ALL items...");
         if (window.allItemTemplates) {
             window.allItemTemplates.forEach(item => {
+                // SKIP items that are explicitly set to spawnable: false (e.g. Start Level 4)
+                if (item.spawnable === false) return;
+
                 // Determine Rarity (since it's not bucketed here)
                 let rarity = item.rarity || 'common';
 
@@ -3948,12 +4090,112 @@ export function drawBulletsAndShards() {
         Globals.ctx.beginPath();
         if (b.shape === 'triangle') { Globals.ctx.moveTo(s, 0); Globals.ctx.lineTo(-s, s); Globals.ctx.lineTo(-s, -s); Globals.ctx.closePath(); }
         else if (b.shape === 'square') Globals.ctx.rect(-s, -s, s * 2, s * 2);
+        else if (b.shape === 'hexagon') {
+            // 6 sides
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3;
+                const hx = s * Math.cos(angle);
+                const hy = s * Math.sin(angle);
+                if (i === 0) Globals.ctx.moveTo(hx, hy);
+                else Globals.ctx.lineTo(hx, hy);
+            }
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'diamond') {
+            // 4 points, rotated square
+            Globals.ctx.moveTo(s, 0);
+            Globals.ctx.lineTo(0, s);
+            Globals.ctx.lineTo(-s, 0);
+            Globals.ctx.lineTo(0, -s);
+            Globals.ctx.closePath();
+        }
+        else if (['pentagon', 'heptagon', 'octagon', 'nonagon', 'decagon'].includes(b.shape)) {
+            const sides = { pentagon: 5, heptagon: 7, octagon: 8, nonagon: 9, decagon: 10 }[b.shape];
+            for (let i = 0; i < sides; i++) {
+                const angle = (i * 2 * Math.PI / sides) - Math.PI / 2; // Start at top
+                const px = s * Math.cos(angle);
+                const py = s * Math.sin(angle);
+                if (i === 0) Globals.ctx.moveTo(px, py);
+                else Globals.ctx.lineTo(px, py);
+            }
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'parallelogram') {
+            // Skewed Rectangle
+            Globals.ctx.moveTo(-s, -s / 2);
+            Globals.ctx.lineTo(s / 2, -s / 2);
+            Globals.ctx.lineTo(s, s / 2);
+            Globals.ctx.lineTo(-s / 2, s / 2);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'trapezoid') {
+            // Narrow top, wide bottom
+            Globals.ctx.moveTo(-s / 2, -s / 2);
+            Globals.ctx.lineTo(s / 2, -s / 2);
+            Globals.ctx.lineTo(s, s / 2);
+            Globals.ctx.lineTo(-s, s / 2);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'kite') {
+            // 4 points, long tail
+            Globals.ctx.moveTo(0, -s);
+            Globals.ctx.lineTo(s / 2, 0);
+            Globals.ctx.lineTo(0, s * 1.5);
+            Globals.ctx.lineTo(-s / 2, 0);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'rhombus') {
+            // Basically a diamond but maybe we just treat it same
+            Globals.ctx.moveTo(0, -s);
+            Globals.ctx.lineTo(s * 0.7, 0);
+            Globals.ctx.lineTo(0, s);
+            Globals.ctx.lineTo(-s * 0.7, 0);
+            Globals.ctx.closePath();
+        }
+        else if (b.shape === 'star') {
+            // 5 points
+            const spikes = 5;
+            const outerRadius = s;
+            const innerRadius = s / 2;
+            let rotAngle = Math.PI / 2 * 3;
+            let cx = 0; let cy = 0;
+            let step = Math.PI / spikes;
+
+            Globals.ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                let x = cx + Math.cos(rotAngle) * outerRadius;
+                let y = cy + Math.sin(rotAngle) * outerRadius;
+                Globals.ctx.lineTo(x, y);
+                rotAngle += step;
+
+                x = cx + Math.cos(rotAngle) * innerRadius;
+                y = cy + Math.sin(rotAngle) * innerRadius;
+                Globals.ctx.lineTo(x, y);
+                rotAngle += step;
+            }
+            Globals.ctx.lineTo(cx, cy - outerRadius);
+            Globals.ctx.closePath();
+        }
         else Globals.ctx.arc(0, 0, s, 0, Math.PI * 2);
 
         if (b.filled) Globals.ctx.fill();
         else Globals.ctx.stroke();
 
         Globals.ctx.restore();
+
+        // SPARKLY EFFECT (Legendary)
+        if (b.sparkly && Math.random() < 0.3) {
+            Globals.particles.push({
+                x: b.x + (Math.random() - 0.5) * 5,
+                y: b.y + (Math.random() - 0.5) * 5,
+                vx: (Math.random() - 0.5) * 1,
+                vy: (Math.random() - 0.5) * 1,
+                life: 0.5,
+                maxLife: 0.5,
+                size: 2,
+                color: 'gold'
+            });
+        }
     });
 }
 
@@ -4191,6 +4433,16 @@ export function drawItems() {
         } else if (itemType === 'ammo') {
             Globals.ctx.fillStyle = '#2ecc71'; // Green
             Globals.ctx.fillRect(-size / 3, -size / 2, size / 1.5, size);
+        } else if (itemType === 'unlock') {
+            // UNLOCK REWARD (Gold Square)
+            Globals.ctx.fillStyle = '#f1c40f'; // Gold
+            Globals.ctx.fillRect(-size / 2, -size / 2, size, size);
+            Globals.ctx.strokeStyle = '#fff';
+            Globals.ctx.lineWidth = 2;
+            Globals.ctx.strokeRect(-size / 2, -size / 2, size, size);
+            Globals.ctx.fillStyle = 'black';
+            Globals.ctx.textAlign = 'center';
+            Globals.ctx.fillText("U", 0, 4);
         } else {
             // Generic Item - Use Type Color
             Globals.ctx.fillStyle = getItemTypeColor(itemType, item.data) || item.color || '#95a5a6';
@@ -4267,8 +4519,11 @@ export function drawItems() {
         const nameData = item.data?.name || item.name;
         if (nameData) {
             let DisplayName = nameData;
+            // Clean up prefixes if they exist
             if (DisplayName.startsWith("gun_")) DisplayName = DisplayName.replace("gun_", "");
             if (DisplayName.startsWith("bomb_")) DisplayName = DisplayName.replace("bomb_", "");
+
+
 
             Globals.ctx.fillStyle = 'white';
             Globals.ctx.font = '10px monospace';

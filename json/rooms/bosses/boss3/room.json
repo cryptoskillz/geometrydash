@@ -42,8 +42,8 @@
     "width": 800,
     "height": 600,
     "unlocks": [
-        "enemies",
-        "startlevel4"
+        "/game/misc/enemies",
+        "/game/rooms/startlevel4"
     ],
     "unlockItem": {
         "active": false,

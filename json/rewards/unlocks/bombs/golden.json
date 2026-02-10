@@ -1,0 +1,9 @@
+{
+    "name": "Golden Bomb",
+    "description": "Unlocks golden bomb",
+    "unlock": "goldenbomb",
+    "json": "rewards/items/bombs/golden.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}

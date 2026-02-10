@@ -1,0 +1,10 @@
+{
+    "name": "5 Keys",
+    "description": "Unlocks 5 keys for start",
+    "unlock": "add5keys",
+    "json": "game.json",
+    "attr": "inventory.keys",
+    "value": 5,
+    "spawnable": true,
+    "instantTrigger": false
+}

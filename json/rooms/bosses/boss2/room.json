@@ -37,7 +37,7 @@
     "width": 800,
     "height": 600,
     "unlocks": [
-        "startlevel3"
+        "/game/rooms/startlevel3"
     ],
     "unlockItem": {
         "active": false,
