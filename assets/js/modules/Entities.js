@@ -2267,6 +2267,75 @@ export function updateShield() {
 
 export function drawEnemies() {
 
+    // Helper for 3D/Shape Drawing
+    const drawEnemyShape = (ctx, en, x, y, size) => {
+        const shape = en.shape || "circle";
+        ctx.beginPath();
+        if (shape === "square") {
+            ctx.rect(x - size, y - size, size * 2, size * 2);
+        } else if (shape === "triangle") {
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x + size, y + size);
+            ctx.lineTo(x - size, y + size);
+            ctx.closePath();
+        } else if (shape === "star") {
+            const spikes = 5;
+            const outerRadius = size;
+            const innerRadius = size / 2;
+            let rot = Math.PI / 2 * 3;
+            let step = Math.PI / spikes;
+            ctx.moveTo(x, y - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                let px = x + Math.cos(rot) * outerRadius;
+                let py = y + Math.sin(rot) * outerRadius;
+                ctx.lineTo(px, py);
+                rot += step;
+                px = x + Math.cos(rot) * innerRadius;
+                py = y + Math.sin(rot) * innerRadius;
+                ctx.lineTo(px, py);
+                rot += step;
+            }
+            ctx.lineTo(x, y - outerRadius);
+            ctx.closePath();
+        } else if (shape === "hexagon" || shape === "pentagon") {
+            const sides = shape === "hexagon" ? 6 : 5;
+            const angleStep = (Math.PI * 2) / sides;
+            const startAngle = -Math.PI / 2;
+            ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
+            for (let i = 1; i <= sides; i++) {
+                const angle = startAngle + i * angleStep;
+                ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+            }
+            ctx.closePath();
+        } else if (shape === "diamond") {
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x, y + size);
+            ctx.lineTo(x - size, y);
+            ctx.closePath();
+        } else if (en.type === 'ghost') {
+            const r = size;
+            const h = r * 0.8;
+            ctx.arc(x, y - (r * 0.2), r, Math.PI, 0);
+            ctx.lineTo(x + r, y + h);
+            const waves = 3;
+            const waveWidth = (r * 2) / waves;
+            for (let i = 1; i <= waves; i++) {
+                const waveX = (x + r) - (waveWidth * i);
+                const waveY = (y + h);
+                const cX = (x + r) - (waveWidth * (i - 0.5));
+                const cY = waveY - (r * 0.3);
+                ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+            }
+            ctx.closePath();
+        } else {
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+        }
+    };
+
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+    const isGlobal3D = Globals.gameData["3dGlasses"] || unlockedIds.includes('3dGlasses') || Globals.player["3dGlasses"];
+
     Globals.enemies.forEach(en => {
         Globals.ctx.save();
 
@@ -2307,102 +2376,23 @@ export function drawEnemies() {
 
 
         // DRAWING SHAPE
-        const shape = en.shape || "circle";
+        const size = en.size + sizeMod;
+        const currentY = en.y + bounceY;
 
-        Globals.ctx.beginPath();
-
-        if (shape === "square") {
-            // Draw Square (centered)
-            const s = (en.size + sizeMod) * 2; // Diameter to side length roughly? Or just size as half-width?
-            // Existing logic uses size as radius. So square side should be roughly 2*radius?
-            // Let's use size as "radius equivalent" so side = size * 2
-            const side = (en.size + sizeMod); // actually let's stick to the visual expectation. radius 50 = 100 wide.
-            // If I use rect from x-size, y-size to w=size*2, h=size*2
-            Globals.ctx.rect(en.x - side, en.y + bounceY - side, side * 2, side * 2);
-        } else if (shape === "triangle") {
-            const r = en.size + sizeMod;
-            const yOffset = en.y + bounceY;
-            // Upward pointing triangle
-            Globals.ctx.moveTo(en.x, yOffset - r);
-            Globals.ctx.lineTo(en.x + r, yOffset + r);
-            Globals.ctx.lineTo(en.x - r, yOffset + r);
-            Globals.ctx.closePath();
-        } else if (shape === "star") {
-            const spikes = 5;
-            const outerRadius = en.size + sizeMod;
-            const innerRadius = outerRadius / 2;
-            let rot = Math.PI / 2 * 3;
-            let x = en.x;
-            let y = en.y + bounceY;
-            let step = Math.PI / spikes;
-
-            Globals.ctx.moveTo(0, 0 - outerRadius); // Start at top
-            for (let i = 0; i < spikes; i++) {
-                x = en.x + Math.cos(rot) * outerRadius;
-                y = en.y + bounceY + Math.sin(rot) * outerRadius;
-                Globals.ctx.lineTo(x, y);
-                rot += step;
-
-                x = en.x + Math.cos(rot) * innerRadius;
-                y = en.y + bounceY + Math.sin(rot) * innerRadius;
-                Globals.ctx.lineTo(x, y);
-                rot += step;
+        // 3D Effect (Extrusion)
+        if (en["3d"] || isGlobal3D) {
+            Globals.ctx.save();
+            Globals.ctx.filter = 'brightness(0.7)'; // Darker shade for sides
+            const depth = 10;
+            for (let d = depth; d > 0; d -= 2) {
+                drawEnemyShape(Globals.ctx, en, en.x, currentY + d, size);
+                Globals.ctx.fill();
             }
-            Globals.ctx.lineTo(en.x, en.y + bounceY - outerRadius);
-            Globals.ctx.closePath();
-        } else if (shape === "hexagon" || shape === "pentagon") {
-            const sides = shape === "hexagon" ? 6 : 5;
-            const r = en.size + sizeMod;
-            const angleStep = (Math.PI * 2) / sides;
-            // Rotate hexagon 30 deg (PI/6) to have flat top? Or 0 for pointy top.
-            // Let's do -PI/2 to start at top center like circle/triangle expectations roughly
-            const startAngle = -Math.PI / 2;
-
-            Globals.ctx.moveTo(en.x + r * Math.cos(startAngle), (en.y + bounceY) + r * Math.sin(startAngle));
-            for (let i = 1; i <= sides; i++) {
-                const angle = startAngle + i * angleStep;
-                Globals.ctx.lineTo(en.x + r * Math.cos(angle), (en.y + bounceY) + r * Math.sin(angle));
-            }
-            Globals.ctx.closePath();
-        } else if (shape === "diamond") {
-            const r = en.size + sizeMod;
-            // Rhombus / Rotated Square
-            Globals.ctx.moveTo(en.x, (en.y + bounceY) - r); // Top
-            Globals.ctx.lineTo(en.x + r, (en.y + bounceY)); // Right
-            Globals.ctx.lineTo(en.x, (en.y + bounceY) + r); // Bottom
-            Globals.ctx.lineTo(en.x - r, (en.y + bounceY)); // Left
-            Globals.ctx.closePath();
-        } else if (en.type === 'ghost') {
-            // Classic Sheet Ghost Shape
-            const r = en.size + sizeMod;
-            const h = r * 0.8; // Height below center
-
-            // Top Semicircle
-            Globals.ctx.arc(en.x, (en.y + bounceY) - (r * 0.2), r, Math.PI, 0);
-
-            // Right Side Down
-            Globals.ctx.lineTo(en.x + r, (en.y + bounceY) + h);
-
-            // Wavy Bottom (3 waves)
-            const waves = 3;
-            const waveWidth = (r * 2) / waves;
-            for (let i = 1; i <= waves; i++) {
-                const waveX = (en.x + r) - (waveWidth * i);
-                const waveY = (en.y + bounceY) + h;
-                // Control point (mid-wave, slightly up)
-                const cX = (en.x + r) - (waveWidth * (i - 0.5));
-                const cY = waveY - (r * 0.3); // Curve UP
-
-                Globals.ctx.quadraticCurveTo(cX, cY, waveX, waveY);
-            }
-
-            // Left Side Up (Closed by fill)
-            Globals.ctx.closePath();
-        } else {
-            // Default: "circle"
-            Globals.ctx.arc(en.x, en.y + bounceY, en.size + sizeMod, 0, Math.PI * 2);
+            Globals.ctx.restore();
         }
 
+        // Main Shape
+        drawEnemyShape(Globals.ctx, en, en.x, currentY, size);
         Globals.ctx.fill();
 
         // Draw Name (After Fill to avoid color bleed)

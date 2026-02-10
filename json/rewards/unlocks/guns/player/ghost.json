@@ -1,0 +1,9 @@
+{
+    "name": "Ghost",
+    "description": "Unlocks ghost",
+    "unlock": "ghost",
+    "json": "rewards/items/guns/player/ghost.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}

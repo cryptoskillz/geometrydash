@@ -36,6 +36,7 @@
         "inventory/add3keys",
         "inventory/add5bombs",
         "inventory/add5keys",
-        "modifiers/player/addMaxhp"
+        "modifiers/player/addMaxhp",
+        "game/misc/3dglasses"
     ]
 }

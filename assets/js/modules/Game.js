@@ -1756,8 +1756,6 @@ function drawMatrixRain() {
 //draw loop
 export async function draw() {
     if (Globals.isInitializing) {
-        Globals.ctx.fillStyle = "black";
-        Globals.ctx.fillRect(0, 0, Globals.canvas.width, Globals.canvas.height);
         requestAnimationFrame(() => { draw(); });
         return;
     }

@@ -1,0 +1,77 @@
+{
+    "name": "pacifier",
+    "description": "the pacifier",
+    "location": "rewards/items/guns/player/pacifier.json",
+    "type": "gun",
+    "starter": false,
+    "special": true,
+    "consumed": true,
+    "unlocked": {
+        "active": false,
+        "modifyType": "perm"
+    },
+    "modifier": {
+        "active": false,
+        "modify": ""
+    },
+    "rarity": "legendary",
+    "Bullet": {
+        "particles": {
+            "active": false,
+            "frequency": 0.5,
+            "life": 0.5,
+            "sizeMult": 0.1
+        },
+        "colour": "",
+        "ammo": {
+            "active": true,
+            "type": "recharge",
+            "resetTimer": 1000,
+            "amount": 10,
+            "maxAmount": 50
+        },
+        "geometry": {
+            "shape": "circle",
+            "shapes": [],
+            "animated": false,
+            "filled": true
+        },
+        "canDamagePlayer": false,
+        "speed": 5,
+        "size": 10,
+        "damage": 1,
+        "range": 50,
+        "curve": 0,
+        "spread": 0,
+        "spreadRate": 0,
+        "number": 1,
+        "recoil": 0,
+        "homing": false,
+        "fireRate": 0.5,
+        "wallBounce": false,
+        "pierce": false,
+        "reverseFire": false,
+        "frontLocked": false,
+        "NoBullets": true,
+        "critChance": 0.05,
+        "critDamage": 2.0,
+        "freezeChance": 0.05,
+        "freezeDuration": 100,
+        "multiDirectional": {
+            "active": false,
+            "fireNorth": false,
+            "fireEast": false,
+            "fireSouth": false,
+            "fireWest": false,
+            "fire360": false
+        },
+        "Explode": {
+            "active": false,
+            "shards": 8,
+            "size": 2,
+            "damage": 0.1,
+            "shardRange": 30,
+            "wallExplode": true
+        }
+    }
+}

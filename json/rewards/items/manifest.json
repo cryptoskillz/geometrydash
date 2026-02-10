@@ -16,6 +16,7 @@
         "modifiers/player/addhp",
         "modifiers/player/addmaxhp",
         "modifiers/player/shield",
+        "inventory/3dglasses",
         "modifiers/bullets/decreasefirerate",
         "modifiers/bullets/homing",
         "modifiers/bullets/pierce",

@@ -3,6 +3,7 @@
     "description": "Slow and armored.",
     "damage": 2,
     "hp": 25,
+    "3d": false,
     "alwaysAngry": false,
     "angryAfterHit": 0.05,
     "staysAngryWhenHit": false,

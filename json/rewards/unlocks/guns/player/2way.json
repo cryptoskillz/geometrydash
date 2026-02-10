@@ -1,0 +1,9 @@
+{
+    "name": "2way",
+    "description": "Unlocks 2way",
+    "unlock": "2way",
+    "json": "rewards/items/guns/player/2way.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}
