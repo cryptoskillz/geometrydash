@@ -164,6 +164,9 @@ export async function updateUI() {
     // HP
     if (Globals.elements.hp) Globals.elements.hp.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
 
+    // Room Name (Ensure it persists)
+    if (Globals.elements.roomName && Globals.roomData) Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
+
     // Keys
     if (Globals.elements.keys) {
         const keyCount = Globals.player.inventory.keys || 0;
@@ -213,7 +216,7 @@ export async function updateUI() {
     const greenEl = document.getElementById('green-shards');
 
     if (redEl) redEl.innerHTML = `<span style="color: #e74c3c">♦</span> ${redShards} / ${maxRed}`;
-    if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen}`;
+    if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen} `;
 
     // Timer
     if (Globals.elements.timer) {
@@ -248,7 +251,8 @@ export async function updateUI() {
 export function drawTutorial() {
     // --- Start Room Tutorial Text ---
     // Show in start room (0,0) if it is NOT a boss room
-    if (Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
+
+    if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
         Globals.ctx.save();
 
         //uodate start room name in the UI
@@ -328,9 +332,39 @@ export function drawTutorial() {
     }
 }
 
+export function drawStatsPanel() {
+    //get the ids
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+    //check for minimap
+    const statsPanel = Globals.gameData.showStatsPanel || unlockedIds.includes('statsPanel');
+    if (Globals.gameData && statsPanel === false) {
+        if (Globals.statsPanel) Globals.statsPanel.style.display = 'none';
+        return;
+    }
+    else {
+
+        //only add the block style if its not already applied
+        if (Globals.statsPanel && Globals.statsPanel.style.display === 'none') Globals.statsPanel.style.display = 'block';
+    }
+}
+
 export function drawMinimap() {
     if (!Globals.mctx) return; // Safety check
-    if (Globals.gameData && Globals.gameData.showMinimap === false) return;
+    //get the ids
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+    //check for minimap
+    const showMinimap = Globals.gameData.showMinimap || unlockedIds.includes('minimap');
+
+
+    if (Globals.gameData && showMinimap === false) {
+        if (Globals.mapCanvas) Globals.mapCanvas.style.display = 'none';
+        return;
+    }
+
+    // Ensure it's visible if we are drawing
+    if (Globals.mapCanvas && Globals.mapCanvas.style.display === 'none') {
+        Globals.mapCanvas.style.display = 'block';
+    }
 
     const mapSize = 100;
     const roomSize = 12;

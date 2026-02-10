@@ -3,11 +3,11 @@
     "description": "A few more enemies to keep you on your toes.",
     "hardness": 3,
     "keyBonus": 1.0,
-    "speedGoal": 10000,
+    "speedGoal": 3000,
     "item": {
         "common": {
-            "count": 10,
-            "dropChance": 1
+            "count": 1,
+            "dropChance": 0.01
         },
         "uncommon": {
             "count": 1,

@@ -3,7 +3,7 @@ import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_
 import { log, deepMerge, triggerSpeech, generateLore } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
-import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
+import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
 import { renderDebugForm, updateDebugEditor } from './Debug.js';
 import { generateLevel } from './Level.js';
 import {
@@ -18,6 +18,7 @@ import {
 
 // Placeholders for functions to be appended
 export async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
+
     // 0. Force Audio Resume (Must be first, to catch user interaction)
     if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
 
@@ -27,6 +28,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     // Stats Init
     loadGameStats();
     if (!keepStats) resetSessionStats();
+
+    // Reset Ghost Trap State
+    Globals.ghostTrapActive = false;
+    // Music Reset handled in startGame or updateRoomLock if state persists?
+    // Force music reset if coming from Ghost Trap
+    if (introMusic && introMusic.src.includes('ghost')) {
+        introMusic.src = 'assets/music/tron.mp3';
+        if (!introMusic.paused) introMusic.play().catch(() => { });
+    }
 
     console.log("TRACER: initGame Start. isRestart=", isRestart);
 
@@ -42,11 +52,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         window.introMusic.pause();
         window.introMusic = null;
     }
-    // Also pause the global one just in case we are restarting
-    if (introMusic && !introMusic.paused) {
-        // Don't pause here if we want seamless loop, but given the bugs, let's ensure clean state
-        // introMusic.pause(); 
-    }
 
     // Debug panel setup moved after config load
 
@@ -60,7 +65,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     if (Globals.elements.ui) {
         Globals.elements.ui.style.display = 'flex'; // Always keep flex container for layout
         const statsPanel = document.getElementById('stats-panel');
-        if (statsPanel) statsPanel.style.display = (Globals.gameData && Globals.gameData.showUI !== false) ? 'block' : 'none';
+        if (statsPanel) statsPanel.style.display = (Globals.gameData && Globals.gameData.showStatsPanel !== false) ? 'block' : 'none';
 
         const mapCanvas = document.getElementById('minimapCanvas');
         if (mapCanvas) mapCanvas.style.display = (Globals.gameData && Globals.gameData.showMinimap !== false) ? 'block' : 'none';
@@ -308,20 +313,64 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // 2. Spawnable Unlocks
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        if (unlockedIds.length > 0) {
-            log(`Checking ${unlockedIds.length} unlocks for spawnables...`);
-            const unlockPromises = unlockedIds.map(id =>
+        let unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+
+        // MIGRATION: 'ui' was renamed to 'statsPanel'
+        if (unlockedIds.includes('ui')) {
+            unlockedIds = unlockedIds.filter(id => id !== 'ui');
+            if (!unlockedIds.includes('statsPanel')) unlockedIds.push('statsPanel');
+            localStorage.setItem('game_unlocked_ids', JSON.stringify(unlockedIds));
+            log("Migrated unlock: ui -> statsPanel");
+        }
+        // Load ALL potential unlocks so they exist for Matrix room testing
+        // Standard "drop" logic in Entities.js will filter out locked ones based on localStorage.
+        if (true) {
+            const unlockManRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/manifest.json?t=` + Date.now());
+            const unlockMan = await unlockManRes.json();
+            const allUnlockIds = unlockMan.unlocks || [];
+
+            log(`Loading ${allUnlockIds.length} potential unlocks from manifest...`);
+
+            const unlockPromises = allUnlockIds.map(id =>
                 fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=` + Date.now())
                     .then(r => r.json())
                     .then(async data => {
                         if (data.spawnable && data.json) {
+                            let item;
                             const path = data.json;
-                            // Ensure path logic matches other loaders
-                            const res = await fetch(`${JSON_PATHS.ROOT}${path}?t=` + Date.now());
-                            if (res.ok) {
-                                const item = await res.json();
-                                item._isUnlock = true; // Tag it debug
+
+                            // Special Handling for Config Unlocks (game.json)
+                            if (path === 'game.json' || path.endsWith('game.json')) {
+                                item = {
+                                    name: data.name || "Unknown Unlock",
+                                    type: "unlock",
+                                    rarity: "special", // Don't spawn randomly
+                                    location: data.json,
+                                    colour: "#fdcb6e", // Goldish
+                                    size: 15,
+                                    description: data.description,
+                                    // Metadata for pickup logic
+                                    instantTrigger: data.instantTrigger,
+                                    unlockId: data.unlock,
+                                    json: data.json,
+                                    attr: data.attr,
+                                    value: data.value
+                                };
+                            } else {
+                                // Normal Item File
+                                const res = await fetch(`${JSON_PATHS.ROOT}${path}?t=` + Date.now());
+                                if (res.ok) {
+                                    item = await res.json();
+                                }
+                            }
+
+                            if (item) {
+                                // Entities.js isUnlocked() + localStorage('game_unlocks') handles status.
+                                // Merge metadata if not present
+                                if (data.instantTrigger) item.instantTrigger = true;
+                                if (data.unlock) item.unlockId = data.unlock;
+                                if (data.attr) item.attr = data.attr;
+                                if (data.value) item.value = data.value;
                                 return item;
                             }
                         }
@@ -549,11 +598,30 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         }
 
-        if (Globals.gameData.music) {
+        // Check for SFX mute and ensure unlock status is respected
+        const soundUnlocked = Globals.gameData.soundEffects || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('soundEffects');
+        if (soundUnlocked) {
+            Globals.gameData.soundEffects = true;
+            // Only force mute if explicitly requested? Or default to on.
+            // Globals.sfxMuted = false; // Let's not force false if user muted it?
+            // But if it was locked, it was forced true.
+            // We need a persistence for user preference too ideally, but for now just unlock it.
+        } else {
+            Globals.sfxMuted = true;
+        }
+
+        if (Globals.gameData.music || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('music')) {
+            // Force enable if unlocked (override default config)
+            Globals.gameData.music = true;
+            // Respect previous state or load from storage
+            if (Globals.musicMuted === undefined) {
+                Globals.musicMuted = localStorage.getItem('music_muted') === 'true';
+            }
             // --- 1. INSTANT AUDIO SETUP ---
             // Ensure global audio is ready
             introMusic.loop = true;
             introMusic.volume = 0.4;
+            Globals.introMusic = introMusic; // Expose for Entities
 
             // This attempts to play immediately.
             // If the browser blocks it, the 'keydown' listener below will catch it.
@@ -632,7 +700,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     if (type) data._type = type;
 
                     // Store
-                    // Store
+                    // SAFETY CHECK: Don't overwrite a 'start' room with a 'normal' one (Race condition fix)
+                    if (Globals.roomTemplates[id] && Globals.roomTemplates[id]._type === 'start' && type !== 'start') {
+                        // We already have a definitive Start Room for this ID. Don't downgrade it.
+                        // However, we might want to store it by path still?
+                        Globals.roomTemplates[path] = data; // Store path variant anyway
+                        log(`Skipping override of Start Room ${id} with normal variant.`);
+                        return;
+                    }
+
                     Globals.roomTemplates[id] = data;
                     // Also store by full path just in case
                     Globals.roomTemplates[path] = data;
@@ -647,6 +723,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         // If empty, fallback to manifest?
         // ONE CHECK: Only fallback if we DON'T have a startRoom/bossRoom config
         // meaning we are truly in a "default game" state, not a specific level file state.
+        //is this required?
         if (available.length === 0 && !Globals.gameData.startRoom && !Globals.gameData.bossRoom) {
             // FALLBACK: Load from old manifest
             try {
@@ -696,7 +773,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         // 5. Generate Level
         const urlParams = new URLSearchParams(window.location.search);
-        const isDebugRoom = urlParams.get('debugRoom') === 'true';
+        const isDebugRoom = DEBUG_FLAGS.TEST_ROOM || urlParams.get('debugRoom') === 'true';
         DEBUG_FLAGS.TEST_ROOM = isDebugRoom;
 
         if (DEBUG_FLAGS.START_BOSS) {
@@ -756,8 +833,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             console.log("MATRIX ROOM DETECTED: Spawning all items...");
             const items = window.allItemTemplates || Globals.itemTemplates || [];
             if (items.length > 0) {
-                const cols = 10; // Items per row
-                const spacing = 50;
+                const cols = 8; // Items per row
+                const spacing = 85;
                 const startX = 100;
                 const startY = 100;
 
@@ -806,8 +883,11 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // Start Run Timer
-        Globals.runStartTime = Date.now();
-        Globals.runElapsedTime = 0;
+        //on restart if its a new game
+        if (isRestart) {
+            Globals.runStartTime = Date.now();
+            Globals.runElapsedTime = 0;
+        }
 
         // AUTO START IF CONFIGURED (After everything is ready)
     } finally {
@@ -868,6 +948,11 @@ export function startGame(keepState = false) {
         // If keepState is FALSE, it's a fresh run (or restart).
         Globals.NumberOfRuns++;
         localStorage.setItem('numberOfRuns', Globals.NumberOfRuns);
+
+        // RESET TIMER
+        Globals.runStartTime = Date.now();
+        Globals.runElapsedTime = 0;
+        Globals.SessionRunTime = 0; // Fix persisted welcome screen timer
     }
 
     // Show Loading Screen immediately to block input/visuals
@@ -975,7 +1060,12 @@ export function startGame(keepState = false) {
                 Globals.elements.ui.style.display = 'block';
 
                 const statsPanel = document.getElementById('stats-panel');
-                if (statsPanel) statsPanel.style.display = (Globals.gameData.showUI !== false) ? 'block' : 'none';
+                if (statsPanel) statsPanel.style.display = (Globals.gameData.showStatsPanel !== false) ? 'block' : 'none';
+
+                // FORCE UI UPDATE for Room Name
+                if (Globals.elements.roomName) {
+                    Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
+                }
             }     // Show Level Title
             if (Globals.gameData.name) {
                 showLevelTitle(Globals.gameData.name);
@@ -1319,6 +1409,8 @@ export function changeRoom(dx, dy) {
         Globals.roomFreezeUntil = now + actualDuration;
         Globals.player.invulnUntil = Globals.roomFreezeUntil;
         Globals.roomStartTime = Globals.roomFreezeUntil; // Ghost timer starts AFTER freeze ends
+        Globals.roomNativeStart = now; // ABSOLUTE START TIME (For Speedy Bonus Calculation)
+        log("Globals.roomStartTime set to FreezeUntil: " + Globals.roomStartTime);
 
         log(`Room Freeze Active: ${actualDuration}ms (Enemies Frozen, Player Invulnerable)`);
 
@@ -1340,6 +1432,7 @@ export function changeRoom(dx, dy) {
             // If travelTime > ghostTimer, timeAlreadyElapsed is negative, so we wait longer than usual. Correct.
 
             Globals.roomStartTime = Date.now() - timeAlreadyElapsed;
+            log("Globals.roomStartTime overridden by Ghost Logic: " + Globals.roomStartTime);
 
             // Set Ghost Entry Point (The door we just came through)
             // Player is currently AT the door (spawnPlayer just ran)
@@ -1498,10 +1591,25 @@ export function update() {
     updateRemoteDetonation(); // Remote Bombs - Check BEFORE Use consumes space
     updateBombInteraction(); // Kick/Interact with Bombs
     if (Globals.keys["Space"]) updateUse();
+    //if (Globals.ghostSpawned && !window.DEBUG_WINDOW_ENABLED) {
     if (Globals.keys["KeyP"] && Globals.gameData.pause !== false) {
-        Globals.keys["KeyP"] = false; // Prevent repeated triggers
-        gameMenu();
-        return;
+
+        if (Globals.ghostSpawned) {
+            // Find the ghost entity
+            const ghost = Globals.enemies.find(e => e.type === 'ghost');
+            if (ghost) {
+                const ghostLore = Globals.speechData.types?.ghost_pause || ["You cannot escape me!!"];
+                //pick a random line from the ghost lore
+                const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
+                triggerSpeech(ghost, "ghost_restart", ghostLine, true);
+                Globals.keys['KeyP'] = false; // consume key
+            }
+        }
+        else {
+            Globals.keys["KeyP"] = false; // Prevent repeated triggers
+            gameMenu();
+            return;
+        }
     }
 
     // 2. World Logic
@@ -1559,6 +1667,49 @@ export function updateReload() {
     }
 }
 
+// --- MATRIX RAIN GLOBAL EFFECT ---
+function drawMatrixRain() {
+    // Lazy Init Columns
+    if (!Globals.matrixDrops || Globals.matrixDrops.length !== Math.floor(Globals.canvas.width / 20)) {
+        const cols = Math.floor(Globals.canvas.width / 20);
+        Globals.matrixDrops = Array.from({ length: cols }, () => ({
+            y: Math.random() * Globals.canvas.height, // Random start
+            speed: Math.random() * 5 + 3, // Fast fall (3-8)
+            chars: "01"
+        }));
+    }
+
+    Globals.ctx.save();
+    Globals.ctx.font = '15px monospace';
+    // Use semi-transparent context for trails? No, clearRect kills it.
+    // Instead simulate trails by drawing head + tail segments
+
+    Globals.matrixDrops.forEach((d, i) => {
+        // Draw Head (Bright)
+        Globals.ctx.fillStyle = '#0f0';
+        const char = Math.random() > 0.5 ? "1" : "0";
+        Globals.ctx.fillText(char, i * 20, d.y);
+
+        // Draw Tail (Faint)
+        Globals.ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+        Globals.ctx.fillText(Math.random() > 0.5 ? "1" : "0", i * 20, d.y - 15);
+        Globals.ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+        Globals.ctx.fillText(Math.random() > 0.5 ? "1" : "0", i * 20, d.y - 30);
+
+        // Move
+        if (Math.random() > 0.98) d.y = 0; // Random Reset
+        d.y += d.speed;
+
+        // Wrap
+        if (d.y > Globals.canvas.height) {
+            d.y = 0;
+            d.speed = Math.random() * 5 + 3;
+        }
+    });
+
+    Globals.ctx.restore();
+}
+
 //draw loop
 export async function draw() {
     if (Globals.isInitializing) {
@@ -1572,6 +1723,16 @@ export async function draw() {
     const doors = Globals.roomData.doors || {};
     await updateUI();
     Globals.ctx.clearRect(0, 0, Globals.canvas.width, Globals.canvas.height);
+
+    // Global Matrix Effect (Background)
+    if (Globals.roomData && Globals.roomData.name === "Guns Lots of Guns") {
+        drawMatrixRain();
+    }
+    // Ghost Trap Effect
+    if (Globals.ghostTrapActive) {
+        drawGhostBorder();
+    }
+
     drawShake()
     drawDoors()
     drawBossSwitch() // Draw switch underneath entities
@@ -1637,7 +1798,7 @@ export async function draw() {
 
         }
     }
-
+    drawStatsPanel();
     drawMinimap();
     if (!DEBUG_FLAGS.TEST_ROOM) drawTutorial();
     drawBossIntro();
@@ -1695,8 +1856,15 @@ export function drawBossSwitch() {
 }
 
 export function updateMusicToggle() {
-    // If music is disabled in config, do not allow toggling
-    if (!Globals.gameData.music) return;
+    // If music is NOT enabled (either via config or unlock), do not allow toggling
+    // Check both GameData (instant ref) and Storage (persistence ref)
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+    const isUnlocked = Globals.gameData.music || unlockedIds.includes('music');
+    if (!isUnlocked) {
+        // Ensure it stays muted if locked
+        if (!Globals.musicMuted) Globals.musicMuted = true;
+        return;
+    }
 
     if (Globals.keys['Digit0']) {
         Globals.keys['Digit0'] = false; // consume key
@@ -1708,11 +1876,14 @@ export function updateMusicToggle() {
         } else {
             log("Music Unmuted");
             // Only play if we are in state where music should play
-            if (Globals.gameState === 1 || Globals.gameState === 2 || Globals.gameState === 4) {
+            // Allow START(0), PLAY(1), GAMEOVER(2), GAMEMENU(3), WIN(4)
+            if ([0, 1, 2, 3, 4].includes(Globals.gameState)) {
                 fadeIn(introMusic, 5000); // Smooth fade in
             }
         }
+        localStorage.setItem('music_muted', Globals.musicMuted);
     }
+
 }
 
 export function updateRoomTransitions(doors, roomLocked) {
@@ -1786,9 +1957,87 @@ Globals.isRoomLocked = isRoomLocked;
 export function updateRoomLock() {
     // --- 2. ROOM & LOCK STATUS ---
     const roomLocked = isRoomLocked();
+
+    // --- GHOST MUSIC LOGIC ---
+    // If not already detected, check if ghost is trapping player
+    const activeGhost = Globals.enemies.find(en => en.type === 'ghost');
+    const isGhostTrap = activeGhost && activeGhost.locksRoom;
+
+    if (isGhostTrap && !Globals.ghostTrapActive) {
+        // Trap Started - FORCE PLAY GHOST MUSIC (Override mute/lock)
+        if (introMusic) {
+            // Store previous state (was it playing Tron?)
+            if (Globals.wasMusicPlayingBeforeGhost === undefined) Globals.wasMusicPlayingBeforeGhost = !introMusic.paused;
+
+            console.log("GHOST TRAP: Switching to Ghost Music and FORCING Play. Previous:", Globals.wasMusicPlayingBeforeGhost);
+            introMusic.src = 'assets/music/ghost.mp3';
+            introMusic.volume = 0.4; // Force Volume Up (Override mute)
+            // Force Play
+            introMusic.play().then(() => console.log("Ghost Music Started")).catch((e) => { console.error("Ghost Music Force Play Failed:", e); });
+            Globals.ghostTrapActive = true;
+        }
+    } else if (!isGhostTrap && Globals.ghostTrapActive) {
+        // Trap Ended - Revert to Tron and Previous State
+        if (introMusic) {
+            introMusic.src = 'assets/music/tron.mp3';
+            if (Globals.wasMusicPlayingBeforeGhost) {
+                introMusic.play().catch(() => { });
+            } else {
+                introMusic.pause(); // Return to silence if it was silenced
+            }
+            Globals.ghostTrapActive = false;
+            Globals.wasMusicPlayingBeforeGhost = undefined;
+        }
+    }
     const doors = Globals.roomData.doors || {};
 
+    // Check if we expect enemies but none are present (meaning spawn failed or hasn't happened yet)
+    // This handles the instant-clear racing condition on room entry
+    const expectsEnemies = Globals.roomData.enemies && Globals.roomData.enemies.length > 0;
+    const hasEnemiesList = Globals.enemies && Globals.enemies.length > 0;
+
+    // Auto-fix Dead-on-Arrival Bug (Speedy Bonus Exploit Fix)
+    // If room just started (< 1000ms after freeze ends) and all enemies are dead but shouldn't be
+    const timeSinceFreeze = Date.now() - (Globals.roomFreezeUntil || 0);
+    // Use a negative buffer because freezeUntil might be in future slightly or just passed
+    // We care if we are within the first second of gameplay.
+    const isEarlyGame = timeSinceFreeze > -1500 && timeSinceFreeze < 1000;
+
+    if (!roomLocked && expectsEnemies && hasEnemiesList && !Globals.roomData.cleared && isEarlyGame) {
+        // Check if all spawned enemies are dead (which is impossible for player to do instantly)
+        const allDead = Globals.enemies.every(en => en.isDead || en.hp <= 0);
+
+        if (allDead) {
+            console.warn("Detected Dead-on-Arrival Glitch! Reviving enemies to enforce gameplay.");
+            Globals.enemies.forEach(en => {
+                if (en.isDead || en.hp <= 0) {
+                    en.isDead = false;
+                    en.hp = Math.max(en.maxHp || 1, 1);
+                    if (en.baseStats) {
+                        if (!en.baseStats.hp || en.baseStats.hp <= 0) en.baseStats.hp = en.hp;
+                    } else {
+                        en.baseStats = { hp: en.hp, speed: en.speed || 1, damage: en.damage || 1 };
+                    }
+                    en.deathTimer = undefined; // Reset despawn timer
+                }
+            });
+            // Force roomLocked to true for this frame so we don't clear
+            // But relies on isRoomLocked() next frame which will be true (since we revived them)
+            return;
+        }
+    }
+
+    if (expectsEnemies && !hasEnemiesList && !Globals.roomData.cleared) {
+        // Room expects enemies, but none found in list. 
+        // Do not clear. Wait for spawnEnemies() to populate list.
+        return;
+    }
+
     if (!roomLocked && !Globals.roomData.cleared) {
+        // Prevent clearing room instantly during freeze/spawn time
+        // This stops "Speedy Bonus" from triggering before enemies even spawn
+        if (Globals.roomFreezeUntil && Date.now() < Globals.roomFreezeUntil) return;
+
         Globals.roomData.cleared = true;
         const currentCoord = `${Globals.player.roomX},${Globals.player.roomY}`; // Fixed space typo
         if (Globals.visitedRooms[currentCoord]) Globals.visitedRooms[currentCoord].cleared = true;
@@ -1799,13 +2048,19 @@ export function updateRoomLock() {
         }
 
         // --- SPEEDY BONUS ---
-        // Check if room cleared quickly (e.g. within 5 seconds)
-        // Hardcoded to 5s if speedyGoal not in logic (using local var here)
-        const timeTakenMs = Date.now() - Globals.roomStartTime;
-        // Default to 5000 if undefined, but explicit 0 means 0 (no bonus)
-        const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 5000;
+        // Calculate Time Taken using STABLE timer (Globals.roomNativeStart)
+        // Subtract freeze duration to be fair (only gameplay time counts)
+        const freezeEnd = Globals.roomFreezeUntil || Globals.roomNativeStart || 0;
+        const timeTakenMs = Date.now() - freezeEnd; // Time since freeze ended
 
-        if (speedyLimitMs > 0 && timeTakenMs <= speedyLimitMs) {
+        // Require minimum time to disqualify glitches (e.g. 100ms)
+        const isGlitch = timeTakenMs < 100;
+        const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 5000;
+        console.log(`Room Cleared! TimeTaken: ${timeTakenMs}ms, Limit: ${speedyLimitMs}ms (Start: ${freezeEnd}, Now: ${Date.now()})`);
+
+        // Fix: check timeTakenMs > 100 to avoid glitch "instant clears"
+        if (speedyLimitMs > 0 && timeTakenMs > 100 && timeTakenMs <= speedyLimitMs) {
+            console.log("SPEEDY BONUS AWARDED!");
             if (Globals.gameData.rewards && Globals.gameData.rewards.speedy) {
                 const dropped = spawnRoomRewards(Globals.gameData.rewards.speedy);
                 if (dropped) {
@@ -1813,6 +2068,8 @@ export function updateRoomLock() {
                     triggerPerfectText();
                 }
             }
+        } else {
+            console.log("Speedy Bonus Missed (or disabled).");
         }
 
         // --- PERFECT BONUS (STREAK) ---
@@ -2024,7 +2281,7 @@ export async function restartGame(keepItems = false) {
 
     // Wait for init to complete, then auto-start
     await initGame(true, null, keepItems);
-    startGame(true);
+    // startGame is called by initGame internal logic (via shouldAutoStart)
 }
 Globals.restartGame = restartGame;
 
@@ -2050,6 +2307,7 @@ export function goContinue() {
     if (Globals.pauseStartTime > 0) {
         const pausedDuration = Date.now() - Globals.pauseStartTime;
         Globals.roomStartTime += pausedDuration; // Shift room start time forward
+        log("Globals.roomStartTime shifted by " + pausedDuration + " to " + Globals.roomStartTime);
         Globals.pauseStartTime = 0;
         log("Resumed. Paused for: " + (pausedDuration / 1000).toFixed(1) + "s. Ghost Timer Adjusted.");
     }
@@ -2155,6 +2413,19 @@ export async function showNextUnlock() {
                 saveUnlockOverride(data.json, data.attr, data.value);
             }
 
+            // SPECIAL: Instant Music Play
+            if (key === 'music') {
+                log("Music Unlocked! Playing immediately...");
+                Globals.musicMuted = false;
+                localStorage.setItem('music_muted', 'false');
+                // Ensure music is enabled in gameData too so toggle works
+                Globals.gameData.music = true;
+
+                if (introMusic) {
+                    if (introMusic.paused) fadeIn(introMusic, 5000);
+                }
+            }
+
             // CHECK HISTORY: Skip if already unlocked
             const history = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
             if (history.includes(key)) {
@@ -2228,6 +2499,22 @@ export function saveUnlockOverride(file, attr, value) {
 
         localStorage.setItem('game_unlocks', JSON.stringify(store));
         log(`Saved Unlock Override: ${file} -> ${attr} = ${value}`);
+
+        // IMMEDIATE UPDATE: If this is for game.json, update Globals.gameData too!
+        if (file === 'game.json' || file === 'game') {
+            if (Globals.gameData) {
+                // handle nested? For now, attr is usually top level like "showTimer"
+                // But could be "ghost.spawn".
+                const parts = attr.split('.');
+                let current = Globals.gameData;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (!current[parts[i]]) current[parts[i]] = {};
+                    current = current[parts[i]];
+                }
+                current[parts[parts.length - 1]] = value;
+                log(`Updated Globals.gameData.${attr} = ${value}`);
+            }
+        }
     } catch (e) {
         console.error("Failed to save unlock persistence", e);
     }
@@ -2250,3 +2537,28 @@ export function cancelNewGame() {
 
 
 Globals.loadRoom = initGame; // Alias for clarity
+Globals.saveUnlockOverride = saveUnlockOverride;
+Globals.confirmNewGame = confirmNewGame;
+
+// --- GHOST EFFECT ---
+export function drawGhostBorder() {
+    const w = Globals.canvas.width;
+    const h = Globals.canvas.height;
+
+    // Flickering Red Overlay
+    Globals.ctx.fillStyle = `rgba(255, 0, 0, ${Math.random() * 0.1})`;
+    Globals.ctx.fillRect(0, 0, w, h);
+
+    // Draw "Creepy Particles" rising from borders
+    Globals.ctx.fillStyle = `rgba(180, 0, 0, ${Math.random() * 0.5 + 0.5})`;
+    for (let i = 0; i < 40; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const size = Math.random() * 6 + 2;
+
+        // Only on edges (frame)
+        if (x < 60 || x > w - 60 || y < 60 || y > h - 60) {
+            Globals.ctx.fillRect(x, y, size, size);
+        }
+    }
+}

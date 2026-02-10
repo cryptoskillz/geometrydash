@@ -1,4 +1,13 @@
 bugs
+
+I fixed the issue where some unlocks (like the Minimap and Timer) were missing the Legendary particle effects.
+The logs revealed that these items had a rarity of "special" (instead of "common"), which my previous auto-upgrade logic was ignoring. I have updated the code to automatically upgrade both "common" and "special" rarity unlocks to Legendary.
+This means all unlock items—whether Minimap, Timer, or Keys—will now correctly display the Gold Light Beam and Sparkles, matching the Shotgun's appearance. Please check it out!
+
+
+matrix room does not spawn untik after first boss
+pause restart does not show sweet teleport
+    if you pick it up the portal unlock screen is not required (should it active immediately?)
     if yo press 0 or 9 it should update the debug buttons to on / off
     drawtutoiral in load roomd
     chained explosion should bliw in sequence not all at the same time
@@ -21,7 +30,7 @@ bugs
 
 next up 
   bug fix 6
-    sfx & ui updates
+  sfx & ui updates
         game settings
             inventory
             stats
@@ -40,22 +49,23 @@ next up
     unlocks / permance
     server    
 
-Bug fix 6
+Bug fix  7
     check bomb json 
-    tweak gubs
+    tweak guns
     twweak bombs
+    add a powered down portal to the start room
+    fix debug logs 
     add more unlocks
+    no route to boss room
     On the server we dont see the sweet teleport as the screen goes black so either remove this or have the teelport at the start not the end 
     On the server we are not seeing the last level unlock 
     wasd during pick up items locks up occasionlllay and pulls in you a random direction for a while, firing seems to fix it. 
     somme gold doors wont unlock you have to clear the room go out and go back in and its fine
-    remove secnd green shard from ui
     enemes spawm outside the room if they are very big
     shield shows when you go into the portal
     bomb goes blue when you leave the room and go back in
     dont use the same enmy name in a room
     add back old ghost gun
-    fix debug logs 
     bombs are blue when you leave and reenter a room 
 
     
@@ -176,18 +186,15 @@ enemies
 ghost
     when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
     ghost non solid enmeies should be able to pass through bombs (they dont explode)
+    ghost should be able to pass through solid enemies 
+    ghost should be able to pass through solid objects
     if you go through multiple room and back track you will see multiple ghosts
     if you leave a room and come back the ghost should be the same place + closer to you basedo on the speed the ghost moves. 
     if you kill some of the enemeis and leave a room and back there should only be the remaining enemies left (with ghost or blowing doors)
     door is gone
-    ghost wont enter a room with an indestrcutible eemies
-    if an enemy is nor sold (ie ghost) he should nor try to around enemies just go through them
-    solid enemies cant go through each other, player or objects
-    non solid enemies can be shot by bullets
-    solid enemies can be shot by bullets
-    player can alos be solid or non solid    
-    if you are trapped with the ghost make the room smaller and smaller until you die or the ghost dies
+    ghost wont enter a room with an indestrcutible enemy
     add a timer to show you how long you survice
+    ghost wont enter a start or boss room what is he scared of?
 
 
 NPCsds

@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { log, spawnFloatingText, triggerSpeech } from './Utils.js';
-import { SFX } from './Audio.js';
+import { SFX, fadeIn } from './Audio.js';
 import { generateLore } from './Utils.js'; // Assuming generateLore is in Utils (or I need to extract it)
 import { CONFIG, STATES, BOUNDARY, DOOR_SIZE, JSON_PATHS } from './Constants.js';
 import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats } from './UI.js';
@@ -215,7 +215,18 @@ export function spawnEnemies() {
             // Restore invulnerability based on type/indestructible logic
             inst.invulnerable = inst.indestructible || false;
 
-            enemies.push(inst);
+            // Force Min HP if restored dead or corrupted
+            if (!inst.hp || inst.hp <= 0) {
+                log("Restored enemy HP was 0/Null. Forcing to 1.");
+                inst.hp = 1;
+                inst.maxHp = Math.max(inst.maxHp || 0, 1);
+                // Check and fix baseStats if they carried the corruption
+                if (inst.baseStats && (inst.baseStats.hp <= 0)) inst.baseStats.hp = 1;
+                else if (!inst.baseStats) inst.baseStats = { hp: 1, speed: inst.speed, damage: inst.damage };
+            }
+
+            Globals.enemies.push(inst);
+            log(`Restored Enemy: ${inst.type}, HP: ${inst.hp}`);
         });
 
         // Handle Ghost if Haunted (still spawn it separately if consistent with design?)
@@ -355,8 +366,17 @@ export function spawnEnemies() {
                         inst.damage = (inst.damage || 1) * 2;
                     }
 
+                    // Force Min HP
+                    if (!inst.hp || inst.hp <= 0) {
+                        console.warn("Enemy HP was 0/Null on Spawn. Forcing to 1. Original:", inst.hp, "Variant:", group.variant);
+                        inst.hp = 1;
+                        inst.maxHp = Math.max(inst.maxHp || 0, 1);
+                        // Ensure baseStats logic doesn't revert it
+                        if (inst.baseStats && inst.baseStats.hp <= 0) inst.baseStats.hp = 1;
+                    }
+
                     Globals.enemies.push(inst);
-                    log(`Spawned ${inst.type} (ID: ${group.type}). Stealth: ${inst.stealth}, Indestructible: ${inst.indestructible}`);
+                    log(`Spawned ${inst.type} (ID: ${group.type}). HP: ${inst.hp}, Index: ${i}`);
                 }
             } else {
                 console.warn(`Enemy template not found for: ${group.type}`);
@@ -1217,17 +1237,15 @@ export function updateRestart() {
         //check if the ghost is in the room and we are not in debug mode
         //note the debug flag isnt working but i dont mind that the GHOST is more powerful than the CODE!!!
         if (Globals.ghostSpawned && !window.DEBUG_WINDOW_ENABLED) {
-            //pick the ghost lore from ghost_restart
-            const ghostLore = Globals.speechData.types?.ghost_restart || ["You cannot escape me!!"];
-            //pick a random line from the ghost lore
-            const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
-
             // Find the ghost entity
             const ghost = Globals.enemies.find(e => e.type === 'ghost');
             if (ghost) {
+                //pick the ghost lore from ghost_restart
+                const ghostLore = Globals.speechData.types?.ghost_restart || ["You cannot escape me!!"];
+                //pick a random line from the ghost lore
+                const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
                 triggerSpeech(ghost, "ghost_restart", ghostLine, true);
             }
-
         }
         else {
             if (Globals.restartGame) Globals.restartGame(false);
@@ -1281,11 +1299,11 @@ export function updateBombsPhysics() {
                     if (dist < r + en.size) {
                         if (b.canInteract?.explodeOnImpact) {
                             // Boom
-                            bullets = [];
-                            bombs = [];
-                            particles = [];
-                            roomStartTime = Date.now();
-                            ghostSpawned = false; // Reset Ghost Timer
+                            // bullets = [];
+                            // bombs = [];
+                            // particles = [];
+                            // roomStartTime = Date.now();
+                            // ghostSpawned = false; // Reset Ghost Timer
 
                             // Check if visited before
                             const coord = `${player.roomX},${player.roomY}`;
@@ -1766,7 +1784,7 @@ export function updateEnemies() {
                         const count = Globals.roomData.unlockItem.count || 1;
                         log(`Roll Success! Spawning ${count} unlock items.`);
                         for (let i = 0; i < count; i++) {
-                            spawnUnlockItem(en.x + (i * 20), en.y);
+                            spawnUnlockItem(en.x + (i * 20), en.y, true);
                         }
                     } else {
                         log("Unlock Roll Failed.");
@@ -2219,13 +2237,14 @@ export function drawEnemies() {
             bounceY = Math.sin(time) * 5; // Float up and down
             sizeMod = Math.cos(time) * 2; // Pulse size slightly
 
-            // Translucency (Base 0.6, fade if dying)
-            const baseAlpha = 0.6;
+            // Translucency (Base 0.4 for spookier effect)
+            const baseAlpha = 0.4;
             Globals.ctx.globalAlpha = en.isDead ? (en.deathTimer / 30) * baseAlpha : baseAlpha;
+            Globals.ctx.globalCompositeOperation = "screen"; // Additive glow
 
             // Ghostly Glow/Shadow
-            Globals.ctx.shadowBlur = 20;
-            Globals.ctx.shadowColor = en.color || "red";
+            Globals.ctx.shadowBlur = 35;
+            Globals.ctx.shadowColor = en.color || "white";
         } else {
             // Standard Death Fade
             if (en.isDead) Globals.ctx.globalAlpha = en.deathTimer / 30;
@@ -2310,6 +2329,32 @@ export function drawEnemies() {
             Globals.ctx.lineTo(en.x, (en.y + bounceY) + r); // Bottom
             Globals.ctx.lineTo(en.x - r, (en.y + bounceY)); // Left
             Globals.ctx.closePath();
+        } else if (en.type === 'ghost') {
+            // Classic Sheet Ghost Shape
+            const r = en.size + sizeMod;
+            const h = r * 0.8; // Height below center
+
+            // Top Semicircle
+            Globals.ctx.arc(en.x, (en.y + bounceY) - (r * 0.2), r, Math.PI, 0);
+
+            // Right Side Down
+            Globals.ctx.lineTo(en.x + r, (en.y + bounceY) + h);
+
+            // Wavy Bottom (3 waves)
+            const waves = 3;
+            const waveWidth = (r * 2) / waves;
+            for (let i = 1; i <= waves; i++) {
+                const waveX = (en.x + r) - (waveWidth * i);
+                const waveY = (en.y + bounceY) + h;
+                // Control point (mid-wave, slightly up)
+                const cX = (en.x + r) - (waveWidth * (i - 0.5));
+                const cY = waveY - (r * 0.3); // Curve UP
+
+                Globals.ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+            }
+
+            // Left Side Up (Closed by fill)
+            Globals.ctx.closePath();
         } else {
             // Default: "circle"
             Globals.ctx.arc(en.x, en.y + bounceY, en.size + sizeMod, 0, Math.PI * 2);
@@ -2378,6 +2423,35 @@ export function drawEnemies() {
         }
 
         // DRAW EYES
+        if (en.type === 'ghost') {
+            // Large Black Ghost Eyes (Geometric)
+            const eyeSize = en.size * 0.3; // BIG
+            const eyeXOffset = en.size * 0.4;
+            const lookDist = en.size * 0.15; // How far eyes track player
+
+            // Calculate Look Vector
+            const dx = Globals.player.x - en.x;
+            const dy = Globals.player.y - en.y;
+            const d = Math.hypot(dx, dy);
+            let lx = 0, ly = 0;
+            if (d > 0) { lx = (dx / d) * lookDist; ly = (dy / d) * lookDist; }
+
+            Globals.ctx.fillStyle = "black";
+
+            // Left Eye
+            Globals.ctx.beginPath();
+            Globals.ctx.ellipse(en.x - eyeXOffset + lx, en.y + bounceY + ly, eyeSize, eyeSize * 1.2, 0, 0, Math.PI * 2);
+            Globals.ctx.fill();
+
+            // Right Eye
+            Globals.ctx.beginPath();
+            Globals.ctx.ellipse(en.x + eyeXOffset + lx, en.y + bounceY + ly, eyeSize, eyeSize * 1.2, 0, 0, Math.PI * 2);
+            Globals.ctx.fill();
+
+            Globals.ctx.restore();
+            return; // Skip default text eyes
+        }
+
         Globals.ctx.fillStyle = "white";
         Globals.ctx.textAlign = "center";
         Globals.ctx.textBaseline = "middle";
@@ -2958,10 +3032,68 @@ export async function pickupItem(item, index) {
     }
 
     if (type === 'unlock') {
-        // Queue it for Portal Exit
-        if (!Globals.foundUnlocks) Globals.foundUnlocks = [];
-        Globals.foundUnlocks.push(data.unlockId);
-        spawnFloatingText(Globals.player.x, Globals.player.y - 40, "UNLOCK FOUND!", "gold");
+        // UNIFY ALL UNLOCKS TO BE IMMEDIATE
+        // Original "Queue for Portal" logic is deprecated in favor of immediate gratification.
+
+        // 1. Persist
+        const history = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        if (!history.includes(data.unlockId)) {
+            history.push(data.unlockId);
+            localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
+        }
+
+        // 2. Notification
+        const displayName = (data.name || data.unlockId).toUpperCase().replace(/_/g, ' ');
+        spawnFloatingText(Globals.player.x, Globals.player.y - 40, `UNLOCKED: ${displayName}`, "#2ecc71");
+
+        const details = data.details || data;
+
+        if (details.instantTrigger) {
+
+            // Apply the override immediately
+            if (Globals.saveUnlockOverride && details.json && details.attr && details.value !== undefined) {
+                Globals.saveUnlockOverride(details.json, details.attr, details.value);
+                log(`Instant Unlock Triggered: ${details.attr} = ${details.value}`);
+            }
+
+            // Persistence for Instant ID
+            const detailID = details.unlock || data.unlockId;
+            if (detailID && !history.includes(detailID)) {
+                history.push(detailID);
+                localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
+                log(`Instant Unlock Detail ID Saved: ${detailID}`);
+            }
+
+            // SPECIAL: Instant sound effect
+            if (detailID === 'soundEffects') {
+                console.log("Sound Effect Unlocked via Pickup! key=" + detailID);
+                Globals.gameData.soundEffects = true;
+                Globals.sfxMuted = false;
+                if (SFX && SFX.upgrade) SFX.upgrade();
+                else if (SFX && SFX.coin) SFX.coin();
+            }
+
+            // SPECIAL: Instant Music Play
+            if (detailID === 'music') {
+                console.log("Music Unlocked via Pickup! key=" + detailID);
+
+                Globals.musicMuted = false;
+                localStorage.setItem('music_muted', 'false');
+                Globals.gameData.music = true;
+
+                if (Globals.introMusic) {
+                    console.log("Starting Music Playback...");
+                    if (Globals.introMusic.paused) {
+                        fadeIn(Globals.introMusic, 2000, 0.4);
+                    } else {
+                        // already playing? ensure volume
+                        Globals.introMusic.volume = 0.4;
+                    }
+                } else {
+                    console.error("Globals.introMusic is missing!");
+                }
+            }
+        }
 
         if (Globals.audioCtx.state !== 'suspended' && SFX.coin) SFX.coin();
         removeItem();
@@ -3255,6 +3387,7 @@ export async function pickupItem(item, index) {
     }
 }
 
+
 export function applyModifierToGun(gunObj, modConfig) {
     // Fix: Define mods
     const mods = modConfig.modifiers;
@@ -3346,7 +3479,7 @@ export function applyModifierToGun(gunObj, modConfig) {
 // --- UNLOCK SYSTEM ---
 let unlockQueue = [];
 // Helper to spawn unlock item
-export async function spawnUnlockItem(x, y) {
+export async function spawnUnlockItem(x, y, isBossDrop = false) {
     try {
         // 1. Fetch Manifest
         const res = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/manifest.json?t=${Date.now()}`);
@@ -3370,7 +3503,23 @@ export async function spawnUnlockItem(x, y) {
         const nextUnlockId = available[Math.floor(Math.random() * available.length)];
         log("Spawning Unlock Item:", nextUnlockId);
 
+        // Fetch Unlock Details to get Real Name
+        let unlockName = "Unlock Reward";
+        let unlockDetails = null;
+        try {
+            const detailRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${nextUnlockId}.json?t=${Date.now()}`);
+            if (detailRes.ok) {
+                const detail = await detailRes.json();
+                unlockDetails = detail;
+                if (detail.name) unlockName = detail.name;
+            }
+        } catch (e) {
+            console.warn("Failed to fetch unlock details for name:", nextUnlockId);
+        }
+
         // 4. Spawn Physical Item
+
+        //chris<---
         Globals.groundItems.push({
             x: x, y: y,
             roomX: Globals.player.roomX, roomY: Globals.player.roomY,
@@ -3378,12 +3527,14 @@ export async function spawnUnlockItem(x, y) {
             friction: 0.9, solid: true, moveable: true, size: 20,
             floatOffset: 0,
             data: {
-                name: "Unlock Reward",
+                name: unlockName,
+                details: unlockDetails, // Store full details
                 type: "unlock", // New Type
                 unlockId: nextUnlockId,
                 colour: "gold",
                 size: 20,
-                rarity: "legendary"
+                rarity: "legendary",
+                isBossDrop: isBossDrop
             }
         });
         spawnFloatingText(x, y - 40, "UNLOCK REWARD!", "gold");
@@ -3402,6 +3553,31 @@ export function spawnRoomRewards(dropConfig, label = null) {
 
     let anyDropped = false;
     const pendingDrops = [];
+
+    // MATRIX ROOM SPECIAL LOGIC
+    if (dropConfig.matrix === true) {
+        log("Matrix Room: Spawning ALL items...");
+        if (window.allItemTemplates) {
+            window.allItemTemplates.forEach(item => {
+                // Determine Rarity (since it's not bucketed here)
+                let rarity = item.rarity || 'common';
+
+                // If it's an Item/Unlock without rarity, assume it's valuable
+                if (!item.rarity) {
+                    // Check MULTIPLE properties for Unlocks
+                    if (item.unlock || item.unlockId || item.type === 'unlock' || item.name === 'Minimap') {
+                        rarity = 'legendary'; // Upgrade to Legendary (Gold)
+                        log(`SpawnRoomRewards: Forcing LEGENDARY rarity for ${item.name} (Unlock ID: ${item.unlockId || item.unlock})`);
+                    }
+                    else if (item.type === 'gun') rarity = 'rare';     // Guns are decent
+                    else if (item.type === 'bomb') rarity = 'common';
+                }
+
+                // Spawn EVERYTHING without filtering
+                pendingDrops.push({ item: item, rarity: rarity });
+            });
+        }
+    }
 
     // 0. Fetch Unlock State
     const unlocks = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
@@ -3572,7 +3748,7 @@ export function spawnRoomRewards(dropConfig, label = null) {
 
         Globals.groundItems.push({
             x: dropX, y: dropY,
-            data: item,
+            data: { ...item, rarity: drop.rarity }, // Inject rarity from bucket/logic
             roomX: Globals.player.roomX, roomY: Globals.player.roomY,
             vx: (Math.random() - 0.5) * 5,
             vy: (Math.random() - 0.5) * 5,
@@ -3879,6 +4055,39 @@ export function updateItems() {
             item.vy += Math.sin(angle) * pushForce;
         }
 
+        // 3.5 Item-Item Collision (Bounce off each other)
+        for (let j = i - 1; j >= 0; j--) {
+            const other = Globals.groundItems[j];
+            const dx = item.x - other.x;
+            const dy = item.y - other.y;
+            const dist = Math.hypot(dx, dy);
+            const minD = (item.size || 15) + (other.size || 15);
+
+            if (dist < minD) {
+                const angle = Math.atan2(dy, dx);
+                const overlap = minD - dist;
+
+                // Push apart (half each)
+                const pushX = Math.cos(angle) * overlap * 0.5;
+                const pushY = Math.sin(angle) * overlap * 0.5;
+
+                item.x += pushX;
+                item.y += pushY;
+                other.x -= pushX;
+                other.y -= pushY;
+
+                // Bounce (add velocity away from center)
+                const kick = 0.2; // Small bounce
+                const kvx = Math.cos(angle) * kick;
+                const kvy = Math.sin(angle) * kick;
+
+                item.vx += kvx;
+                item.vy += kvy;
+                other.vx -= kvx;
+                other.vy -= kvy;
+            }
+        }
+
         // Decrement Cooldown
         if (item.pickupCooldown > 0) item.pickupCooldown--;
 
@@ -3940,6 +4149,19 @@ export function drawItems() {
         const bob = Math.sin(Date.now() / 300) * 3;
         Globals.ctx.translate(0, bob);
 
+        // Check Matrix Theme (from room config or name)
+        const isMatrix = (Globals.roomData && (Globals.roomData.name === "Guns Lots of Guns" || (Globals.roomData.item && Globals.roomData.item.matrix))) || (item.data && item.data.rarity === 'matrix');
+
+        if (isMatrix) {
+            // Matrix Digital Rain Effect (Mini) around item
+            Globals.ctx.fillStyle = `rgba(0, 255, 0, ${Math.random() * 0.5 + 0.2})`;
+            Globals.ctx.font = '10px monospace';
+            // Draw random 0s and 1s floating
+            if (Math.random() > 0.8) {
+                Globals.ctx.fillText(Math.random() > 0.5 ? "1" : "0", (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30);
+            }
+        }
+
         const itemType = item.type || (item.data && item.data.type);
 
         // Draw Item Base
@@ -3976,7 +4198,13 @@ export function drawItems() {
         }
 
         // Rarity Effects (Glow/Pulse)
-        const rarity = (item.data && item.data.rarity) ? item.data.rarity.toLowerCase() : 'common';
+        let rarity = (item.data && item.data.rarity) ? item.data.rarity.toLowerCase() : 'common';
+
+        // Auto-Upgrade Unlocks to Legendary (for visual effects)
+        if (item.data && (item.data.name === 'Minimap' || item.data.unlock || item.data.unlockId || item.data.type === 'unlock')) {
+            if (rarity === 'common' || rarity === 'special') rarity = 'legendary';
+        }
+
         if (rarity !== 'common') {
             const time = Date.now() / 1000;
             let glowColor = 'rgba(255, 255, 255, 0.5)';
@@ -4105,6 +4333,8 @@ function getItemTypeColor(type, data) {
     }
     if (type === 'health' || type === 'heart') return '#e74c3c';
     if (type === 'ammo') return '#2ecc71';
+
+    if (type === 'unlock' || (data && (data.unlock || data.unlockId))) return '#f1c40f'; // Gold for Unlocks (Legendary)
 
     if (type === 'modifier') {
         const loc = (data && data.location) ? data.location.toLowerCase() : "";
