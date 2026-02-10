@@ -3568,8 +3568,27 @@ export async function spawnUnlockItem(x, y, isBossDrop = false) {
             return;
         }
 
-        // 3. Pick Random
-        const nextUnlockId = available[Math.floor(Math.random() * available.length)];
+        // 3. Pick Random (Filter Spawnable logic)
+        // We need to fetch details to check spawnable property BEFORE picking
+        const candidates = [];
+        for (const id of available) {
+            try {
+                const dRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=${Date.now()}`);
+                if (dRes.ok) {
+                    const d = await dRes.json();
+                    if (d.spawnable !== false) {
+                        candidates.push(id);
+                    }
+                }
+            } catch (e) { }
+        }
+
+        if (candidates.length === 0) {
+            spawnShard(x, y, 'red', 25);
+            return;
+        }
+
+        const nextUnlockId = candidates[Math.floor(Math.random() * candidates.length)];
         log("Spawning Unlock Item:", nextUnlockId);
 
         // Fetch Unlock Details to get Real Name
@@ -3628,6 +3647,9 @@ export function spawnRoomRewards(dropConfig, label = null) {
         log("Matrix Room: Spawning ALL items...");
         if (window.allItemTemplates) {
             window.allItemTemplates.forEach(item => {
+                // SKIP items that are explicitly set to spawnable: false (e.g. Start Level 4)
+                if (item.spawnable === false) return;
+
                 // Determine Rarity (since it's not bucketed here)
                 let rarity = item.rarity || 'common';
 
@@ -4260,6 +4282,16 @@ export function drawItems() {
         } else if (itemType === 'ammo') {
             Globals.ctx.fillStyle = '#2ecc71'; // Green
             Globals.ctx.fillRect(-size / 3, -size / 2, size / 1.5, size);
+        } else if (itemType === 'unlock') {
+            // UNLOCK REWARD (Gold Square)
+            Globals.ctx.fillStyle = '#f1c40f'; // Gold
+            Globals.ctx.fillRect(-size / 2, -size / 2, size, size);
+            Globals.ctx.strokeStyle = '#fff';
+            Globals.ctx.lineWidth = 2;
+            Globals.ctx.strokeRect(-size / 2, -size / 2, size, size);
+            Globals.ctx.fillStyle = 'black';
+            Globals.ctx.textAlign = 'center';
+            Globals.ctx.fillText("U", 0, 4);
         } else {
             // Generic Item - Use Type Color
             Globals.ctx.fillStyle = getItemTypeColor(itemType, item.data) || item.color || '#95a5a6';
@@ -4336,8 +4368,13 @@ export function drawItems() {
         const nameData = item.data?.name || item.name;
         if (nameData) {
             let DisplayName = nameData;
+            // Clean up prefixes if they exist
             if (DisplayName.startsWith("gun_")) DisplayName = DisplayName.replace("gun_", "");
             if (DisplayName.startsWith("bomb_")) DisplayName = DisplayName.replace("bomb_", "");
+
+            // Append Type Indicator
+            if (itemType === 'gun') DisplayName += " (G)";
+            else if (itemType === 'bomb') DisplayName += " (B)";
 
             Globals.ctx.fillStyle = 'white';
             Globals.ctx.font = '10px monospace';

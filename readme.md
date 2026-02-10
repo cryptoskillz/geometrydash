@@ -101,9 +101,10 @@ Defines bomb properties.
     - `radius`: Blast radius in pixels.
     - `canDamagePlayer`: If `true`, the player takes damage from their own bombs.
 - `doors`:
-    - `openLockedDoors`: If `true`, opens yellow locked doors.
     - `openRedDoors`: If `true`, forces open red (enemy-locked) doors.
-
+   
+> **Note**: Every item JSON file MUST have a `"location"` property matching its path (e.g., `"location": "rewards/items/bombs/ghost.json"`). This is critical for the game to identify the item on pickup.
+ 
 ### `json/enemies/*.json`
 Defines individual enemy stats.
 - `hp`: Enemy health.

@@ -2,6 +2,8 @@
     "unlocks": [
         "bombs/golden",
         "bombs/remote",
+        "bombs/red",
+        "bombs/ghost",
         "game/audio/music",
         "game/audio/soundeffects",
         "game/logic/items",
@@ -30,8 +32,6 @@
         "inventory/add3keys",
         "inventory/add5bombs",
         "inventory/add5keys",
-        "modifiers/bullets/_bullettime",
-        "modifiers/bullets/_homingbullets",
         "modifiers/player/addMaxhp"
     ]
 }

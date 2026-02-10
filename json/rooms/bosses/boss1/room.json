@@ -28,11 +28,11 @@
     "width": 800,
     "height": 600,
     "unlocks": [
-        "itempickup",
-        "pause",
-        "firstboss",
-        "startlevel2",
-        "shards"
+        "/game/misc/itempickup",
+        "/game/logic/pause",
+        "/game/misc/firstboss",
+        "/game/rooms/startlevel2",
+        "/game/logic/shards"
     ],
     "unlockItem": {
         "active": false,

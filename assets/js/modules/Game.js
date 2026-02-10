@@ -322,7 +322,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                         })
                 );
                 const manifestItems = await Promise.all(itemPromises);
-                allItems = allItems.concat(manifestItems);
+
+                // Avoid duplicates if manifest overlaps with hardcoded or other load steps (though this is the first step)
+                // Just concat to allItems (which is empty here)
+                allItems = allItems.concat(manifestItems.filter(i => i !== null));
             }
 
             // 2. Spawnable Unlocks
@@ -367,14 +370,30 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                                         unlockId: data.unlock,
                                         json: data.json,
                                         attr: data.attr,
-                                        value: data.value
+                                        value: data.value,
+                                        isUnlockWrapper: true, // Flag for renderer
+                                        spawnable: data.spawnable
                                     };
                                 } else {
                                     // Normal Item File
-                                    const res = await fetch(`${JSON_PATHS.ROOT}${path}?t=` + Date.now());
-                                    if (res.ok) {
-                                        item = await res.json();
-                                    }
+                                    // wrapper so it renders as an UNLOCK (Gold/Square) not the item itself
+                                    item = {
+                                        name: data.name || "Unlock Reward",
+                                        type: "unlock", // FORCE TYPE TO UNLOCK
+                                        rarity: "legendary",
+                                        location: data.json, // The file it unlocks
+                                        colour: "#fdcb6e", // Goldish
+                                        size: 20,
+                                        description: data.description,
+                                        // Metadata
+                                        instantTrigger: data.instantTrigger,
+                                        unlockId: data.unlock,
+                                        json: data.json,
+                                        attr: data.attr,
+                                        value: data.value,
+                                        isUnlockWrapper: true, // Flag for renderer
+                                        spawnable: data.spawnable
+                                    };
                                 }
 
                                 if (item) {

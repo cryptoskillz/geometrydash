@@ -11,7 +11,7 @@
         "bombs/golden",
         "bombs/red",
         "bombs/remote",
-        "bombs/ghostbomb",
+        "bombs/ghost",
         "modifiers/player/addhp",
         "modifiers/player/addmaxhp",
         "modifiers/player/shield",
@@ -36,6 +36,10 @@
         "modifiers/bullets/4way",
         "modifiers/bullets/360",
         "inventory/addbomb",
-        "inventory/addkey"
+        "inventory/add3bombs",
+        "inventory/add5bombs",
+        "inventory/addkey",
+        "inventory/add3keys",
+        "inventory/add5keys"
     ]
 }

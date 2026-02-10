@@ -1,6 +1,6 @@
 {
     "name": "Bomb +3",
-    "description": "Adds a bomb to your inventory",
+    "description": "Adds 3 bombs to your inventory",
     "location": "rewards/items/inventory/add3bombs.json",
     "type": "modifier",
     "modify": "player",
