@@ -77,15 +77,15 @@ export function generateLore(enemy) {
     if (enemy.type === 'boss' || enemy.isBoss) return null;
 
     // 1. Name Parts
-    const prefix = Globals.loreData.prefixes[Math.floor(Math.random() * Globals.loreData.prefixes.length)];
-    const firstName = Globals.loreData.firstNames[Math.floor(Math.random() * Globals.loreData.firstNames.length)];
+    const prefix = Globals.loreData.prefixes[Math.floor(Globals.random() * Globals.loreData.prefixes.length)];
+    const firstName = Globals.loreData.firstNames[Math.floor(Globals.random() * Globals.loreData.firstNames.length)];
 
     // 2. Surname by Shape
     const shape = enemy.shape ? enemy.shape.toLowerCase() : 'default';
     const surnames = Globals.loreData.surnames[shape] || Globals.loreData.surnames['default'];
     // Fallback if shape key exists but list empty
     const surnameList = (surnames && surnames.length > 0) ? surnames : Globals.loreData.surnames['default'];
-    const surname = surnameList[Math.floor(Math.random() * surnameList.length)];
+    const surname = surnameList[Math.floor(Globals.random() * surnameList.length)];
 
     // 3. Nickname by Stats
     let nickname = "";
@@ -101,10 +101,10 @@ export function generateLore(enemy) {
     // Fallback pool
     if (pool.length === 0) pool = ['speed', 'hp'];
 
-    const cat = pool[Math.floor(Math.random() * pool.length)];
+    const cat = pool[Math.floor(Globals.random() * pool.length)];
     const nicks = Globals.loreData.nicknames[cat] || [];
     if (nicks.length > 0) {
-        nickname = nicks[Math.floor(Math.random() * nicks.length)];
+        nickname = nicks[Math.floor(Globals.random() * nicks.length)];
     }
 
     // 4. Randomize Display Format
@@ -129,7 +129,7 @@ export function generateLore(enemy) {
     }
 
     // Select Random
-    const selected = options[Math.floor(Math.random() * options.length)];
+    const selected = options[Math.floor(Globals.random() * options.length)];
     const displayName = selected.val;
 
     return {
@@ -152,8 +152,8 @@ export function triggerSpeech(enemy, type, forceText = null, bypassCooldown = fa
 
     // Probability Checks (unless forced)
     if (!forceText && !bypassCooldown) {
-        if (type === 'idle' && Math.random() > 0.001) return; // Low chance for idle
-        if (type === 'hit' && Math.random() > 0.3) return; // 30% chance on hit
+        if (type === 'idle' && Globals.random() > 0.001) return; // Low chance for idle
+        if (type === 'hit' && Globals.random() > 0.3) return; // 30% chance on hit
     }
 
     let text = forceText;
@@ -182,7 +182,7 @@ export function triggerSpeech(enemy, type, forceText = null, bypassCooldown = fa
             }
             // 4. Enemy Type Specific
             else if (enemy.type && speechData.types && speechData.types[enemy.type]) {
-                if (Math.random() < 0.5) pool = speechData.types[enemy.type];
+                if (Globals.random() < 0.5) pool = speechData.types[enemy.type];
             }
 
             // 5. General Fallback
@@ -193,7 +193,7 @@ export function triggerSpeech(enemy, type, forceText = null, bypassCooldown = fa
 
         // Pick Random
         if (pool && pool.length > 0) {
-            text = pool[Math.floor(Math.random() * pool.length)];
+            text = pool[Math.floor(Globals.random() * pool.length)];
         }
     }
 

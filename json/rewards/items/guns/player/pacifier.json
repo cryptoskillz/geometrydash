@@ -1,20 +1,20 @@
 {
-    "name": "peashooter",
-    "description": "the Basic gun",
-    "location": "rewards/items/guns/player/peashooter.json",
+    "name": "pacifier",
+    "description": "the pacifier",
+    "location": "rewards/items/guns/player/pacifier.json",
     "type": "gun",
-    "starter": true,
-    "special": false,
+    "starter": false,
+    "special": true,
     "consumed": true,
     "unlocked": {
-        "active": true,
+        "active": false,
         "modifyType": "perm"
     },
     "modifier": {
         "active": false,
         "modify": ""
     },
-    "rarity": "common",
+    "rarity": "legendary",
     "Bullet": {
         "particles": {
             "active": false,
@@ -52,7 +52,7 @@
         "pierce": false,
         "reverseFire": false,
         "frontLocked": false,
-        "NoBullets": false,
+        "NoBullets": true,
         "critChance": 0.05,
         "critDamage": 2.0,
         "freezeChance": 0.05,

@@ -270,8 +270,8 @@ export function spawnEnemies() {
 
 
         // Standard random placement or center
-        inst.x = Math.random() * (canvas.width - 60) + 30;
-        inst.y = Math.random() * (canvas.height - 60) + 30;
+        inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
+        inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
         inst.frozen = false; // Active immediately
         inst.invulnerable = false;
 
@@ -353,8 +353,8 @@ export function spawnEnemies() {
                         inst.x = fixedX;
                         inst.y = fixedY;
                     } else {
-                        inst.x = Math.random() * (Globals.canvas.width - 60) + 30;
-                        inst.y = Math.random() * (Globals.canvas.height - 60) + 30;
+                        inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
+                        inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
                     }
                     inst.frozen = true;
                     inst.freezeEnd = freezeUntil;
@@ -385,11 +385,11 @@ export function spawnEnemies() {
     } else {
         // Fallback: Random Grunts
         // FILTER: Don't spawn special enemies (Boss, Ghost) as randoms
-        const validKeys = Object.keys(enemyTemplates).filter(k => !enemyTemplates[k].special);
-        const randomType = validKeys.length > 0 ? validKeys[Math.floor(Math.random() * validKeys.length)] : "grunt";
+        const validKeys = Object.keys(Globals.enemyTemplates).filter(k => !Globals.enemyTemplates[k].special).sort();
+        const randomType = validKeys.length > 0 ? validKeys[Math.floor(Globals.random() * validKeys.length)] : "grunt";
 
-        let count = 3 + Math.floor(Math.random() * 3);
-        if (gameData.difficulty) count += gameData.difficulty;
+        let count = 3 + Math.floor(Globals.random() * 3);
+        if (Globals.gameData.difficulty) count += Globals.gameData.difficulty;
 
         const template = enemyTemplates[randomType] || { hp: 2, speed: 1, size: 25 };
 
@@ -397,8 +397,8 @@ export function spawnEnemies() {
         for (let i = 0; i < count; i++) {
             const inst = JSON.parse(JSON.stringify(template));
             inst.templateId = randomType; // Store ID for persistence lookup
-            inst.x = Math.random() * (Globals.canvas.width - 60) + 30;
-            inst.y = Math.random() * (Globals.canvas.height - 60) + 30;
+            inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
+            inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
             inst.frozen = true;
             inst.freezeEnd = freezeUntil;
             inst.invulnerable = true;
@@ -412,7 +412,7 @@ export function spawnEnemies() {
                 inst.color = "red"; // Make them look angry? or just keep same.
             }
 
-            enemies.push(inst);
+            Globals.enemies.push(inst);
         }
     }
 
@@ -2267,6 +2267,75 @@ export function updateShield() {
 
 export function drawEnemies() {
 
+    // Helper for 3D/Shape Drawing
+    const drawEnemyShape = (ctx, en, x, y, size) => {
+        const shape = en.shape || "circle";
+        ctx.beginPath();
+        if (shape === "square") {
+            ctx.rect(x - size, y - size, size * 2, size * 2);
+        } else if (shape === "triangle") {
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x + size, y + size);
+            ctx.lineTo(x - size, y + size);
+            ctx.closePath();
+        } else if (shape === "star") {
+            const spikes = 5;
+            const outerRadius = size;
+            const innerRadius = size / 2;
+            let rot = Math.PI / 2 * 3;
+            let step = Math.PI / spikes;
+            ctx.moveTo(x, y - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                let px = x + Math.cos(rot) * outerRadius;
+                let py = y + Math.sin(rot) * outerRadius;
+                ctx.lineTo(px, py);
+                rot += step;
+                px = x + Math.cos(rot) * innerRadius;
+                py = y + Math.sin(rot) * innerRadius;
+                ctx.lineTo(px, py);
+                rot += step;
+            }
+            ctx.lineTo(x, y - outerRadius);
+            ctx.closePath();
+        } else if (shape === "hexagon" || shape === "pentagon") {
+            const sides = shape === "hexagon" ? 6 : 5;
+            const angleStep = (Math.PI * 2) / sides;
+            const startAngle = -Math.PI / 2;
+            ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
+            for (let i = 1; i <= sides; i++) {
+                const angle = startAngle + i * angleStep;
+                ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+            }
+            ctx.closePath();
+        } else if (shape === "diamond") {
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x, y + size);
+            ctx.lineTo(x - size, y);
+            ctx.closePath();
+        } else if (en.type === 'ghost') {
+            const r = size;
+            const h = r * 0.8;
+            ctx.arc(x, y - (r * 0.2), r, Math.PI, 0);
+            ctx.lineTo(x + r, y + h);
+            const waves = 3;
+            const waveWidth = (r * 2) / waves;
+            for (let i = 1; i <= waves; i++) {
+                const waveX = (x + r) - (waveWidth * i);
+                const waveY = (y + h);
+                const cX = (x + r) - (waveWidth * (i - 0.5));
+                const cY = waveY - (r * 0.3);
+                ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+            }
+            ctx.closePath();
+        } else {
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+        }
+    };
+
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+    const isGlobal3D = Globals.gameData["3dGlasses"] || Globals.gameData["3dglasses"] || unlockedIds.includes('3dGlasses') || unlockedIds.includes('3dglasses') || Globals.player["3dGlasses"] || Globals.player["3dglasses"];
+
     Globals.enemies.forEach(en => {
         Globals.ctx.save();
 
@@ -2307,102 +2376,24 @@ export function drawEnemies() {
 
 
         // DRAWING SHAPE
-        const shape = en.shape || "circle";
+        const size = en.size + sizeMod;
+        const currentY = en.y + bounceY;
 
-        Globals.ctx.beginPath();
-
-        if (shape === "square") {
-            // Draw Square (centered)
-            const s = (en.size + sizeMod) * 2; // Diameter to side length roughly? Or just size as half-width?
-            // Existing logic uses size as radius. So square side should be roughly 2*radius?
-            // Let's use size as "radius equivalent" so side = size * 2
-            const side = (en.size + sizeMod); // actually let's stick to the visual expectation. radius 50 = 100 wide.
-            // If I use rect from x-size, y-size to w=size*2, h=size*2
-            Globals.ctx.rect(en.x - side, en.y + bounceY - side, side * 2, side * 2);
-        } else if (shape === "triangle") {
-            const r = en.size + sizeMod;
-            const yOffset = en.y + bounceY;
-            // Upward pointing triangle
-            Globals.ctx.moveTo(en.x, yOffset - r);
-            Globals.ctx.lineTo(en.x + r, yOffset + r);
-            Globals.ctx.lineTo(en.x - r, yOffset + r);
-            Globals.ctx.closePath();
-        } else if (shape === "star") {
-            const spikes = 5;
-            const outerRadius = en.size + sizeMod;
-            const innerRadius = outerRadius / 2;
-            let rot = Math.PI / 2 * 3;
-            let x = en.x;
-            let y = en.y + bounceY;
-            let step = Math.PI / spikes;
-
-            Globals.ctx.moveTo(0, 0 - outerRadius); // Start at top
-            for (let i = 0; i < spikes; i++) {
-                x = en.x + Math.cos(rot) * outerRadius;
-                y = en.y + bounceY + Math.sin(rot) * outerRadius;
-                Globals.ctx.lineTo(x, y);
-                rot += step;
-
-                x = en.x + Math.cos(rot) * innerRadius;
-                y = en.y + bounceY + Math.sin(rot) * innerRadius;
-                Globals.ctx.lineTo(x, y);
-                rot += step;
+        // 3D Effect (Extrusion)
+        if (en["3d"] || isGlobal3D) {
+            Globals.ctx.save();
+            Globals.ctx.filter = 'brightness(0.7)'; // Darker shade for sides
+            const depth = 20; // Internal steps
+            for (let d = depth; d > 0; d -= 2) {
+                // More X offset, Less Y offset (Squashed height)
+                drawEnemyShape(Globals.ctx, en, en.x + (d * 0.5), currentY + (d * 0.5), size);
+                Globals.ctx.fill();
             }
-            Globals.ctx.lineTo(en.x, en.y + bounceY - outerRadius);
-            Globals.ctx.closePath();
-        } else if (shape === "hexagon" || shape === "pentagon") {
-            const sides = shape === "hexagon" ? 6 : 5;
-            const r = en.size + sizeMod;
-            const angleStep = (Math.PI * 2) / sides;
-            // Rotate hexagon 30 deg (PI/6) to have flat top? Or 0 for pointy top.
-            // Let's do -PI/2 to start at top center like circle/triangle expectations roughly
-            const startAngle = -Math.PI / 2;
-
-            Globals.ctx.moveTo(en.x + r * Math.cos(startAngle), (en.y + bounceY) + r * Math.sin(startAngle));
-            for (let i = 1; i <= sides; i++) {
-                const angle = startAngle + i * angleStep;
-                Globals.ctx.lineTo(en.x + r * Math.cos(angle), (en.y + bounceY) + r * Math.sin(angle));
-            }
-            Globals.ctx.closePath();
-        } else if (shape === "diamond") {
-            const r = en.size + sizeMod;
-            // Rhombus / Rotated Square
-            Globals.ctx.moveTo(en.x, (en.y + bounceY) - r); // Top
-            Globals.ctx.lineTo(en.x + r, (en.y + bounceY)); // Right
-            Globals.ctx.lineTo(en.x, (en.y + bounceY) + r); // Bottom
-            Globals.ctx.lineTo(en.x - r, (en.y + bounceY)); // Left
-            Globals.ctx.closePath();
-        } else if (en.type === 'ghost') {
-            // Classic Sheet Ghost Shape
-            const r = en.size + sizeMod;
-            const h = r * 0.8; // Height below center
-
-            // Top Semicircle
-            Globals.ctx.arc(en.x, (en.y + bounceY) - (r * 0.2), r, Math.PI, 0);
-
-            // Right Side Down
-            Globals.ctx.lineTo(en.x + r, (en.y + bounceY) + h);
-
-            // Wavy Bottom (3 waves)
-            const waves = 3;
-            const waveWidth = (r * 2) / waves;
-            for (let i = 1; i <= waves; i++) {
-                const waveX = (en.x + r) - (waveWidth * i);
-                const waveY = (en.y + bounceY) + h;
-                // Control point (mid-wave, slightly up)
-                const cX = (en.x + r) - (waveWidth * (i - 0.5));
-                const cY = waveY - (r * 0.3); // Curve UP
-
-                Globals.ctx.quadraticCurveTo(cX, cY, waveX, waveY);
-            }
-
-            // Left Side Up (Closed by fill)
-            Globals.ctx.closePath();
-        } else {
-            // Default: "circle"
-            Globals.ctx.arc(en.x, en.y + bounceY, en.size + sizeMod, 0, Math.PI * 2);
+            Globals.ctx.restore();
         }
 
+        // Main Shape
+        drawEnemyShape(Globals.ctx, en, en.x, currentY, size);
         Globals.ctx.fill();
 
         // Draw Name (After Fill to avoid color bleed)
@@ -3473,15 +3464,16 @@ export async function pickupItem(item, index) {
                                 log(`Player Mod: Set ${targetKey} to ${current[leaf]}`);
                             }
                         } else {
-                            if (Globals.player[targetKey] !== undefined) {
-                                if (isRelative && typeof Globals.player[targetKey] === 'number') {
-                                    Globals.player[targetKey] += val;
-                                } else {
-                                    Globals.player[targetKey] = val;
-                                }
-                                applied = true;
-                                log(`Player Mod: Set ${targetKey} to ${Globals.player[targetKey]}`);
+                            // Allow adding new properties (e.g. 3dglasses)
+                            // if (Globals.player[targetKey] !== undefined) {
+                            if (isRelative && typeof Globals.player[targetKey] === 'number') {
+                                Globals.player[targetKey] += val;
+                            } else {
+                                Globals.player[targetKey] = val;
                             }
+                            applied = true;
+                            log(`Player Mod: Set ${targetKey} to ${Globals.player[targetKey]}`);
+                            // }
                         }
                     }
                     if (applied) spawnFloatingText(Globals.player.x, Globals.player.y - 40, "+PLAYER MOD", "#3498db");
@@ -3601,7 +3593,13 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
 
         // 2. Filter Unlocked
         const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        const available = allUnlocks.filter(id => !unlockedIds.includes(id));
+        const available = allUnlocks.filter(path => {
+            // Normalize manifest path to simple ID (filename)
+            // This ensures "inventory/add3bombs" checks against "add3bombs" in storage
+            const simpleId = path.split('/').pop().replace(/\.json$/i, '');
+            // Check both simple ID and full path (legacy support)
+            return !unlockedIds.includes(simpleId) && !unlockedIds.includes(path);
+        });
 
         log(`SpawnUnlockItem: Found ${allUnlocks.length} total, ${unlockedIds.length} unlocked. Available: ${available.length}`);
 
@@ -3614,13 +3612,15 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
         // 3. Pick Random (Filter Spawnable logic + Rarity)
         // We need to fetch details to check spawnable property BEFORE picking
         const candidates = [];
+        const priorityCandidates = []; // for hasItem: false items
+
         for (const id of available) {
             try {
                 const dRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=${Date.now()}`);
                 if (dRes.ok) {
                     const d = await dRes.json();
 
-                    // Filter: Spawnable Check
+                    // Filter: Spawnable Check (Reverted: Skip if false)
                     if (d.spawnable === false) continue;
 
                     // Filter: Rarity Check (if filter provided)
@@ -3629,17 +3629,29 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
                         if (!rarityFilter[r]) continue; // Skip if rarity not enabled
                     }
 
-                    candidates.push(id);
+                    // User Request: Prioritize hasItem: false (Meta Unlocks)
+                    if (d.hasItem === false) {
+                        priorityCandidates.push(id);
+                    } else {
+                        // Regular unlock
+                        candidates.push(id);
+                    }
                 }
             } catch (e) { }
         }
 
-        if (candidates.length === 0) {
+        // PRIORITIZE "hasItem: false" items first
+        let nextUnlockId = null;
+
+        if (priorityCandidates.length > 0) {
+            log("Spawning PRIORITY Unlock (hasItem: false): Found " + priorityCandidates.length);
+            nextUnlockId = priorityCandidates[Math.floor(Math.random() * priorityCandidates.length)];
+        } else if (candidates.length > 0) {
+            nextUnlockId = candidates[Math.floor(Math.random() * candidates.length)];
+        } else {
             spawnShard(x, y, 'red', 25);
             return;
         }
-
-        const nextUnlockId = candidates[Math.floor(Math.random() * candidates.length)];
         log("Spawning Unlock Item:", nextUnlockId);
 
         // Fetch Unlock Details to get Real Name
@@ -3723,6 +3735,8 @@ export function spawnRoomRewards(dropConfig, label = null) {
 
     // 0. Fetch Unlock State
     const unlocks = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+
     const isUnlocked = (item) => {
         if (!item.unlocked) return true; // Default: Unlocked
         let isActive = item.unlocked.active; // Default state from JSON
@@ -3732,6 +3746,31 @@ export function spawnRoomRewards(dropConfig, label = null) {
         if (stored && stored.unlocked && stored.unlocked.active !== undefined) {
             isActive = stored.unlocked.active;
         }
+
+        // Check ID-based Unlocks (game_unlocked_ids)
+        // 1. Explicit unlockId in item JSON
+        if (item.unlockId && unlockedIds.some(id => id === item.unlockId)) return true;
+
+        // 2. Implicit ID Logic (Filename vs Path)
+        if (item.location) {
+            const cleanPath = item.location.replace(/\.json$/i, '').toLowerCase(); // Full path w/o ext
+            const filenameId = cleanPath.split('/').pop(); // Just filename (e.g. "add3bombs")
+
+            // Check against unlocked IDs
+            const match = unlockedIds.some(rawId => {
+                const id = rawId.toLowerCase();
+                // A. Exact Filename Match (e.g. ID "add3bombs" matches "add3bombs.json")
+                if (id === filenameId) return true;
+
+                // B. Path Suffix Match (e.g. ID "inventory/add3bombs" matches ".../inventory/add3bombs.json")
+                // Only if ID contains a slash to avoid generic suffix false positives
+                if (id.includes('/') && cleanPath.endsWith(id)) return true;
+
+                return false;
+            });
+            if (match) return true;
+        }
+
         return isActive;
     };
 

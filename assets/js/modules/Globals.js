@@ -151,6 +151,35 @@ export const Globals = {
     // Special Entities
     portal: { active: false, x: 0, y: 0, scrapping: false },
 
+    // RNG
+    seed: null,
+    rngState: 0,
+
+    setSeed: function (s) {
+        // String to hash or number
+        let h = 2166136261 >>> 0;
+        let str = s.toString();
+        for (let i = 0; i < str.length; i++) {
+            h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+        }
+        this.rngState = h >>> 0;
+        this.seed = s;
+        console.log("RNG Seed set to:", s, "Hash:", this.rngState);
+    },
+
+    random: function () {
+        if (this.seed === null) {
+            // Fallback to Math.random if no seed set (should set seed though)
+            return Math.random();
+        }
+        // Mulberry32
+        let t = this.rngState += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        this.rngState = t >>> 0; // update state
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    },
+
     // Setup Function
     initDOM: function () {
         this.canvas = document.getElementById('gameCanvas');

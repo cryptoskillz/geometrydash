@@ -1,0 +1,10 @@
+{
+    "name": "Shield",
+    "description": "Unlocks shield",
+    "unlock": "shield",
+    "json": "game.json",
+    "attr": "shield.active",
+    "value": true,
+    "spawnable": true,
+    "instantTrigger": true
+}

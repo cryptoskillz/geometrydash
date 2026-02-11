@@ -134,7 +134,7 @@ export function updateWelcomeScreen() {
     const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
     const hasSave = localStorage.getItem('game_unlocks') || unlockedIds.length > 0;
     const startText = hasSave
-        ? 'Press any key to continue<br><div style="margin-top:8px; font-size:0.8em; color:#e74c3c;">Press <span class="key-badge">N</span> for new game</div>'
+        ? 'Press any key to continue<br><div style="margin-top:8px; font-size:0.8em; color:#e74c3c;">Press <span class="key-badge">N</span> to Delete Save</div>'
         : 'Press any key to start';
 
     // Normalize string array check (case-insensitive)
@@ -145,6 +145,10 @@ export function updateWelcomeScreen() {
     if (Globals.gameData.music || hasUnlock('music')) instructions += `<div>Press <span class="key-badge">0</span> to toggle music</div>`;
     if (Globals.gameData.soundEffects || hasUnlock('soundeffects')) instructions += `<div>Press <span class="key-badge">9</span> to toggle SFX</div>`;
 
+    if (Globals.gameData.showSeed) {
+        instructions += `<div style="margin-top: 10px; pointer-events: auto;">Seed: <input type="text" id="seedInput" value="${Globals.seed || ''}" style="width: 100px; text-align: center; background: #333; color: white; border: 1px solid #555; font-family: inherit;"></div>`;
+    }
+
     // Update Welcome Element if exists
     // Globals.elements.welcome is cached
     if (Globals.elements.welcome) {
@@ -153,7 +157,7 @@ export function updateWelcomeScreen() {
         ${charSelectHtml}
         <div class="welcome-instructions">${instructions}</div>
         <p style="margin-top: 30px; font-size: 1.4rem; animation: blink 1.5s infinite;">${startText}</p>
-        <p style="font-size: 0.8em; color: #555; margin-top: 40px;">v0.93</p>
+        <p style="font-size: 0.8em; color: #555; margin-top: 40px;">v0.94/p>
     `;
     }
 }
@@ -235,6 +239,20 @@ export async function updateUI() {
             if (Globals.elements.tMin) Globals.elements.tMin.textContent = minutes.toString().padStart(2, '0');
             if (Globals.elements.tSec) Globals.elements.tSec.textContent = seconds.toString().padStart(2, '0');
             if (Globals.elements.tMs) Globals.elements.tMs.textContent = ms.toString().padStart(2, '0');
+
+            if (Globals.gameData.showSeed && Globals.seed) {
+                let seedEl = document.getElementById('seed-display');
+                if (!seedEl) {
+                    seedEl = document.createElement('div');
+                    seedEl.id = 'seed-display';
+                    seedEl.style.fontSize = '12px';
+                    seedEl.style.color = '#888';
+                    seedEl.style.textAlign = 'center';
+                    seedEl.style.marginTop = '-5px';
+                    Globals.elements.timer.appendChild(seedEl);
+                }
+                seedEl.innerText = `${Globals.seed}`;
+            }
         } else {
             Globals.elements.timer.style.display = 'none';
         }
@@ -317,6 +335,7 @@ export function drawTutorial() {
             actions.push({ label: "BOMB", key: "B" });
         }
 
+        actions.push({ label: "NEW RUN", key: "T" });
 
         actions.push({ label: "RESTART", key: "R" });
 
@@ -557,6 +576,9 @@ export function showCredits() {
                      <p>Best Time: <span style="color: #f1c40f">${formatTime(Globals.BestRunTime)}</span></p>
                      <p>Total Runs: <span style="color: #95a5a6">${Globals.NumberOfRuns}</span></p>
                 </div>
+                
+                
+
 
                    <p style="font-size: 1.5em; margin: 20px 0; color: #3498db;">Design & Code</p>
                 <p style="color: #ccc;">Cryptoskillz</p>
@@ -569,6 +591,11 @@ export function showCredits() {
                 <br><br><br><br>
                 <p style="font-size: 0.8em; color: #555;">Press any key to return to menu</p>
             </div>
+        </div>
+        
+        <div style="position: absolute; bottom: 20px; right: 20px; text-align: right; color: #ccc; font-family: monospace; z-index: 10;">
+             <p style="font-size: 1.2em; color: #3498db; margin: 0 0 5px 0;">Game Info</p>
+             <p>Seed: <span style="color: #95a5a6">${Globals.seed || 'Unknown'}</span></p>
         </div>
     `;
 

@@ -22,6 +22,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     // 0. Force Audio Resume (Must be first, to catch user interaction)
     if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
 
+    Globals.isRestart = isRestart; // Track global state for startGame logic
+    Globals.isLevelTransition = !!nextLevel; // Track level transition
+
+    // Show Loading Immediately for transitions to hide empty room flash
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl && Globals.isLevelTransition) loadingEl.style.display = 'flex';
+
     if (Globals.isInitializing) return;
     Globals.isInitializing = true;
 
@@ -39,6 +46,26 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     }
 
     console.log("TRACER: initGame Start. isRestart=", isRestart);
+
+    // SEED INITIALIZATION
+    if (!nextLevel) { // Only change seed state on new run or restart
+        if (isRestart) {
+            // Restart: Use the SAME seed again (Deterministic Replay)
+            if (Globals.seed !== null) Globals.setSeed(Globals.seed);
+        } else {
+            // New Game: Generate Random Seed (unless provided in URL/Input later)
+            // Check URL for seed
+            const params = new URLSearchParams(window.location.search);
+            const urlSeed = params.get('seed');
+            if (urlSeed) {
+                Globals.setSeed(urlSeed);
+            } else {
+                // Random new seed
+                const newSeed = Math.floor(Math.random() * 999999);
+                Globals.setSeed(newSeed);
+            }
+        }
+    }
 
     // FIX: Enforce Base State on Fresh Run (Reload/Restart)
     const isDebug = Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true;
@@ -316,6 +343,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 const itemPromises = itemMan.items.map(i =>
                     fetch(`${JSON_PATHS.ROOT}rewards/items/${i}.json?t=` + Date.now())
                         .then(r => r.json())
+                        .then(obj => {
+                            if (!obj.location) obj.location = `rewards/items/${i}.json`;
+                            return obj;
+                        })
                         .catch(e => {
                             console.error("Failed to load item:", i, e);
                             return null;
@@ -978,6 +1009,52 @@ export function startGame(keepState = false) {
         return;
     }
 
+    // SEED OVERRIDE FROM UI
+    const seedInput = document.getElementById('seedInput');
+    if (seedInput && seedInput.value && seedInput.value.trim() !== "") {
+        const val = seedInput.value.trim();
+        // Loose comparison to allow string/number match
+        if (val != Globals.seed) {
+            Globals.setSeed(val);
+        }
+    }
+
+    // Check if we need to regenerate level due to seed change
+    // If not keeping state (fresh start) AND seed input exists
+    // We compare with the seed used during initGame (Globals.seed)
+    // If val != Globals.seed, we already set it. 
+    // BUT initGame already ran generateLevel with old seed.
+    // So if val was different, we MUST regenerate.
+
+    if (!keepState && seedInput && seedInput.value && seedInput.value.trim() !== "") {
+        const val = seedInput.value.trim();
+        // If we just changed the seed (setSeed logs it, but we can verify)
+        // Actually we just set it above. 
+        // We need to know if the level CURRENTLY generated matches this seed.
+        // A simple way is: if we are allowing seed input, we should probably ALWAYS regenerate the level 
+        // on "Start Game" to be safe, OR track "seedUsedForGeneration".
+
+        // Let's just regenerate if it's a fresh start. It's cheap enough.
+        // Unless it's a "Restart" (keepState=false, isRestart=true) which handled seed in initGame.
+        // But "Restart" doesn't show Welcome Screen input usually? 
+        // Wait, restartGame calls initGame(true), which hides welcome. 
+        // So this input logic only applies to MANUAL start from Welcome Screen.
+
+        console.log("Regenerating level with selected seed:", Globals.seed);
+        generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
+
+        // Also must respawn enemies for the start room (0,0) as generateLevel resets map
+        if (Globals.levelMap["0,0"]) {
+            Globals.roomData = Globals.levelMap["0,0"].roomData;
+            // spawnEnemies(Globals.roomData); // spawnEnemies uses Globals.roomData by default
+            // Actually, initGame does NOT spawn enemies for 0,0 by default? 
+            // updateEnemies loop handles it if they exist?
+            // Let's check initGame again. It only spawns for debug/nextLevel.
+            // Standard spawning happens in update() -> updateRoom() -> if (room != lastRoom)
+            // So we just need to reset player.roomX/Y which we do below.
+        }
+    }
+
     // Increment Run Count (Persisted)
     if (!keepState && !Globals.isRestart) {
         // Only count as new run if not a level transition (keepState) 
@@ -999,8 +1076,10 @@ export function startGame(keepState = false) {
     }
 
     // Show Loading Screen immediately to block input/visuals
+    // BUT skip if restarting (same level) to show teleport effect.
+    // Show if transitioning levels (clean slate).
     const loadingEl = document.getElementById('loading');
-    if (loadingEl) loadingEl.style.display = 'flex';
+    if (loadingEl && (!Globals.isRestart || Globals.isLevelTransition)) loadingEl.style.display = 'flex';
     Globals.elements.welcome.style.display = 'none';
 
     // Apply Selected Player Stats
@@ -1577,7 +1656,7 @@ export function update() {
     }
 
     // 0. Global Inputs (Restart/Menu from non-play states)
-    if (handleGlobalInputs({ restartGame, goToWelcome })) return;
+    if (handleGlobalInputs({ restartGame, goToWelcome, newRun })) return;
 
     // Music Toggle (Global) - Allow toggling in Start, Play, etc.
     updateMusicToggle();
@@ -1756,8 +1835,6 @@ function drawMatrixRain() {
 //draw loop
 export async function draw() {
     if (Globals.isInitializing) {
-        Globals.ctx.fillStyle = "black";
-        Globals.ctx.fillRect(0, 0, Globals.canvas.width, Globals.canvas.height);
         requestAnimationFrame(() => { draw(); });
         return;
     }
@@ -1831,7 +1908,7 @@ export async function draw() {
             //make the ghost say something from ghost_room_shrink using lore
             const ghostLore = Globals.speechData.types?.ghost_room_shrink || ["COME TO ME!"];
             //pick a random line from the ghost lore
-            const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
+            const ghostLine = ghostLore[Math.floor(Globals.random() * ghostLore.length)];
 
             // Find the ghost entity
             const ghost = Globals.enemies.find(e => e.type === 'ghost');
@@ -2221,17 +2298,33 @@ export function gameOver() {
     const continueBtn = Globals.elements.overlay.querySelector('#continueBtn');
     const menuBtn = Globals.elements.overlay.querySelector('#menuBtn');
     const restartBtn = Globals.elements.overlay.querySelector('#restartBtn');
+    const newRunBtn = Globals.elements.overlay.querySelector('#newRunBtn');
+
+    // Add Seed Display
+    let seedEl = document.getElementById('game-over-seed');
+    if (!seedEl) {
+        seedEl = document.createElement('div');
+        seedEl.id = 'game-over-seed';
+        seedEl.style.color = '#888';
+        seedEl.style.marginTop = '10px';
+        seedEl.style.fontFamily = 'monospace';
+        // Insert before buttons container (which is usually flex column at bottom?)
+        // Let's insert after stats
+        Globals.elements.stats.parentNode.insertBefore(seedEl, Globals.elements.stats.nextSibling);
+    }
+    seedEl.innerText = `Seed: ${Globals.seed || 'Unknown'}`;
 
     if (Globals.gameState === STATES.WIN) {
         // Victory: Show Continue (Enter)
         continueBtn.style.display = 'block';
-        continueBtn.innerText = "(Enter) Continue";
+        continueBtn.innerText = "Continue (Enter) ";
         menuBtn.style.display = 'none'; // Hide Menu button on Victory? Or Keep it mapped to M?
         // Let's keep Menu visible but maybe mapped to M?
         // User asked for "Main Menu (Enter)" for DEATH popup. 
         // For Victory, they asked for "Enter to Continue".
 
         restartBtn.style.display = 'none';
+        if (newRunBtn) newRunBtn.style.display = 'none';
     } else {
         // Death (Game Over)
         // Request: "Main Menu (Enter)"
@@ -2242,6 +2335,7 @@ export function gameOver() {
         menuBtn.innerText = "Main Menu (Enter)";
 
         restartBtn.style.display = 'block';
+        if (newRunBtn) newRunBtn.style.display = 'block';
     }
 }
 
@@ -2264,14 +2358,21 @@ export function gameMenu() {
 
     // Configure Buttons for Pause
     overlayEl.querySelector('#continueBtn').style.display = '';
-    overlayEl.querySelector('#continueBtn').innerText = "(Enter) Continue";
+    overlayEl.querySelector('#continueBtn').innerText = "Continue (Enter)";
 
     overlayEl.querySelector('#restartBtn').style.display = '';
+
+    // Show New Run Button
+    const newRunBtn = overlayEl.querySelector('#newRunBtn');
+    if (newRunBtn) {
+        newRunBtn.style.display = '';
+        newRunBtn.innerText = "New Run (T)";
+    }
 
     // Show Main Menu Button
     const menuBtn = overlayEl.querySelector('#menuBtn');
     menuBtn.style.display = '';
-    menuBtn.innerText = "(M)ain Menu";
+    menuBtn.innerText = "Main Menu (M)";
 }
 
 // Helper to reset runtime state to base state (Death/Restart)
@@ -2322,11 +2423,46 @@ export async function restartGame(keepItems = false) {
     );
     if (!keepItems && !isDebug) resetWeaponState();
 
+    // Trigger "Cool Teleport Effect" (Glitch Shake)
+    Globals.screenShake.power = 20;
+    Globals.screenShake.endAt = Date.now() + 600;
+    Globals.screenShake.teleport = 1;
+
     // Wait for init to complete, then auto-start
     await initGame(true, null, keepItems);
     // startGame is called by initGame internal logic (via shouldAutoStart)
 }
 Globals.restartGame = restartGame;
+
+export async function newRun() {
+
+    log("Starting New Run (Fresh Seed)");
+    resetWeaponState();
+    // Generate new seed manually here before calling init (as init handles restart specially)
+    // Actually, calling initGame(false) treats it as a "New Game" which generates a random seed!
+    // BUT initGame(false) shows the Welcome Screen by default (shouldAutoStart check).
+    // If we want to skip welcome and start immediately:
+
+    // 1. Set seed
+    const newSeed = Math.floor(Math.random() * 999999);
+    Globals.setSeed(newSeed);
+
+    // Trigger "Cool Teleport Effect" (Glitch Shake)
+    Globals.screenShake.power = 20;
+    Globals.screenShake.endAt = Date.now() + 600;
+    Globals.screenShake.teleport = 1;
+
+    // CRITICAL: We must clear the input box so startGame() doesn't overwrite our new random seed with the old input value.
+    const seedInput = document.getElementById('seedInput');
+    if (seedInput) seedInput.value = "";
+
+    // 2. Call initGame as if it's a restart (to skip welcome) but with the NEW seed already set?
+    // Wait, initGame(true) RE-SETS seed to Globals.seed. 
+    // So if we set Globals.seed then call initGame(true), it should work!
+
+    await initGame(true);
+}
+Globals.newRun = newRun;
 
 export function goToWelcome() {
     resetWeaponState();
@@ -2485,7 +2621,15 @@ export async function showNextUnlock() {
             unlockEl.innerHTML = `
                 <h1 style="color: gold; text-shadow: 0 0 10px gold;">UNLOCKED!</h1>
                 <h2 style="font-size: 2em; margin: 20px;">${data.name || key}</h2>
+                
+                <p style="font-size: 1.5em; margin: 20px 0; color: #3498db;">Game Info</p>
+                <div style="color: #ccc; font-family: monospace; text-align: left; display: inline-block; margin: 0 auto;">
+                     <p>Seed: <span style="color: #95a5a6">${Globals.seed || 'Unknown'}</span></p>
+                </div>
+
                 <p style="font-size: 1.2em; color: #aaa;">${data.description || "You have unlocked a new feature!"}</p>
+                <p style="font-size: 1.5em; margin: 20px 0; color: #3498db;">Design & Code</p>
+                <p style="color: #ccc;">Cryptoskillz</p>
                 <div style="margin-top: 40px; padding: 10px 20px; border: 2px solid white; cursor: pointer; display: inline-block;" id="unlock-ok-btn">
                     CONTINUE (Enter)
                 </div>

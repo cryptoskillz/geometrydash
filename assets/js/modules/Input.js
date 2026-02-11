@@ -8,6 +8,10 @@ export function setupInput(callbacks) {
     // Callbacks: { restartGame, goToWelcome, goContinue }
 
     window.addEventListener('keydown', e => {
+        // IGNORE INPUT FIELDS (Prevent typing from moving player)
+        // EXCEPTION: Allow Enter key to trigger start even from input
+        if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.code !== 'Enter') return;
+
         // Update Key State
         Globals.keys[e.code] = true;
 
@@ -55,14 +59,20 @@ export function setupInput(callbacks) {
 
             // Any other key starts game
             // Any other key starts game
+            // Trigger Delete Save Modal on N (as requested)
             if (e.code === 'KeyN') {
-                // Show Dedicated New Game Modal
                 const modal = document.getElementById('newGameModal');
                 if (modal) {
                     modal.style.display = 'flex';
                     Globals.isNewGameModalOpen = true;
                 }
                 return;
+            }
+
+            // Trigger New Run directly on T
+            if (e.code === 'KeyT') {
+                // Let handleGlobalInputs handle it, or call here
+                return; // Allow propagation to handleGlobalInputs?
             }
 
             // Handle Modal Inputs
@@ -83,7 +93,7 @@ export function setupInput(callbacks) {
     });
 
     window.addEventListener('keyup', e => {
-        if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+        // ALWAYS CLEAR (Prevent sticking even if focus changed)
         Globals.keys[e.code] = false;
     });
 
@@ -96,9 +106,25 @@ export function setupInput(callbacks) {
 export function handleGlobalInputs(callbacks) {
     // Restart
     if (Globals.keys['KeyR']) {
-        if (Globals.gameState === STATES.GAMEOVER || Globals.gameState === STATES.WIN || Globals.gameState === STATES.GAMEMENU || Globals.ghostKilled) {
+        // Allow Restart in PLAY, GAMEOVER, WIN, MENU, GHOSTKILLED
+        if (Globals.gameState === STATES.PLAY || Globals.gameState === STATES.GAMEOVER || Globals.gameState === STATES.WIN || Globals.gameState === STATES.GAMEMENU || Globals.ghostKilled) {
             callbacks.restartGame();
             return true;
+        }
+    }
+    // New Run (T)
+    if (Globals.keys['KeyT']) {
+        console.log("T key pressed. Current State:", Globals.gameState);
+        // Allow New Run in PLAY, GAMEOVER, WIN, MENU, START, GHOSTKILLED (Truly Global)
+        if (Globals.gameState === STATES.PLAY || Globals.gameState === STATES.GAMEOVER || Globals.gameState === STATES.WIN || Globals.gameState === STATES.GAMEMENU || Globals.gameState === STATES.START || Globals.ghostKilled) {
+            console.log("Checking callbacks:", Object.keys(callbacks));
+            if (callbacks.newRun) {
+                console.log("Calling newRun...");
+                callbacks.newRun().catch(err => console.error("newRun failed:", err)); // Async call safety catch
+                return true;
+            } else {
+                console.error("callbacks.newRun IS MISSING!");
+            }
         }
     }
     // Main Menu

@@ -1,0 +1,9 @@
+{
+    "name": "4way",
+    "description": "Unlocks 4way",
+    "unlock": "4way",
+    "json": "rewards/items/guns/player/4way.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}

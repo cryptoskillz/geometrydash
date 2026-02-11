@@ -1,0 +1,9 @@
+{
+    "name": "360",
+    "description": "Unlocks 360",
+    "unlock": "360",
+    "json": "rewards/items/guns/player/360.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}

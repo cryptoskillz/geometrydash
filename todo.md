@@ -1,4 +1,12 @@
 bugs
+level 0 = shows last screen a little before going to welcome screen (unlocks)
+level 1 = shows last screen a little before going to welcome screen (unlocks)
+level 2 = shows last screen a little before going to welcome screen (unlocks)
+level 5 = loads credits fine then shows last screen a little before going to welcome screen (unlocks / not)
+    boss spwans with portal sometimes
+    minimap moves down on restaer then goes back up
+    add epic rarity 
+    add a powered down portal to the start room
 whenyou restart after dying you keep your gun
 when you are facing north but shooting south the gun turret should be pointing south not north
 add bukket time
@@ -54,21 +62,20 @@ next up
     unlocks / permance
     server    
 
-Bug fix  7
-
-    ----
-    "staysAngryWhenHit": false  ,
-    dont spawnsame unock twice
+Bug fix  9
+    dont allow P from welcome screen as it brings up pause menu
+    no route to boss room
+    somme gold doors wont unlock you have to clear the room go out and go back in and its fine it appers to be when you pick a key up in the room as if you leave and come back it is fine
+    wasd gets locked there is always an item spwamed in the room when this happens, could be unrealted
+    if you are at the edge of the door or walk past it you go through it you should only go throug a door if. you are facing it
+    dont spawn same unock twice
     give red shards if their are no unlocks left
-    it does not appear to be spawing unlocked items 
-    add epic rarity 
-    add a powered down portal to the start room
     fix debug logs 
     add more unlocks
-    no route to boss room
-    On the server we are not seeing the last level unlock 
-    wasd during pick up items locks up occasionlllay and pulls in you a random direction for a while, firing seems to fix it. 
-    somme gold doors wont unlock you have to clear the room go out and go back in and its fine
+    
+    ^^^^
+    "staysAngryWhenHit": false  ,
+
     enemes spawm outside the room if they are very big
     shield shows when you go into the portal
     bomb goes blue when you leave the room and go back in

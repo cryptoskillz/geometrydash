@@ -1,18 +1,18 @@
 {
-    "name": "Hp +1",
-    "description": "Increases hp by 1",
-    "location": "rewards/items/modifiers/player/addhp.json",
+    "name": "3D Glasses",
+    "description": "Enables 3D glasses",
+    "location": "rewards/items/modifiers/player/add3dglasses.json",
     "type": "modifier",
     "starter": false,
     "special": false,
     "consumed": true,
     "unlocked": {
-        "active": true,
+        "active": false,
         "modifyType": "session"
     },
     "modify": "player",
     "modifiers": {
-        "hp": "+1"
+        "3dglasses": true
     },
     "rarity": "common"
 }

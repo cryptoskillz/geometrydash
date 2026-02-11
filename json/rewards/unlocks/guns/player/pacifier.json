@@ -1,0 +1,9 @@
+{
+    "name": "Pacifier",
+    "description": "Unlocks pacifier",
+    "unlock": "pacifier",
+    "json": "rewards/items/guns/player/pacifier.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true
+}

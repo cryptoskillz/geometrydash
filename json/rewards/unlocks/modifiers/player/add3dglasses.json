@@ -1,0 +1,10 @@
+{
+    "name": "3D Glasses",
+    "description": "Unlocks 3D Glasses for start",
+    "unlock": "add3dglasses",
+    "json": "game.json",
+    "attr": "3dGlasses",
+    "value": true,
+    "spawnable": true,
+    "instantTrigger": false
+}
