@@ -42,6 +42,6 @@
         "inventory/addkey",
         "inventory/add3keys",
         "inventory/add5keys",
-        "inventory/add3dglasses"
+        "modifiers/player/add3dglasses"
     ]
 }
