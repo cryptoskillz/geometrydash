@@ -23,6 +23,11 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
 
     Globals.isRestart = isRestart; // Track global state for startGame logic
+    Globals.isLevelTransition = !!nextLevel; // Track level transition
+
+    // Show Loading Immediately for transitions to hide empty room flash
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl && Globals.isLevelTransition) loadingEl.style.display = 'flex';
 
     if (Globals.isInitializing) return;
     Globals.isInitializing = true;
@@ -1005,9 +1010,10 @@ export function startGame(keepState = false) {
     }
 
     // Show Loading Screen immediately to block input/visuals
-    // BUT skip if restarting to show teleport effect (no black flash)
+    // BUT skip if restarting (same level) to show teleport effect.
+    // Show if transitioning levels (clean slate).
     const loadingEl = document.getElementById('loading');
-    if (loadingEl && !Globals.isRestart) loadingEl.style.display = 'flex';
+    if (loadingEl && (!Globals.isRestart || Globals.isLevelTransition)) loadingEl.style.display = 'flex';
     Globals.elements.welcome.style.display = 'none';
 
     // Apply Selected Player Stats
