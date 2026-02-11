@@ -47,6 +47,27 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
     console.log("TRACER: initGame Start. isRestart=", isRestart);
 
+    // SEED INITIALIZATION
+    if (!nextLevel) { // Only change seed state on new run or restart
+        if (isRestart) {
+            // Restart: Generate NEW random seed for fresh experience
+            const newSeed = Math.floor(Math.random() * 999999);
+            Globals.setSeed(newSeed);
+        } else {
+            // New Game: Generate Random Seed (unless provided in URL/Input later)
+            // Check URL for seed
+            const params = new URLSearchParams(window.location.search);
+            const urlSeed = params.get('seed');
+            if (urlSeed) {
+                Globals.setSeed(urlSeed);
+            } else {
+                // Random new seed
+                const newSeed = Math.floor(Math.random() * 999999);
+                Globals.setSeed(newSeed);
+            }
+        }
+    }
+
     // FIX: Enforce Base State on Fresh Run (Reload/Restart)
     const isDebug = Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true;
     if (!keepStats && !isDebug) {
@@ -989,6 +1010,52 @@ export function startGame(keepState = false) {
         return;
     }
 
+    // SEED OVERRIDE FROM UI
+    const seedInput = document.getElementById('seedInput');
+    if (seedInput && seedInput.value && seedInput.value.trim() !== "") {
+        const val = seedInput.value.trim();
+        // Loose comparison to allow string/number match
+        if (val != Globals.seed) {
+            Globals.setSeed(val);
+        }
+    }
+
+    // Check if we need to regenerate level due to seed change
+    // If not keeping state (fresh start) AND seed input exists
+    // We compare with the seed used during initGame (Globals.seed)
+    // If val != Globals.seed, we already set it. 
+    // BUT initGame already ran generateLevel with old seed.
+    // So if val was different, we MUST regenerate.
+
+    if (!keepState && seedInput && seedInput.value && seedInput.value.trim() !== "") {
+        const val = seedInput.value.trim();
+        // If we just changed the seed (setSeed logs it, but we can verify)
+        // Actually we just set it above. 
+        // We need to know if the level CURRENTLY generated matches this seed.
+        // A simple way is: if we are allowing seed input, we should probably ALWAYS regenerate the level 
+        // on "Start Game" to be safe, OR track "seedUsedForGeneration".
+
+        // Let's just regenerate if it's a fresh start. It's cheap enough.
+        // Unless it's a "Restart" (keepState=false, isRestart=true) which handled seed in initGame.
+        // But "Restart" doesn't show Welcome Screen input usually? 
+        // Wait, restartGame calls initGame(true), which hides welcome. 
+        // So this input logic only applies to MANUAL start from Welcome Screen.
+
+        console.log("Regenerating level with selected seed:", Globals.seed);
+        generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
+
+        // Also must respawn enemies for the start room (0,0) as generateLevel resets map
+        if (Globals.levelMap["0,0"]) {
+            Globals.roomData = Globals.levelMap["0,0"].roomData;
+            // spawnEnemies(Globals.roomData); // spawnEnemies uses Globals.roomData by default
+            // Actually, initGame does NOT spawn enemies for 0,0 by default? 
+            // updateEnemies loop handles it if they exist?
+            // Let's check initGame again. It only spawns for debug/nextLevel.
+            // Standard spawning happens in update() -> updateRoom() -> if (room != lastRoom)
+            // So we just need to reset player.roomX/Y which we do below.
+        }
+    }
+
     // Increment Run Count (Persisted)
     if (!keepState && !Globals.isRestart) {
         // Only count as new run if not a level transition (keepState) 
@@ -1842,7 +1909,7 @@ export async function draw() {
             //make the ghost say something from ghost_room_shrink using lore
             const ghostLore = Globals.speechData.types?.ghost_room_shrink || ["COME TO ME!"];
             //pick a random line from the ghost lore
-            const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
+            const ghostLine = ghostLore[Math.floor(Globals.random() * ghostLore.length)];
 
             // Find the ghost entity
             const ghost = Globals.enemies.find(e => e.type === 'ghost');

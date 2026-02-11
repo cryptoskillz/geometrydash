@@ -9,7 +9,8 @@ export function setupInput(callbacks) {
 
     window.addEventListener('keydown', e => {
         // IGNORE INPUT FIELDS (Prevent typing from moving player)
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        // EXCEPTION: Allow Enter key to trigger start even from input
+        if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.code !== 'Enter') return;
 
         // Update Key State
         Globals.keys[e.code] = true;

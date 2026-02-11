@@ -145,6 +145,10 @@ export function updateWelcomeScreen() {
     if (Globals.gameData.music || hasUnlock('music')) instructions += `<div>Press <span class="key-badge">0</span> to toggle music</div>`;
     if (Globals.gameData.soundEffects || hasUnlock('soundeffects')) instructions += `<div>Press <span class="key-badge">9</span> to toggle SFX</div>`;
 
+    if (Globals.gameData.showSeed) {
+        instructions += `<div style="margin-top: 10px; pointer-events: auto;">Seed: <input type="text" id="seedInput" value="${Globals.seed || ''}" style="width: 100px; text-align: center; background: #333; color: white; border: 1px solid #555; font-family: inherit;"></div>`;
+    }
+
     // Update Welcome Element if exists
     // Globals.elements.welcome is cached
     if (Globals.elements.welcome) {
@@ -235,6 +239,20 @@ export async function updateUI() {
             if (Globals.elements.tMin) Globals.elements.tMin.textContent = minutes.toString().padStart(2, '0');
             if (Globals.elements.tSec) Globals.elements.tSec.textContent = seconds.toString().padStart(2, '0');
             if (Globals.elements.tMs) Globals.elements.tMs.textContent = ms.toString().padStart(2, '0');
+
+            if (Globals.gameData.showSeed && Globals.seed) {
+                let seedEl = document.getElementById('seed-display');
+                if (!seedEl) {
+                    seedEl = document.createElement('div');
+                    seedEl.id = 'seed-display';
+                    seedEl.style.fontSize = '12px';
+                    seedEl.style.color = '#888';
+                    seedEl.style.textAlign = 'center';
+                    seedEl.style.marginTop = '-5px';
+                    Globals.elements.timer.appendChild(seedEl);
+                }
+                seedEl.innerText = `${Globals.seed}`;
+            }
         } else {
             Globals.elements.timer.style.display = 'none';
         }

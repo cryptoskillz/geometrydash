@@ -15,7 +15,7 @@ export function generateLevel(length) {
     for (let i = 0; i < length; i++) {
         let possible = dirs.filter(d => !path.includes(`${cx + d.dx},${cy + d.dy}`));
         if (possible.length === 0) break;
-        let move = possible[Math.floor(Math.random() * possible.length)];
+        let move = possible[Math.floor(Globals.random() * possible.length)];
         cx += move.dx;
         cy += move.dy;
         path.push(`${cx},${cy}`);
@@ -33,8 +33,8 @@ export function generateLevel(length) {
         if (coord === Globals.bossCoord || coord === "0,0") return;
 
         // 50% chance to start a branch from this node
-        if (Math.random() > 0.5) {
-            const branchLength = Math.floor(Math.random() * 3) + 1; // 1 to 3 rooms deep
+        if (Globals.random() > 0.5) {
+            const branchLength = Math.floor(Globals.random() * 3) + 1; // 1 to 3 rooms deep
             let bx = parseInt(coord.split(',')[0]);
             let by = parseInt(coord.split(',')[1]);
 
@@ -43,7 +43,7 @@ export function generateLevel(length) {
                 let possible = dirs.filter(d => !fullMapCoords.includes(`${bx + d.dx},${by + d.dy}`));
                 if (possible.length === 0) break; // Stuck, stop branching
 
-                let move = possible[Math.floor(Math.random() * possible.length)];
+                let move = possible[Math.floor(Globals.random() * possible.length)];
                 bx += move.dx;
                 by += move.dy;
                 fullMapCoords.push(`${bx},${by}`);
@@ -58,7 +58,8 @@ export function generateLevel(length) {
     const findStartTemplate = () => {
         const templates = Globals.roomTemplates;
         // 0. Explicit loaded start room (tagged with _type = 'start')
-        const explicitStart = Object.keys(templates).find(k => templates[k]._type === 'start');
+        const allKeys = Object.keys(templates).sort();
+        const explicitStart = allKeys.find(k => templates[k]._type === 'start');
         if (explicitStart) return templates[explicitStart];
 
         // 1. Try explicit "start" (legacy or named)
@@ -67,11 +68,11 @@ export function generateLevel(length) {
         if (templates["rooms/start.json"]) return templates["rooms/start.json"];
 
         // 2. Try to find any room with "start" in name/ID
-        const startKey = Object.keys(templates).find(k => k.toLowerCase().includes('start'));
+        const startKey = allKeys.find(k => k.toLowerCase().includes('start'));
         if (startKey) return templates[startKey];
 
         // 3. Fallback: Take the first "normal" room available
-        const keys = Object.keys(templates).filter(k =>
+        const keys = allKeys.filter(k =>
             !templates[k]._type || templates[k]._type !== 'boss'
         );
         if (keys.length > 0) return templates[keys[0]];
@@ -85,7 +86,8 @@ export function generateLevel(length) {
         if (templates["boss"]) return templates["boss"];
 
         // 2. Try any room tagged as boss (from bossrooms list)
-        const bossKey = Object.keys(templates).find(k => templates[k]._type === 'boss');
+        const allKeys = Object.keys(templates).sort();
+        const bossKey = allKeys.find(k => templates[k]._type === 'boss');
         if (bossKey) {
             log("Found Boss Template:", bossKey);
             return templates[bossKey];
@@ -93,7 +95,8 @@ export function generateLevel(length) {
 
         // 3. Fallback
         console.warn("No Boss Template found. Using last available.");
-        const keys = Object.keys(templates);
+        // keys is already sorted via allKeys if we used it, otherwise sort here
+        const keys = Object.keys(templates).sort();
         return templates[keys[keys.length - 1]];
     };
 
@@ -109,13 +112,13 @@ export function generateLevel(length) {
         } else {
             // Random Normal Room
             const templates = Globals.roomTemplates;
-            const keys = Object.keys(templates).filter(k =>
+            const keys = Object.keys(templates).sort().filter(k =>
                 templates[k] !== startTmpl && templates[k] !== bossTmpl &&
                 (!templates[k]._type || templates[k]._type !== 'boss')
             );
 
             if (keys.length > 0) {
-                const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                const randomKey = keys[Math.floor(Globals.random() * keys.length)];
                 template = templates[randomKey];
             } else {
                 template = startTmpl; // Last resort

@@ -270,8 +270,8 @@ export function spawnEnemies() {
 
 
         // Standard random placement or center
-        inst.x = Math.random() * (canvas.width - 60) + 30;
-        inst.y = Math.random() * (canvas.height - 60) + 30;
+        inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
+        inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
         inst.frozen = false; // Active immediately
         inst.invulnerable = false;
 
@@ -353,8 +353,8 @@ export function spawnEnemies() {
                         inst.x = fixedX;
                         inst.y = fixedY;
                     } else {
-                        inst.x = Math.random() * (Globals.canvas.width - 60) + 30;
-                        inst.y = Math.random() * (Globals.canvas.height - 60) + 30;
+                        inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
+                        inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
                     }
                     inst.frozen = true;
                     inst.freezeEnd = freezeUntil;
@@ -385,11 +385,11 @@ export function spawnEnemies() {
     } else {
         // Fallback: Random Grunts
         // FILTER: Don't spawn special enemies (Boss, Ghost) as randoms
-        const validKeys = Object.keys(enemyTemplates).filter(k => !enemyTemplates[k].special);
-        const randomType = validKeys.length > 0 ? validKeys[Math.floor(Math.random() * validKeys.length)] : "grunt";
+        const validKeys = Object.keys(Globals.enemyTemplates).filter(k => !Globals.enemyTemplates[k].special).sort();
+        const randomType = validKeys.length > 0 ? validKeys[Math.floor(Globals.random() * validKeys.length)] : "grunt";
 
-        let count = 3 + Math.floor(Math.random() * 3);
-        if (gameData.difficulty) count += gameData.difficulty;
+        let count = 3 + Math.floor(Globals.random() * 3);
+        if (Globals.gameData.difficulty) count += Globals.gameData.difficulty;
 
         const template = enemyTemplates[randomType] || { hp: 2, speed: 1, size: 25 };
 
@@ -397,8 +397,8 @@ export function spawnEnemies() {
         for (let i = 0; i < count; i++) {
             const inst = JSON.parse(JSON.stringify(template));
             inst.templateId = randomType; // Store ID for persistence lookup
-            inst.x = Math.random() * (Globals.canvas.width - 60) + 30;
-            inst.y = Math.random() * (Globals.canvas.height - 60) + 30;
+            inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
+            inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
             inst.frozen = true;
             inst.freezeEnd = freezeUntil;
             inst.invulnerable = true;
@@ -412,7 +412,7 @@ export function spawnEnemies() {
                 inst.color = "red"; // Make them look angry? or just keep same.
             }
 
-            enemies.push(inst);
+            Globals.enemies.push(inst);
         }
     }
 

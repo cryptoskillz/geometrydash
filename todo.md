@@ -1,4 +1,12 @@
 bugs
+level 0 = shows last screen a little before going to welcome screen (unlocks)
+level 1 = shows last screen a little before going to welcome screen (unlocks)
+level 2 = shows last screen a little before going to welcome screen (unlocks)
+level 5 = loads credits fine then shows last screen a little before going to welcome screen (unlocks / not)
+    boss spwans with portal sometimes
+    minimap moves down on restaer then goes back up
+    add epic rarity 
+    add a powered down portal to the start room
 whenyou restart after dying you keep your gun
 when you are facing north but shooting south the gun turret should be pointing south not north
 add bukket time
@@ -55,20 +63,17 @@ next up
     server    
 
 Bug fix  8
-    boss spwans with portal sometimes
-    minimap moves down on restaer then goes back up
-    "staysAngryWhenHit": false  ,
-    dont spawnsame unock twice
+    no route to boss room
+    somme gold doors wont unlock you have to clear the room go out and go back in and its fine <- recreacte
+
+    dont spawn same unock twice
     give red shards if their are no unlocks left
-    it does not appear to be spawing unlocked items 
-    add epic rarity 
-    add a powered down portal to the start room
     fix debug logs 
     add more unlocks
-    no route to boss room
-    On the server we are not seeing the last level unlock 
-    wasd during pick up items locks up occasionlllay and pulls in you a random direction for a while, firing seems to fix it. 
-    somme gold doors wont unlock you have to clear the room go out and go back in and its fine
+    
+    ^^^^
+    "staysAngryWhenHit": false  ,
+
     enemes spawm outside the room if they are very big
     shield shows when you go into the portal
     bomb goes blue when you leave the room and go back in

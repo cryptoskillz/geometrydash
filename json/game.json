@@ -90,6 +90,7 @@
     "itemPickup": false,
     "canRestart": true,
     "soundEffects": false,
+    "showSeed": true,
     "showMinimap": false,
     "showStatsPanel": false,
     "showWelcome": false,
