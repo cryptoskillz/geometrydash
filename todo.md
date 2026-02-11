@@ -62,7 +62,7 @@ next up
     unlocks / permance
     server    
 
-Bug fix  8
+Bug fix  9
     dont allow P from welcome screen as it brings up pause menu
     no route to boss room
     somme gold doors wont unlock you have to clear the room go out and go back in and its fine it appers to be when you pick a key up in the room as if you leave and come back it is fine
