@@ -2423,6 +2423,11 @@ export async function restartGame(keepItems = false) {
     );
     if (!keepItems && !isDebug) resetWeaponState();
 
+    // Trigger "Cool Teleport Effect" (Glitch Shake)
+    Globals.screenShake.power = 20;
+    Globals.screenShake.endAt = Date.now() + 600;
+    Globals.screenShake.teleport = 1;
+
     // Wait for init to complete, then auto-start
     await initGame(true, null, keepItems);
     // startGame is called by initGame internal logic (via shouldAutoStart)
@@ -2430,6 +2435,7 @@ export async function restartGame(keepItems = false) {
 Globals.restartGame = restartGame;
 
 export async function newRun() {
+
     log("Starting New Run (Fresh Seed)");
     resetWeaponState();
     // Generate new seed manually here before calling init (as init handles restart specially)
@@ -2440,6 +2446,11 @@ export async function newRun() {
     // 1. Set seed
     const newSeed = Math.floor(Math.random() * 999999);
     Globals.setSeed(newSeed);
+
+    // Trigger "Cool Teleport Effect" (Glitch Shake)
+    Globals.screenShake.power = 20;
+    Globals.screenShake.endAt = Date.now() + 600;
+    Globals.screenShake.teleport = 1;
 
     // CRITICAL: We must clear the input box so startGame() doesn't overwrite our new random seed with the old input value.
     const seedInput = document.getElementById('seedInput');
