@@ -576,13 +576,9 @@ export function showCredits() {
                      <p>Best Time: <span style="color: #f1c40f">${formatTime(Globals.BestRunTime)}</span></p>
                      <p>Total Runs: <span style="color: #95a5a6">${Globals.NumberOfRuns}</span></p>
                 </div>
-
-                </div>
                 
-                 <p style="font-size: 1.5em; margin: 20px 0; color: #3498db;">Game Info</p>
-                <div style="color: #ccc; font-family: monospace; text-align: left; display: inline-block; margin: 0 auto;">
-                     <p>Seed: <span style="color: #95a5a6">${Globals.seed || 'Unknown'}</span></p>
-                </div>
+                
+
 
                    <p style="font-size: 1.5em; margin: 20px 0; color: #3498db;">Design & Code</p>
                 <p style="color: #ccc;">Cryptoskillz</p>
@@ -595,6 +591,11 @@ export function showCredits() {
                 <br><br><br><br>
                 <p style="font-size: 0.8em; color: #555;">Press any key to return to menu</p>
             </div>
+        </div>
+        
+        <div style="position: absolute; bottom: 20px; right: 20px; text-align: right; color: #ccc; font-family: monospace; z-index: 10;">
+             <p style="font-size: 1.2em; color: #3498db; margin: 0 0 5px 0;">Game Info</p>
+             <p>Seed: <span style="color: #95a5a6">${Globals.seed || 'Unknown'}</span></p>
         </div>
     `;
 
