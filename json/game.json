@@ -85,7 +85,7 @@
     "levelCount": 6,
     "showTimer": false,
     "showSpeedyTimer": false,
-    "showGhostimer": true,
+    "showGhostimer": false,
     "showPerfectCount": false,
     "showNoDamageCount": false,
     "showShooterCount": false,
@@ -307,7 +307,7 @@
     "debug": {
         "startBoss": false,
         "player": true,
-        "godMode": false,
+        "godMode": true,
         "windowEnabled": true,
         "log": false,
         "spawn": {

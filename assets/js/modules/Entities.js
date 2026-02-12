@@ -2065,6 +2065,20 @@ function proceedLevelComplete() {
     // Save Stats before transition
     saveGameStats();
 
+    // Track Level Split
+    if (Globals.levelStartTime) {
+        const split = Date.now() - Globals.levelStartTime;
+        Globals.levelSplits = Globals.levelSplits || [];
+
+        // Store Object: { name, time }
+        const levelName = localStorage.getItem('current_level_name') || Globals.gameData.name || `Level ${Globals.levelSplits.length + 1}`;
+        Globals.levelSplits.push({
+            name: levelName,
+            time: split
+        });
+        localStorage.setItem('rogue_level_splits', JSON.stringify(Globals.levelSplits));
+    }
+
     // 1. Next Level?
     if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
         log("Proceeding to Next Level:", Globals.roomData.nextLevel);

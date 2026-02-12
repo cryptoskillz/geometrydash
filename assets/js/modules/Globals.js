@@ -143,6 +143,8 @@ export const Globals = {
     // Run Timer
     runStartTime: 0,
     runElapsedTime: 0,
+    levelSplits: [],
+    levelStartTime: 0,
 
     perfectStreak: 0,
     pauseStartTime: 0,

@@ -53,22 +53,24 @@ next up
 
 Bug fix  10
 
-    unlock spawn that have already been already unlocked
+    if you delete your game your stats (not session) should be saved
+    can you use the level name from josn level 
+    use descrription on level.json to for the start room text 
 
-    timer should not reset on the next level it is a game timer
-    store a tieme for each level starting at level 4 and lasting for howerver maany levels that are game.jsoin levelCount
+    unlock spawn that have already been already unlocked
 
     when you run into a biullet it gets stuck in you we should go back to the methid where the you ate the bullets and place the first shot so many 
     frames in from the player so its a prolonged push that eats the bullet not a simple move forward
+   
     somme gold doors wont unlock you have to clear the room go out and go back in and its fine it appers to be when you pick a key up in the room as if you leave and come back it is fine
    
     fix debug logs 
    
     matrix romm shootable items (chests) that unlocck all of that item type
    
-    
-the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
-matrix room does not spawn untik after first boss
+    the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
+
+    matrix room does not spawn untik after first boss
 
     ^^^^
  

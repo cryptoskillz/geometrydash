@@ -287,7 +287,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     // Update Persistence so Restart (R) uses this level
                     localStorage.setItem('rogue_current_level', levelFile);
 
+
                     const levelData = await levelRes.json();
+                    // Set the level name
+                    localStorage.setItem('current_level_name', levelData.name);
 
                     // AUTO-DETECT: If this file is a Room (has isBoss), ensure it's set as the bossRoom 
                     // so it gets loaded into templates correctly.
@@ -986,11 +989,14 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // Start Run Timer
-        //on restart if its a new game
-        if (isRestart) {
+        // on restart if its a new game (NOT level transition)
+        if (isRestart && !nextLevel) {
             Globals.runStartTime = Date.now();
             Globals.runElapsedTime = 0;
         }
+
+        // Level Split Tracking
+        Globals.levelStartTime = Date.now();
 
         // AUTO START IF CONFIGURED (After everything is ready)
     } finally {
@@ -2378,6 +2384,10 @@ export function gameOver() {
 
     // Determine state if not already set (default to GAMEOVER if just called independently)
     if (Globals.gameState !== STATES.WIN) Globals.gameState = STATES.GAMEOVER;
+
+    // Save Persistent Stats (Lifetime)
+    // Note: session stats are reset on next run, so current values are added to lifetime logic in saveGameStats.
+    saveGameStats();
 
     Globals.elements.overlay.style.display = 'flex';
     // Fix: Count unique visited rooms instead of displacement

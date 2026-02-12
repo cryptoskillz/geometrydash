@@ -697,6 +697,16 @@ export function showCredits() {
                      <p>Run Time: <span style="color: #f1c40f">${formatTime(Globals.SessionRunTime)}</span></p>
                      <p>Best Time: <span style="color: #f1c40f">${formatTime(Globals.BestRunTime)}</span></p>
                      <p>Total Runs: <span style="color: #95a5a6">${Globals.NumberOfRuns}</span></p>
+                     
+                     ${(Globals.levelSplits && Globals.levelSplits.length > 0) ? `
+                     <hr style="border-color: #555; margin: 10px 0;">
+                     <p style="text-decoration: underline; margin-bottom: 5px;">Level Splits</p>
+                     ${Globals.levelSplits.map((item, i) => {
+        const timeVal = (typeof item === 'object' && item.time) ? item.time : item;
+        const label = (typeof item === 'object' && item.name) ? item.name : `Level ${i + 1}`;
+        return `<p>${label}: <span style="color: #f1c40f">${formatTime(Number(timeVal))}</span></p>`;
+    }).join('')}
+                     ` : ''}
                 </div>
                 
                 
@@ -815,6 +825,10 @@ export function loadGameStats() {
         Globals.speedyBonusCount = stats.speedyBonuses || 0;
         Globals.gameBeatCount = stats.gameBeats || 0;
         Globals.ghostTimeSurvived = stats.ghostTime || 0;
+
+        // Load Level Splits (Separate Key for array)
+        const splits = localStorage.getItem('rogue_level_splits');
+        if (splits) Globals.levelSplits = JSON.parse(splits);
     } else {
         saveGameStats(); // Init if missing
     }
@@ -830,6 +844,7 @@ export function resetSessionStats() {
     Globals.speedyBonusSessionCount = 0;
     Globals.gameBeatSessionCount = 0;
     Globals.ghostTimeSessionSurvived = 0;
+    Globals.levelSplits = [];
 
     // Reset Bonus Streaks
     Globals.perfectStreak = 0;
