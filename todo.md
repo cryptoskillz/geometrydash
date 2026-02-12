@@ -51,6 +51,7 @@ next up
 
 Bug fix  9 
 
+tried to run out of a room with a ghost and enemies it would not let me even though i blew it with a red bomb
 U should restart from level 4 
 speedytimer shoukd be set for standard peashooter time but adjust down for the more powerful gun you have we dont have to be super precise with this and min max it mayber have perOverPeashooter and it uses this to adjsut the speedy bonus accordingly, that can read speedy pea shooter bonuses
 maybe add room unlocks
@@ -119,6 +120,14 @@ achivements
 
 
 Balance
+you kill the ghost by buying the ghost trap and lettign hoim out in the ghost room
+    you have to buy the ghost trap for 10000 red shards, requires upgrading the shard system
+    yuo catch the ghost
+    you then got 5 seconds in the trap (never enough)
+    you have to upgrade the timer of the trap
+    you take the gost to a protal room and let him out
+    he dies
+    this is why he never goes in the portal room or the start room (which will have a portal)
     show an increasingf number of enemies type you killed to the welcome screen with the big ghost occasionally showing
     add what killed you to the game over screen
     count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
@@ -202,6 +211,8 @@ enemies
 
 
 ghost
+    if the ghost respawns his health i think so he should be really hard to kill you shuold clear the level go back coax him and have him chase you 
+    if you get to far away he stops following you and goes back to the void and comes back later fully healed. 
     add ghost to the welcome screen
     when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
     ghost non solid enmeies should be able to pass through bombs (they dont explode)

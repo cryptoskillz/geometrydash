@@ -274,6 +274,9 @@ export function spawnEnemies() {
             Globals.ghostHP = inst.hp;
         }
 
+        inst.spawnTime = Date.now(); // FIX: Ensure spawnTime is set so lock timer works properly
+
+
 
         // Standard random placement or center
         inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
@@ -1706,6 +1709,7 @@ export function updateEnemies() {
 
                 if (!en.indestructible && !en.invulnerable && Date.now() >= Globals.bossIntroEndTime) { // Only damage if not invuln/indestructible AND intro finished
                     en.hp -= finalDamage;
+                    if (en.type === 'ghost') Globals.ghostHP = en.hp; // Sync Persistence
                     en.hitTimer = 10;
 
                     // Speech: Hit
@@ -2198,12 +2202,6 @@ export function updateGhost() {
 
         // 1. LOCK DOORS (after 1 timer cycle)
         if (elapsed > delay) {
-            if (ghost.hasSpokenGhostHealth === false) {
-                triggerSpeech(ghost, "ghost_nohealth", "HEALTH BAR BE GONE!!!!", false);
-
-            }
-            ghost.hasSpokenGhostHealth = true;
-            Globals.gameData.showGhostHealth = false
             ghost.locksRoom = true;
         } else {
             ghost.locksRoom = false;
@@ -2211,6 +2209,14 @@ export function updateGhost() {
 
         // 2. SHRINK ROOM (after 2 timer cycles)
         if (elapsed > delay * 2) {
+            if (!ghost.hasSpokenGhostHealth) {
+                // Only speak if we actually have health bar to hide (and it's not already hidden locally)
+                if (!ghost.hideHealth) triggerSpeech(ghost, "", "HEALTH BAR BE GONE!!!!", false);
+
+                ghost.hasSpokenGhostHealth = true;
+                ghost.hideHealth = true; // Local hide, do not modify Global Config
+            }
+
             // Shrink the room!
             const maxShrink = (Globals.canvas.width / 2) - 60; // Leave a 120px box
             if (Globals.roomShrinkSize < maxShrink) {
@@ -2801,6 +2807,7 @@ export function drawBombs(doors) {
                         if (blocked) return;
 
                         en.hp -= b.damage;
+                        if (en.type === 'ghost') Globals.ghostHP = en.hp; // Sync Persistence
                         en.hitTimer = 10; // Visual flash
                         // Death Logic
                         if (en.hp <= 0 && !en.isDead) {
