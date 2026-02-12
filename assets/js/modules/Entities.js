@@ -3,7 +3,7 @@ import { log, spawnFloatingText, triggerSpeech } from './Utils.js';
 import { SFX, fadeIn } from './Audio.js';
 import { generateLore } from './Utils.js'; // Assuming generateLore is in Utils (or I need to extract it)
 import { CONFIG, STATES, BOUNDARY, DOOR_SIZE, JSON_PATHS } from './Constants.js';
-import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats } from './UI.js';
+import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats, saveGameStats } from './UI.js';
 
 // Functions will be appended below
 
@@ -2062,6 +2062,9 @@ export function handleLevelComplete() {
 }
 
 function proceedLevelComplete() {
+    // Save Stats before transition
+    saveGameStats();
+
     // 1. Next Level?
     if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
         log("Proceeding to Next Level:", Globals.roomData.nextLevel);

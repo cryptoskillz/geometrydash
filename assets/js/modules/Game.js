@@ -33,8 +33,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     Globals.isInitializing = true;
 
     // Stats Init
-    loadGameStats();
-    if (!keepStats) resetSessionStats();
+    if (!keepStats) {
+        loadGameStats();
+        resetSessionStats();
+    }
 
     // Reset Ghost Trap State
     Globals.ghostTrapActive = false;
@@ -2534,6 +2536,7 @@ export async function restartGame(keepItems = false, targetLevel = null) {
     Globals.screenShake.power = 20;
     Globals.screenShake.endAt = Date.now() + 600;
     Globals.screenShake.teleport = 1;
+    SFX.restart();
 
     // Wait for init to complete, then auto-start
     await initGame(true, targetLevel, keepItems);
@@ -2558,6 +2561,7 @@ export async function newRun(targetLevel = null) {
     Globals.screenShake.power = 20;
     Globals.screenShake.endAt = Date.now() + 600;
     Globals.screenShake.teleport = 1;
+    SFX.restart();
 
     // CRITICAL: We must clear the input box so startGame() doesn't overwrite our new random seed with the old input value.
     const seedInput = document.getElementById('seedInput');
