@@ -669,6 +669,10 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         // Optional: Safety buffer for the enemy who shot it?
     }
 
+    if (ownerType === 'player') {
+        Globals.bulletsInRoom++;
+    }
+
     Globals.bullets.push(b);
     return b;
 }
@@ -804,8 +808,7 @@ export function fireBullet(direction, speed, vx, vy, angle) {
 
 
 
-    Globals.bulletsInRoom++;
-    Globals.bulletsInRoom++;
+
 
     // --- RECOIL ---
     const recoil = Globals.gun.Bullet?.recoil || 0;
@@ -958,7 +961,11 @@ export function updateBulletsAndShards(aliveEnemies) {
             } else {
                 // Check for wallExplode OR general explode on impact if not a shard
                 if (Globals.gun.Bullet?.Explode?.active && !b.isShard) {
-                    if (Globals.gun.Bullet.Explode.wallExplode) spawnShards(b);
+                    if (Globals.gun.Bullet.Explode.wallExplode) spawnShards(b); // Can count as hit? Maybe.
+                    // If it explodes, maybe NOT a miss? But usually wall hit = miss.
+                }
+                if (!b.isShard && b.ownerType !== 'enemy' && !b.hasHit) {
+                    Globals.perfectStreak = 0; // Missed Shot (Hit Wall)
                 }
                 Globals.bullets.splice(i, 1);
                 return; // Use return to skip further processing for this bullet
@@ -979,12 +986,14 @@ export function updateBulletsAndShards(aliveEnemies) {
                     bomb.exploding = true;
                     bomb.explosionStartAt = Date.now();
                     SFX.explode(0.3);
+                    Globals.hitsInRoom++; // Count hit on bomb
                     Globals.bullets.splice(i, 1);
                     hitBomb = true;
                     break;
                 } else if (bomb.solid) {
                     // Solid but not shootable = block bullet (destroy bullet)
                     // Optional: Spawn particles/sparks?
+                    if (b.ownerType !== 'enemy' && !b.hasHit) Globals.perfectStreak = 0; // Missed (Hit Solid Bomb non-shootable)
                     Globals.bullets.splice(i, 1);
                     hitBomb = true;
                     break;
@@ -995,7 +1004,10 @@ export function updateBulletsAndShards(aliveEnemies) {
 
         // --- Enemy Collision ---
         b.life--;
-        if (b.life <= 0) Globals.bullets.splice(i, 1);
+        if (b.life <= 0) {
+            if (!b.isShard && b.ownerType !== 'enemy' && !b.hasHit) Globals.perfectStreak = 0; // Missed Shot (Expired)
+            Globals.bullets.splice(i, 1);
+        }
     });
 }
 
@@ -1638,6 +1650,10 @@ export function updateEnemies() {
             if (dist < en.size + (b.size || 5)) {
                 if (Globals.gun.Bullet?.pierce && b.hitEnemies?.includes(ei)) return;
 
+                // Track Accuracy (Perfect Bonus)
+                Globals.hitsInRoom++;
+                b.hasHit = true;
+
                 let finalDamage = b.damage || 1;
                 const isCrit = Math.random() < (Globals.gun.Bullet?.critChance || 0);
                 if (en.type !== 'ghost' && isCrit) {
@@ -2231,6 +2247,7 @@ export function takeDamage(amount) {
     // 2. Health Damage
     Globals.player.hp -= amount;
     Globals.player.tookDamageInRoom = true;
+    Globals.perfectStreak = 0; // Failed Streak (Hit)
     SFX.playerHit();
 
     // Trigger I-Frames
@@ -3709,8 +3726,15 @@ export function spawnRoomRewards(dropConfig, label = null) {
         let dropX = (Globals.canvas.width / 2) + (Math.random() - 0.5) * 40;
         let dropY = (Globals.canvas.height / 2) + (Math.random() - 0.5) * 40;
 
-        // Spawn
-        spawnGroundItem(dropX, dropY, dropConfig);
+        // Spawn Manually
+        Globals.groundItems.push({
+            x: dropX,
+            y: dropY,
+            data: dropConfig,
+            roomX: Globals.player.roomX, roomY: Globals.player.roomY,
+            vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
+            friction: 0.9, solid: true, moveable: true, size: 15, floatOffset: Math.random() * 100
+        });
 
         // Label
         if (label) {

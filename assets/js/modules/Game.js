@@ -2215,7 +2215,11 @@ export function updateRoomLock() {
         // Check if no damage taken in this room AND room had enemies
         const hasCombat = Globals.roomData.enemies && Globals.roomData.enemies.some(e => (e.count || 0) > 0);
 
-        if (!Globals.player.tookDamageInRoom && hasCombat) {
+        // Accuracy Check: No Missed Shots (hits >= bullets)
+        // Note: Using >= to allow for piercing/explosions counting > 100% which is fine.
+        const perfectAccuracy = (Globals.hitsInRoom >= Globals.bulletsInRoom);
+
+        if (!Globals.player.tookDamageInRoom && hasCombat && perfectAccuracy) {
             Globals.perfectStreak++;
             const goal = Globals.gameData.perfectGoal || 3;
 
@@ -2224,15 +2228,15 @@ export function updateRoomLock() {
                 if (Globals.gameData.rewards && Globals.gameData.rewards.perfect) {
                     const dropped = spawnRoomRewards(Globals.gameData.rewards.perfect);
                     if (dropped) {
-                        perfectEl.innerText = "PERFECT BONUS!";
+                        Globals.elements.perfect.innerText = "PERFECT BONUS!";
                         triggerPerfectText();
                         // Reset or Reduce? "only kick in if this is met" likely means reset to start new streak
                         Globals.perfectStreak = 0;
                     }
                 }
             }
-        } else if (Globals.player.tookDamageInRoom) {
-            Globals.perfectStreak = 0; // Reset streak if hit
+        } else if (Globals.player.tookDamageInRoom || (hasCombat && !perfectAccuracy)) {
+            Globals.perfectStreak = 0; // Reset streak if hit OR missed a shot
         }
     }
 }

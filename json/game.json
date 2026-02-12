@@ -187,14 +187,48 @@
             }
         },
         "perfect": {
-            "type": "shard",
-            "amount": 25,
-            "shardType": "green"
+            "maxDrop": 1,
+            "common": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "uncommon": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "rare": {
+                "count": 0,
+                "dropChance": 0
+            },
+            "legendary": {
+                "count": 1,
+                "dropChance": 0
+            },
+            "special": {
+                "item": ""
+            }
         },
         "speedy": {
-            "type": "shard",
-            "amount": 10,
-            "shardType": "green"
+            "maxDrop": 1,
+            "common": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "uncommon": {
+                "count": 1,
+                "dropChance": 0
+            },
+            "rare": {
+                "count": 0,
+                "dropChance": 0
+            },
+            "legendary": {
+                "count": 0,
+                "dropChance": 0
+            },
+            "special": {
+                "item": ""
+            }
         },
         "ghost": {
             "maxDrop": 1,
