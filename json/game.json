@@ -86,8 +86,8 @@
     "showTimer": false,
     "showSpeedyTimer": false,
     "showPerfectCount": false,
-    "showNoDamageCount": true,
-    "showShooterCount": true,
+    "showNoDamageCount": false,
+    "showShooterCount": false,
     "music": false,
     "pause": false,
     "items": true,
@@ -120,6 +120,8 @@
     "room": {
         "freezeTimer": 100
     },
+    "noDamageGoal": 3,
+    "shooterGoal": 3,
     "rewards": {
         "shards": {
             "green": {
@@ -204,6 +206,50 @@
             },
             "legendary": {
                 "count": 1,
+                "dropChance": 0
+            },
+            "special": {
+                "item": ""
+            }
+        },
+        "noDamage": {
+            "maxDrop": 1,
+            "common": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "uncommon": {
+                "count": 1,
+                "dropChance": 0.5
+            },
+            "rare": {
+                "count": 1,
+                "dropChance": 0.1
+            },
+            "legendary": {
+                "count": 0,
+                "dropChance": 0
+            },
+            "special": {
+                "item": ""
+            }
+        },
+        "shooter": {
+            "maxDrop": 1,
+            "common": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "uncommon": {
+                "count": 1,
+                "dropChance": 0.5
+            },
+            "rare": {
+                "count": 1,
+                "dropChance": 0.1
+            },
+            "legendary": {
+                "count": 0,
                 "dropChance": 0
             },
             "special": {

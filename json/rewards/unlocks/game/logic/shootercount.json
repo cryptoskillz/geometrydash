@@ -1,6 +1,6 @@
 {
-    "name": "Perfect Bonus Count",
-    "description": "Unlocks the perfect bonus counter",
+    "name": "Shooter Bonus Count",
+    "description": "Unlocks the shooter bonus counter",
     "unlock": "shootercount",
     "json": "game.json",
     "attr": "showShooterCount",

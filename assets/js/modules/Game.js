@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_PATHS, STORAGE_KEYS } from './Constants.js';
-import { log, deepMerge, triggerSpeech, generateLore } from './Utils.js';
+import { log, deepMerge, triggerSpeech, generateLore, spawnFloatingText } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
 import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
@@ -2203,8 +2203,8 @@ export function updateRoomLock() {
             if (Globals.gameData.rewards && Globals.gameData.rewards.speedy) {
                 const dropped = spawnRoomRewards(Globals.gameData.rewards.speedy);
                 if (dropped) {
-                    Globals.elements.perfect.innerText = "SPEEDY BONUS!";
-                    triggerPerfectText();
+                    spawnFloatingText(Globals.player.x, Globals.player.y - 40, "SPEEDY BONUS!", "#3498db");
+                    // Do not reset streak? Speedy is timer based. No streak.
                 }
             }
         } else {
@@ -2219,24 +2219,56 @@ export function updateRoomLock() {
         // Note: Using >= to allow for piercing/explosions counting > 100% which is fine.
         const perfectAccuracy = (Globals.hitsInRoom >= Globals.bulletsInRoom);
 
+        // --- PERFECT STREAK ---
         if (!Globals.player.tookDamageInRoom && hasCombat && perfectAccuracy) {
             Globals.perfectStreak++;
             const goal = Globals.gameData.perfectGoal || 3;
 
             if (Globals.perfectStreak >= goal) {
-                // Check drop config
                 if (Globals.gameData.rewards && Globals.gameData.rewards.perfect) {
                     const dropped = spawnRoomRewards(Globals.gameData.rewards.perfect);
                     if (dropped) {
-                        Globals.elements.perfect.innerText = "PERFECT BONUS!";
-                        triggerPerfectText();
-                        // Reset or Reduce? "only kick in if this is met" likely means reset to start new streak
+                        spawnFloatingText(Globals.player.x, Globals.player.y - 80, "PERFECT BONUS!", "#9b59b6");
                         Globals.perfectStreak = 0;
                     }
                 }
             }
         } else if (Globals.player.tookDamageInRoom || (hasCombat && !perfectAccuracy)) {
             Globals.perfectStreak = 0; // Reset streak if hit OR missed a shot
+        }
+
+        // --- NO DAMAGE STREAK ---
+        if (!Globals.player.tookDamageInRoom && hasCombat) {
+            Globals.noDamageStreak++;
+            const goal = Globals.gameData.noDamageGoal || 3;
+            if (Globals.noDamageStreak >= goal) {
+                if (Globals.gameData.rewards && Globals.gameData.rewards.noDamage) {
+                    const dropped = spawnRoomRewards(Globals.gameData.rewards.noDamage);
+                    if (dropped) {
+                        spawnFloatingText(Globals.player.x, Globals.player.y - 40, "NO DAMAGE BONUS!", "#e74c3c");
+                        Globals.noDamageStreak = 0;
+                    }
+                }
+            }
+        } else if (Globals.player.tookDamageInRoom) {
+            Globals.noDamageStreak = 0;
+        }
+
+        // --- SHOOTER STREAK ---
+        if (perfectAccuracy && hasCombat) {
+            Globals.shooterStreak++;
+            const goal = Globals.gameData.shooterGoal || 3;
+            if (Globals.shooterStreak >= goal) {
+                if (Globals.gameData.rewards && Globals.gameData.rewards.shooter) {
+                    const dropped = spawnRoomRewards(Globals.gameData.rewards.shooter);
+                    if (dropped) {
+                        spawnFloatingText(Globals.player.x, Globals.player.y - 60, "SHARP SHOOTER!", "#f39c12");
+                        Globals.shooterStreak = 0;
+                    }
+                }
+            }
+        } else if (hasCombat && !perfectAccuracy) {
+            Globals.shooterStreak = 0;
         }
     }
 }

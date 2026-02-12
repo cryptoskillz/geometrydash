@@ -1,6 +1,5 @@
 bugs
     bomb drop don has a big B
-s
 level 0 = shows last screen a little before going to welcome screen (unlocks)
 level 1 = shows last screen a little before going to welcome screen (unlocks)
 level 2 = shows last screen a little before going to welcome screen (unlocks)
@@ -9,27 +8,13 @@ level 5 = loads credits fine then shows last screen a little before going to wel
     minimap moves down on restaer then goes back up
     add epic rarity 
     add a powered down portal to the start room
-whenyou restart after dying you keep your gun
-when you are facing north but shooting south the gun turret should be pointing south not north
-add bukket time
-the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
-make bomb explosion look moer lke. wave
-you ca move bobs into other bombs that are solid
-I fixed the issue where some unlocks (like the Minimap and Timer) were missing the Legendary particle effects.
-The logs revealed that these items had a rarity of "special" (instead of "common"), which my previous auto-upgrade logic was ignoring. I have updated the code to automatically upgrade both "common" and "special" rarity unlocks to Legendary.
-This means all unlock items—whether Minimap, Timer, or Keys—will now correctly display the Gold Light Beam and Sparkles, matching the Shotgun's appearance. Please check it out!
-
-
-matrix room does not spawn untik after first boss
-pause restart does not show sweet teleport
+    add bullet time
+    you ca move bobs into other bombs that are solid
     if you pick it up the portal unlock screen is not required (should it active immediately?)
     if yo press 0 or 9 it should update the debug buttons to on / off
-    drawtutoiral in load roomd
     chained explosion should bliw in sequence not all at the same time
     if you leave the room with a remote bomb it wont detonate with space bar
-    golden bomb statys on level relaod but not red 
     golden bomb does not not stay on the next level went back to -- if you equip bomb at start it stays if you pick it up it doesnt
-    i took golden bomb from first boss fight (lucky drop) but ti wentback to normal bomb on restart
     is death speech working?
     add player enter room speech for enemies
     add event to boss speech (entry and death)
@@ -44,7 +29,7 @@ pause restart does not show sweet teleport
 
 
 next up 
-  bug fix 6
+  bug fix 10
   sfx & ui updates
         game settings
             inventory
@@ -65,25 +50,29 @@ next up
     server    
 
 Bug fix  9 
-404571 spawns    no route to boss room
-10539 so=pawns one room
-414200 spawns 4 roooms no biss
+    enemy health item
+    404571 spawns    no route to boss room
+    10539 so=pawns one room
+4   14200 spawns 4 roooms no biss
+   add critical gun
+    add freeze gun
+    angry gun
+    add fps item
+    add the counters to the session, end game and all time counts
     when you run into a biullet it gets stuck in you we should go back to the methid where the you ate the bullets and place the first shot so many 
     frames in from the player so its a prolonged push that eats the bullet not a simple move forward
- 
     somme gold doors wont unlock you have to clear the room go out and go back in and its fine it appers to be when you pick a key up in the room as if you leave and come back it is fine
     fix debug logs 
-    damage count
-    sharp shooter count
-    
-    ^^^^
-    add criticl gun
-    add freexe gun
-        add fps item
     add a ghsot timer, time survived with ghost and update ghsot timr session & real time
     matrix romm shootable items (chests) that unlocck all of that item type
+    when you are facing north but shooting south the gun turret should be pointing south not north
+the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
+matrix room does not spawn untik after first boss
 
-        angry gun
+    ^^^^
+ 
+  
+
     implement can go through bullets modifier
     "staysAngryWhenHit": false  ,
     dont spawn same unock twice
@@ -129,15 +118,16 @@ achivements
 
 
 Balance
+    show an increasingf number of enemies type you killed to the welcome screen with the big ghost occasionally showing
     add what killed you to the game over screen
-    tweak guns and bombs
+    count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
+
     add correct enemies to each room
 
  implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
     beat the game to unlock permance mode 
        add restarts to the session and global stats
 
-    count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
         This will be the first thing we store on the server we will store the players name, level and time and have a speed run leaderboard
     drops should take into account the room hardness of the room and the player modifiers to incrase the pool chances of dropping to help with balancing 
     rather than add the rooms to the json of level instead add a maxHardnes and maxRooms to decide the rooms that go into the level (you could even factor in the player modifiers)
