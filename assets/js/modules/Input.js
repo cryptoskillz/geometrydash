@@ -115,9 +115,29 @@ export function handleGlobalInputs(callbacks) {
             return true;
         }
     }
-    // New Run (T)
+    // Restarts on Level 4 (Y)
+    if (Globals.keys['KeyY']) {
+        console.log("New Run key pressed (Y). Target: Level 4.");
+
+        // Allow New Run in GAMEOVER, WIN, MENU, START, GHOSTKILLED
+        // BUT if Ghost is SPAWNED (Hunting) in PLAY state, do NOT handle here (let Game.js handle trap)
+        if (Globals.ghostSpawned) return;
+        //restart the game
+        Globals.gameState = STATES.START;
+        console.log("Checking callbacks:", Object.keys(callbacks));
+        if (callbacks.newRun) {
+            console.log("Calling newRun('levels/4.json')...");
+            callbacks.newRun('levels/4.json').catch(err => console.error("newRun failed:", err));
+            return true;
+        } else {
+            console.error("callbacks.newRun IS MISSING!");
+        }
+
+    }
+
+    // New Run (T) - Restart Current Level, New Seed
     if (Globals.keys['KeyT']) {
-        console.log("T key pressed. Current State:", Globals.gameState);
+        console.log("New Run key pressed (T). Target: Current Level.");
         // Allow New Run in GAMEOVER, WIN, MENU, START, GHOSTKILLED
         // BUT if Ghost is SPAWNED (Hunting) in PLAY state, do NOT handle here (let Game.js handle trap)
         if (Globals.ghostSpawned) return;

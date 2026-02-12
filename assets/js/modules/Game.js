@@ -262,6 +262,9 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 const url = `${JSON_PATHS.ROOT}${normalized}`;
                 const levelRes = await fetch(`${url}?t=${Date.now()}`);
                 if (levelRes.ok) {
+                    // Update Persistence so Restart (R) uses this level
+                    localStorage.setItem('rogue_current_level', levelFile);
+
                     const levelData = await levelRes.json();
 
                     // AUTO-DETECT: If this file is a Room (has isBoss), ensure it's set as the bossRoom 
@@ -2488,7 +2491,7 @@ export async function restartGame(keepItems = false) {
 }
 Globals.restartGame = restartGame;
 
-export async function newRun() {
+export async function newRun(targetLevel = null) {
 
     log("Starting New Run (Fresh Seed)");
     resetWeaponState();
@@ -2513,8 +2516,9 @@ export async function newRun() {
     // 2. Call initGame as if it's a restart (to skip welcome) but with the NEW seed already set?
     // Wait, initGame(true) RE-SETS seed to Globals.seed. 
     // So if we set Globals.seed then call initGame(true), it should work!
+    // If targetLevel is passed, use it (and use logic to restart AT that level)
 
-    await initGame(true);
+    await initGame(true, targetLevel);
 }
 Globals.newRun = newRun;
 

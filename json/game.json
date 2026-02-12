@@ -306,7 +306,7 @@
         "startBoss": false,
         "player": true,
         "godMode": false,
-        "windowEnabled": true,
+        "windowEnabled": false,
         "log": false,
         "spawn": {
             "allItems": false,

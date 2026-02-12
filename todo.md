@@ -55,7 +55,6 @@ tried to run out of a room with a ghost and enemies it would not let me even tho
 U should restart from level 4 
 speedytimer shoukd be set for standard peashooter time but adjust down for the more powerful gun you have we dont have to be super precise with this and min max it mayber have perOverPeashooter and it uses this to adjsut the speedy bonus accordingly, that can read speedy pea shooter bonuses
 maybe add room unlocks
-    enemy health item
     add critical gun
     add freeze gun
     angry gun
@@ -120,6 +119,16 @@ achivements
 
 
 Balance
+maybe when not in debug mode restart should restart back to the start level and you dont need T and Y as these are techincally cheating 
+    debug
+        r = restart same seed
+        t = restsrt new seed
+        y = restart game level 4
+    no debug
+        r = restart game level 4 ( new run)
+                t = hidden
+
+        y = hidden
 you kill the ghost by buying the ghost trap and lettign hoim out in the ghost room
     you have to buy the ghost trap for 10000 red shards, requires upgrading the shard system
     yuo catch the ghost
