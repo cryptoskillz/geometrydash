@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_PATHS, STORAGE_KEYS } from './Constants.js';
-import { log, deepMerge, triggerSpeech, generateLore } from './Utils.js';
+import { log, deepMerge, triggerSpeech, generateLore, spawnFloatingText } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
 import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
@@ -164,7 +164,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     // Green Shards (Run-based)
     Globals.player.inventory.greenShards = 0; // Always reset on run start
 
-    // perfectStreak = 0; // REMOVED: Managed above
+    Globals.perfectStreak = 0;
     if (Globals.elements.perfect) Globals.elements.perfect.style.display = 'none';
     Globals.roomStartTime = Date.now();
     Globals.ghostSpawned = false; // Reset Ghost
@@ -224,6 +224,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 targetKeys.forEach(k => {
                     if (overrides[k]) {
                         log("Applying Unlock Overrides for:", k, overrides[k]);
+                        // DEV: Prevent these from being overridden by saves so game.json controls them
+                        if (overrides[k].showSpeedyTimer !== undefined) delete overrides[k].showSpeedyTimer;
+                        if (overrides[k].showPerfectCount !== undefined) delete overrides[k].showPerfectCount;
+
                         gData = deepMerge(gData, overrides[k]);
                     }
                 });
@@ -1013,10 +1017,8 @@ export function startGame(keepState = false) {
     const seedInput = document.getElementById('seedInput');
     if (seedInput && seedInput.value && seedInput.value.trim() !== "") {
         const val = seedInput.value.trim();
-        // Loose comparison to allow string/number match
-        if (val != Globals.seed) {
-            Globals.setSeed(val);
-        }
+        // FORCE Reset RNG State even if value is same (fixes restart bug)
+        Globals.setSeed(val);
     }
 
     // Check if we need to regenerate level due to seed change
@@ -1207,8 +1209,7 @@ export function startGame(keepState = false) {
             if (Globals.gameData.rewards && Globals.gameData.rewards.startroom) {
                 const dropped = spawnRoomRewards(Globals.gameData.rewards.startroom);
                 if (dropped) {
-                    Globals.elements.perfect.innerText = "START BONUS!";
-                    triggerPerfectText();
+                    spawnFloatingText(Globals.player.x, Globals.player.y, "START BONUS!", "#3498db");
                 }
             }
 
@@ -1706,7 +1707,7 @@ export function update() {
     const doors = Globals.roomData.doors || {};
 
     // 1. Inputs & Music
-    updateRestart();
+    // updateRestart(); // HANDLED BY INPUT.JS & GHOST TRAP BELOW
     // updateMusicToggle(); // Moved up (called below now)
     updateMusicToggle();
     updateSFXToggle();
@@ -1714,23 +1715,40 @@ export function update() {
     updateBombInteraction(); // Kick/Interact with Bombs
     if (Globals.keys["Space"]) updateUse();
     //if (Globals.ghostSpawned && !window.DEBUG_WINDOW_ENABLED) {
-    if (Globals.keys["KeyP"] && Globals.gameData.pause !== false) {
+    //trapped by ghsot no escape, pause or new run
+    //trapped by ghsot no escape, pause or new run
+    if ((Globals.keys["KeyP"] || Globals.keys["KeyT"] || Globals.keys["KeyR"]) && Globals.gameData.pause !== false) {
 
         if (Globals.ghostSpawned) {
             // Find the ghost entity
             const ghost = Globals.enemies.find(e => e.type === 'ghost');
             if (ghost) {
-                const ghostLore = Globals.speechData.types?.ghost_pause || ["You cannot escape me!!"];
+                // Determine Speech Key based on Input
+                let speechKey = "ghost_pause";
+                if (Globals.keys["KeyR"]) speechKey = "ghost_restart";
+                if (Globals.keys["KeyT"]) speechKey = "ghost_newgame";
+
+                const ghostLore = Globals.speechData.types?.[speechKey] || ["You cannot escape me!!"];
                 //pick a random line from the ghost lore
                 const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
-                triggerSpeech(ghost, "ghost_restart", ghostLine, true);
+
+                triggerSpeech(ghost, speechKey, ghostLine, true);
+
                 Globals.keys['KeyP'] = false; // consume key
+                Globals.keys['KeyT'] = false; // consume key
+                Globals.keys['KeyR'] = false; // consume key
             }
         }
         else {
-            Globals.keys["KeyP"] = false; // Prevent repeated triggers
-            gameMenu();
-            return;
+            // Normal Pause (Only P reaches here for Pause Menu)
+            if (Globals.keys["KeyP"]) {
+                Globals.keys["KeyP"] = false; // Prevent repeated triggers
+                gameMenu();
+                return;
+            }
+            // If T/R reached here (unlikely if !ghostSpawned, as Input.js handles them), consume
+            if (Globals.keys["KeyT"]) Globals.keys["KeyT"] = false;
+            if (Globals.keys["KeyR"]) Globals.keys["KeyR"] = false;
         }
     }
 
@@ -2028,32 +2046,32 @@ export function updateRoomTransitions(doors, roomLocked) {
     const shrink = Globals.roomShrinkSize || 0;
 
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
-    // Left Door
+    // Left Door - Require Push Left (A/ArrowLeft)
     if (Globals.player.x < t + shrink && doors.left?.active) {
         if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
-            if (!doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
-            else log("Left Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyA'] || Globals.keys['ArrowLeft']) && !doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
+            else log("Left Door Blocked: Key/Lock/Room");
         }
     }
-    // Right Door
+    // Right Door - Require Push Right (D/ArrowRight)
     else if (Globals.player.x > Globals.canvas.width - t - shrink && doors.right?.active) {
         if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
-            if (!doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
-            else log("Right Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyD'] || Globals.keys['ArrowRight']) && !doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
+            else log("Right Door Blocked: Key/Lock/Room");
         }
     }
-    // Top Door
+    // Top Door - Require Push Up (W/ArrowUp)
     else if (Globals.player.y < t + shrink && doors.top?.active) {
         if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
-            if (!doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
-            else log("Top Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyW'] || Globals.keys['ArrowUp']) && !doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
+            else log("Top Door Blocked: Key/Lock/Room");
         }
     }
-    // Bottom Door
+    // Bottom Door - Require Push Down (S/ArrowDown)
     else if (Globals.player.y > Globals.canvas.height - t - shrink && doors.bottom?.active) {
         if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
-            if (!doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
-            else log("Bottom Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyS'] || Globals.keys['ArrowDown']) && !doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
+            else log("Bottom Door Blocked: Key/Lock/Room");
         }
     }
 }
@@ -2184,8 +2202,8 @@ export function updateRoomLock() {
             if (Globals.gameData.rewards && Globals.gameData.rewards.speedy) {
                 const dropped = spawnRoomRewards(Globals.gameData.rewards.speedy);
                 if (dropped) {
-                    Globals.elements.perfect.innerText = "SPEEDY BONUS!";
-                    triggerPerfectText();
+                    spawnFloatingText(Globals.player.x, Globals.player.y - 40, "SPEEDY BONUS!", "#3498db");
+                    // Do not reset streak? Speedy is timer based. No streak.
                 }
             }
         } else {
@@ -2196,24 +2214,60 @@ export function updateRoomLock() {
         // Check if no damage taken in this room AND room had enemies
         const hasCombat = Globals.roomData.enemies && Globals.roomData.enemies.some(e => (e.count || 0) > 0);
 
-        if (!Globals.player.tookDamageInRoom && hasCombat) {
+        // Accuracy Check: No Missed Shots (hits >= bullets)
+        // Note: Using >= to allow for piercing/explosions counting > 100% which is fine.
+        const perfectAccuracy = (Globals.hitsInRoom >= Globals.bulletsInRoom);
+
+        // --- PERFECT STREAK ---
+        if (!Globals.player.tookDamageInRoom && hasCombat && perfectAccuracy) {
             Globals.perfectStreak++;
             const goal = Globals.gameData.perfectGoal || 3;
 
             if (Globals.perfectStreak >= goal) {
-                // Check drop config
-                if (Globals.gameData.bonuses && Globals.gameData.bonuses.perfect) {
-                    const dropped = spawnRoomRewards(Globals.gameData.bonuses.perfect);
+                if (Globals.gameData.rewards && Globals.gameData.rewards.perfect) {
+                    const dropped = spawnRoomRewards(Globals.gameData.rewards.perfect);
                     if (dropped) {
-                        perfectEl.innerText = "PERFECT BONUS!";
-                        triggerPerfectText();
-                        // Reset or Reduce? "only kick in if this is met" likely means reset to start new streak
+                        spawnFloatingText(Globals.player.x, Globals.player.y - 80, "PERFECT BONUS!", "#9b59b6");
                         Globals.perfectStreak = 0;
                     }
                 }
             }
-        } else {
-            Globals.perfectStreak = 0; // Reset streak if hit
+        } else if (Globals.player.tookDamageInRoom || (hasCombat && !perfectAccuracy)) {
+            Globals.perfectStreak = 0; // Reset streak if hit OR missed a shot
+        }
+
+        // --- NO DAMAGE STREAK ---
+        if (!Globals.player.tookDamageInRoom && hasCombat) {
+            Globals.noDamageStreak++;
+            const goal = Globals.gameData.noDamageGoal || 3;
+            if (Globals.noDamageStreak >= goal) {
+                if (Globals.gameData.rewards && Globals.gameData.rewards.noDamage) {
+                    const dropped = spawnRoomRewards(Globals.gameData.rewards.noDamage);
+                    if (dropped) {
+                        spawnFloatingText(Globals.player.x, Globals.player.y - 40, "NO DAMAGE BONUS!", "#e74c3c");
+                        Globals.noDamageStreak = 0;
+                    }
+                }
+            }
+        } else if (Globals.player.tookDamageInRoom) {
+            Globals.noDamageStreak = 0;
+        }
+
+        // --- SHOOTER STREAK ---
+        if (perfectAccuracy && hasCombat) {
+            Globals.shooterStreak++;
+            const goal = Globals.gameData.shooterGoal || 3;
+            if (Globals.shooterStreak >= goal) {
+                if (Globals.gameData.rewards && Globals.gameData.rewards.shooter) {
+                    const dropped = spawnRoomRewards(Globals.gameData.rewards.shooter);
+                    if (dropped) {
+                        spawnFloatingText(Globals.player.x, Globals.player.y - 60, "SHARP SHOOTER!", "#f39c12");
+                        Globals.shooterStreak = 0;
+                    }
+                }
+            }
+        } else if (hasCombat && !perfectAccuracy) {
+            Globals.shooterStreak = 0;
         }
     }
 }
@@ -2572,6 +2626,7 @@ export async function showNextUnlock() {
         // All Done -> Proceed to Victory
         unlockEl.style.display = 'none';
         Globals.isUnlocking = false;
+        Globals.keys = {}; // Clear inputs to prevent stuck movement after modal closes
 
         // Final Win State
         handleLevelComplete();

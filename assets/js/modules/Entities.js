@@ -669,6 +669,10 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         // Optional: Safety buffer for the enemy who shot it?
     }
 
+    if (ownerType === 'player') {
+        Globals.bulletsInRoom++;
+    }
+
     Globals.bullets.push(b);
     return b;
 }
@@ -804,8 +808,7 @@ export function fireBullet(direction, speed, vx, vy, angle) {
 
 
 
-    Globals.bulletsInRoom++;
-    Globals.bulletsInRoom++;
+
 
     // --- RECOIL ---
     const recoil = Globals.gun.Bullet?.recoil || 0;
@@ -874,8 +877,8 @@ export function updateBulletsAndShards(aliveEnemies) {
                         return;
                     }
                 } else {
-                    // Harmless collision - destroy bullet
-                    Globals.bullets.splice(i, 1);
+                    // Harmless collision - Do NOT destroy bullet (Allow player to run through own slow bullets)
+                    // Globals.bullets.splice(i, 1);
                     return;
                 }
             }
@@ -958,7 +961,12 @@ export function updateBulletsAndShards(aliveEnemies) {
             } else {
                 // Check for wallExplode OR general explode on impact if not a shard
                 if (Globals.gun.Bullet?.Explode?.active && !b.isShard) {
-                    if (Globals.gun.Bullet.Explode.wallExplode) spawnShards(b);
+                    if (Globals.gun.Bullet.Explode.wallExplode) spawnShards(b); // Can count as hit? Maybe.
+                    // If it explodes, maybe NOT a miss? But usually wall hit = miss.
+                }
+                if (!b.isShard && b.ownerType !== 'enemy' && !b.hasHit) {
+                    Globals.perfectStreak = 0; // Missed Shot (Hit Wall)
+                    Globals.shooterStreak = 0; // Shooter Reset
                 }
                 Globals.bullets.splice(i, 1);
                 return; // Use return to skip further processing for this bullet
@@ -979,12 +987,17 @@ export function updateBulletsAndShards(aliveEnemies) {
                     bomb.exploding = true;
                     bomb.explosionStartAt = Date.now();
                     SFX.explode(0.3);
+                    Globals.hitsInRoom++; // Count hit on bomb
                     Globals.bullets.splice(i, 1);
                     hitBomb = true;
                     break;
                 } else if (bomb.solid) {
                     // Solid but not shootable = block bullet (destroy bullet)
                     // Optional: Spawn particles/sparks?
+                    if (b.ownerType !== 'enemy' && !b.hasHit) {
+                        Globals.perfectStreak = 0; // Missed (Hit Solid Bomb non-shootable)
+                        Globals.shooterStreak = 0; // Shooter Reset
+                    }
                     Globals.bullets.splice(i, 1);
                     hitBomb = true;
                     break;
@@ -995,7 +1008,13 @@ export function updateBulletsAndShards(aliveEnemies) {
 
         // --- Enemy Collision ---
         b.life--;
-        if (b.life <= 0) Globals.bullets.splice(i, 1);
+        if (b.life <= 0) {
+            if (!b.isShard && b.ownerType !== 'enemy' && !b.hasHit) {
+                Globals.perfectStreak = 0; // Missed Shot (Expired)
+                Globals.shooterStreak = 0; // Shooter Reset
+            }
+            Globals.bullets.splice(i, 1);
+        }
     });
 }
 
@@ -1258,11 +1277,17 @@ export function updateRestart() {
             // Find the ghost entity
             const ghost = Globals.enemies.find(e => e.type === 'ghost');
             if (ghost) {
-                //pick the ghost lore from ghost_restart
-                const ghostLore = Globals.speechData.types?.ghost_restart || ["You cannot escape me!!"];
-                //pick a random line from the ghost lore
-                const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
-                triggerSpeech(ghost, "ghost_restart", ghostLine, true);
+                //pick the ghost lore from ghost restart
+                if (Globals.keys['KeyT']) {
+                    const ghostLore = Globals.speechData.types?.ghost_restart || ["You cannot escape me!!"];
+                    const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
+                    triggerSpeech(ghost, "ghost_restart", ghostLine, true);
+                }
+                if (Globals.keys['KeyR']) {
+                    const ghostLore = Globals.speechData.types?.ghost_newgame || ["Now New world for you!"];
+                    const ghostLine = ghostLore[Math.floor(Math.random() * ghostLore.length)];
+                    triggerSpeech(ghost, "ghost_newgame", ghostLine, true);
+                }
             }
         }
         else {
@@ -1631,6 +1656,10 @@ export function updateEnemies() {
             const dist = Math.hypot(b.x - en.x, b.y - en.y);
             if (dist < en.size + (b.size || 5)) {
                 if (Globals.gun.Bullet?.pierce && b.hitEnemies?.includes(ei)) return;
+
+                // Track Accuracy (Perfect Bonus)
+                Globals.hitsInRoom++;
+                b.hasHit = true;
 
                 let finalDamage = b.damage || 1;
                 const isCrit = Math.random() < (Globals.gun.Bullet?.critChance || 0);
@@ -2225,6 +2254,8 @@ export function takeDamage(amount) {
     // 2. Health Damage
     Globals.player.hp -= amount;
     Globals.player.tookDamageInRoom = true;
+    Globals.perfectStreak = 0; // Failed Streak (Hit)
+    Globals.noDamageStreak = 0; // No Damage Reset
     SFX.playerHit();
 
     // Trigger I-Frames
@@ -3696,6 +3727,30 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
 }
 
 export function spawnRoomRewards(dropConfig, label = null) {
+    if (!dropConfig) return false;
+
+    // DIRECT SPAWN LOGIC (For simple rewards like defined Shards)
+    if (dropConfig.type) {
+        let dropX = (Globals.canvas.width / 2) + (Math.random() - 0.5) * 40;
+        let dropY = (Globals.canvas.height / 2) + (Math.random() - 0.5) * 40;
+
+        // Spawn Manually
+        Globals.groundItems.push({
+            x: dropX,
+            y: dropY,
+            data: dropConfig,
+            roomX: Globals.player.roomX, roomY: Globals.player.roomY,
+            vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
+            friction: 0.9, solid: true, moveable: true, size: 15, floatOffset: Math.random() * 100
+        });
+
+        // Label
+        if (label) {
+            spawnFloatingText(dropX, dropY - 20, label, "#f1c40f");
+        }
+        return true;
+    }
+
     if (!window.allItemTemplates) return false;
     // Debug MaxDrop
     if (dropConfig.maxDrop !== undefined) {

@@ -65,6 +65,9 @@ export const Globals = {
     // Game Logic
     gameState: 0, // Will correspond to STATES.START
     gameData: { perfectGoal: 3 }, // Default config
+    perfectStreak: 0,
+    noDamageStreak: 0,
+    shooterStreak: 0,
 
     // Entities
     player: {
@@ -194,13 +197,20 @@ export const Globals = {
         }
 
         const ids = ['hp', 'keys', 'room', 'overlay', 'welcome', 'ui',
-            'stats', 'perfect', 'roomName', 'bombs', 'ammo', 'gun',
+            'stats', 'perfect-count', 'nodamage-count', 'shooter-count',
+            'roomName', 'bombs', 'ammo', 'gun',
             'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer',
             't-min', 't-sec', 't-ms'];
 
         ids.forEach(id => {
             // camelCase conversion for property name
-            const prop = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+            let prop = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+
+            // Manual overrides for specific counters to match Game.js expectation
+            if (id === 'perfect-count') prop = 'perfect';
+            if (id === 'nodamage-count') prop = 'nodamage';
+            if (id === 'shooter-count') prop = 'shooter';
+
             // Dictionary mapping check
             const key = prop === 'debugSelect' ? 'debugSelect' :
                 prop === 'debugForm' ? 'debugForm' :

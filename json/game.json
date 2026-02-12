@@ -1,5 +1,4 @@
 {
-    "perfectGoal": 5,
     "startLevel": "json/levels/0.json",
     "hardness": 8,
     "enemyConfig": {
@@ -84,13 +83,20 @@
         }
     },
     "showTimer": false,
+    "showSpeedyTimer": false,
+    "showPerfectCount": false,
+    "showNoDamageCount": false,
+    "showShooterCount": false,
+    "perfectGoal": 5,
+    "noDamageGoal": 20,
+    "shooterGoal": 15,
     "music": false,
     "pause": false,
     "items": true,
     "itemPickup": false,
     "canRestart": true,
     "soundEffects": false,
-    "showSeed": true,
+    "showSeed": false,
     "showMinimap": false,
     "showStatsPanel": false,
     "showWelcome": false,
@@ -187,19 +193,63 @@
         "perfect": {
             "maxDrop": 1,
             "common": {
-                "count": 0,
-                "dropChance": 0
-            },
-            "uncommon": {
-                "count": 0,
-                "dropChance": 0
-            },
-            "rare": {
                 "count": 1,
                 "dropChance": 1
             },
+            "uncommon": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "rare": {
+                "count": 0,
+                "dropChance": 0
+            },
             "legendary": {
                 "count": 1,
+                "dropChance": 0
+            },
+            "special": {
+                "item": ""
+            }
+        },
+        "noDamage": {
+            "maxDrop": 1,
+            "common": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "uncommon": {
+                "count": 1,
+                "dropChance": 0.5
+            },
+            "rare": {
+                "count": 1,
+                "dropChance": 0.1
+            },
+            "legendary": {
+                "count": 0,
+                "dropChance": 0
+            },
+            "special": {
+                "item": ""
+            }
+        },
+        "shooter": {
+            "maxDrop": 1,
+            "common": {
+                "count": 1,
+                "dropChance": 1
+            },
+            "uncommon": {
+                "count": 1,
+                "dropChance": 0.5
+            },
+            "rare": {
+                "count": 1,
+                "dropChance": 0.1
+            },
+            "legendary": {
+                "count": 0,
                 "dropChance": 0
             },
             "special": {

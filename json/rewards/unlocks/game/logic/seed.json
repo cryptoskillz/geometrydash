@@ -1,0 +1,11 @@
+{
+    "name": "Seed",
+    "description": "Unlocks the seed",
+    "unlock": "seed",
+    "json": "game.json",
+    "attr": "showSeed",
+    "value": true,
+    "spawnable": true,
+    "hasItem": false,
+    "instantTrigger": true
+}

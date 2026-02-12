@@ -257,6 +257,82 @@ export async function updateUI() {
             Globals.elements.timer.style.display = 'none';
         }
     }
+
+    // --- SPEEDY TIMER ---
+    const speedyEl = document.getElementById('speedy-timer');
+    if (speedyEl) {
+        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        if (Globals.gameData.showSpeedyTimer || unlockedIds.includes('speedytimer')) {
+            speedyEl.style.display = 'block';
+            // Logic: Limit - (Now - FreezeEnd)
+            // Default limit 5000ms if not set
+            const limit = Globals.roomData.speedGoal !== undefined ? Globals.roomData.speedGoal : 5000;
+            const start = Globals.roomFreezeUntil || 0;
+            const now = Date.now();
+
+            let remaining = limit;
+            if (now > start) {
+                remaining = Math.max(0, limit - (now - start));
+            }
+
+            const sec = Math.floor(remaining / 1000);
+            const ms = Math.floor((remaining % 1000) / 10);
+
+            const valEl = document.getElementById('st-val');
+            if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+
+            if (remaining <= 0) speedyEl.style.color = '#555';
+            else speedyEl.style.color = '#3498db';
+
+        } else {
+            speedyEl.style.display = 'none';
+        }
+    }
+
+    // --- PERFECT COUNT ---
+    const perfectCountEl = document.getElementById('perfect-count');
+    if (perfectCountEl) {
+        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        if (Globals.gameData.showPerfectCount || unlockedIds.includes('perfectcount')) {
+            perfectCountEl.style.display = 'block';
+            const valEl = document.getElementById('pc-val');
+            const streak = Globals.perfectStreak || 0;
+            const goal = Globals.gameData.perfectGoal || 3;
+            if (valEl) valEl.innerText = `${streak} / ${goal}`;
+        } else {
+            perfectCountEl.style.display = 'none';
+        }
+    }
+
+    // --- NO DAMAGE COUNT ---
+    const noDamageEl = document.getElementById('nodamage-count');
+    if (noDamageEl) {
+        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        if (Globals.gameData.showNoDamageCount || unlockedIds.includes('nodamagecount')) {
+            noDamageEl.style.display = 'block';
+            const valEl = document.getElementById('nd-val');
+            const streak = Globals.noDamageStreak || 0;
+            const goal = Globals.gameData.noDamageGoal || 3;
+            if (valEl) valEl.innerText = `${streak} / ${goal}`;
+        } else {
+            noDamageEl.style.display = 'none';
+        }
+    }
+
+    // --- SHOOTER COUNT ---
+    const shooterEl = document.getElementById('shooter-count');
+    if (shooterEl) {
+        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        if (Globals.gameData.showShooterCount || unlockedIds.includes('shootercount')) {
+            shooterEl.style.display = 'block';
+            const valEl = document.getElementById('sc-val');
+            const streak = Globals.shooterStreak || 0;
+            const goal = Globals.gameData.shooterGoal || 3;
+            if (valEl) valEl.innerText = `${streak} / ${goal}`;
+        } else {
+            shooterEl.style.display = 'none';
+        }
+    }
 }
 
 // ... DEBUG EDITOR ...
@@ -692,4 +768,9 @@ export function resetSessionStats() {
     Globals.killEnemySessionCount = 0;
     Globals.killBossSessionCount = 0;
     Globals.playerDeathSessionCount = 0;
+
+    // Reset Bonus Streaks
+    Globals.perfectStreak = 0;
+    Globals.noDamageStreak = 0;
+    Globals.shooterStreak = 0;
 }
