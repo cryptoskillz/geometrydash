@@ -10,6 +10,7 @@
         "game/logic/pause",
         "game/logic/shards",
         "game/logic/timer",
+        "game/logic/seed",
         "game/logic/_restart",
         "game/logic/_speedrun",
         "game/misc/enemies",
