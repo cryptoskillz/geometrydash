@@ -164,7 +164,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     // Green Shards (Run-based)
     Globals.player.inventory.greenShards = 0; // Always reset on run start
 
-    // perfectStreak = 0; // REMOVED: Managed above
+    Globals.perfectStreak = 0;
     if (Globals.elements.perfect) Globals.elements.perfect.style.display = 'none';
     Globals.roomStartTime = Date.now();
     Globals.ghostSpawned = false; // Reset Ghost
@@ -224,6 +224,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 targetKeys.forEach(k => {
                     if (overrides[k]) {
                         log("Applying Unlock Overrides for:", k, overrides[k]);
+                        // DEV: Prevent these from being overridden by saves so game.json controls them
+                        if (overrides[k].showSpeedyTimer !== undefined) delete overrides[k].showSpeedyTimer;
+                        if (overrides[k].showPerfectCount !== undefined) delete overrides[k].showPerfectCount;
+
                         gData = deepMerge(gData, overrides[k]);
                     }
                 });
@@ -2217,8 +2221,8 @@ export function updateRoomLock() {
 
             if (Globals.perfectStreak >= goal) {
                 // Check drop config
-                if (Globals.gameData.bonuses && Globals.gameData.bonuses.perfect) {
-                    const dropped = spawnRoomRewards(Globals.gameData.bonuses.perfect);
+                if (Globals.gameData.rewards && Globals.gameData.rewards.perfect) {
+                    const dropped = spawnRoomRewards(Globals.gameData.rewards.perfect);
                     if (dropped) {
                         perfectEl.innerText = "PERFECT BONUS!";
                         triggerPerfectText();
@@ -2227,7 +2231,7 @@ export function updateRoomLock() {
                     }
                 }
             }
-        } else {
+        } else if (Globals.player.tookDamageInRoom) {
             Globals.perfectStreak = 0; // Reset streak if hit
         }
     }

@@ -3702,6 +3702,23 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
 }
 
 export function spawnRoomRewards(dropConfig, label = null) {
+    if (!dropConfig) return false;
+
+    // DIRECT SPAWN LOGIC (For simple rewards like defined Shards)
+    if (dropConfig.type) {
+        let dropX = (Globals.canvas.width / 2) + (Math.random() - 0.5) * 40;
+        let dropY = (Globals.canvas.height / 2) + (Math.random() - 0.5) * 40;
+
+        // Spawn
+        spawnGroundItem(dropX, dropY, dropConfig);
+
+        // Label
+        if (label) {
+            spawnFloatingText(dropX, dropY - 20, label, "#f1c40f");
+        }
+        return true;
+    }
+
     if (!window.allItemTemplates) return false;
     // Debug MaxDrop
     if (dropConfig.maxDrop !== undefined) {
