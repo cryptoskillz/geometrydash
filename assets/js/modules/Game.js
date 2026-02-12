@@ -2043,32 +2043,32 @@ export function updateRoomTransitions(doors, roomLocked) {
     const shrink = Globals.roomShrinkSize || 0;
 
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
-    // Left Door
+    // Left Door - Require Push Left (A/ArrowLeft)
     if (Globals.player.x < t + shrink && doors.left?.active) {
         if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
-            if (!doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
-            else log("Left Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyA'] || Globals.keys['ArrowLeft']) && !doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
+            else log("Left Door Blocked: Key/Lock/Room");
         }
     }
-    // Right Door
+    // Right Door - Require Push Right (D/ArrowRight)
     else if (Globals.player.x > Globals.canvas.width - t - shrink && doors.right?.active) {
         if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
-            if (!doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
-            else log("Right Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyD'] || Globals.keys['ArrowRight']) && !doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
+            else log("Right Door Blocked: Key/Lock/Room");
         }
     }
-    // Top Door
+    // Top Door - Require Push Up (W/ArrowUp)
     else if (Globals.player.y < t + shrink && doors.top?.active) {
         if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
-            if (!doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
-            else log("Top Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyW'] || Globals.keys['ArrowUp']) && !doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
+            else log("Top Door Blocked: Key/Lock/Room");
         }
     }
-    // Bottom Door
+    // Bottom Door - Require Push Down (S/ArrowDown)
     else if (Globals.player.y > Globals.canvas.height - t - shrink && doors.bottom?.active) {
         if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
-            if (!doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
-            else log("Bottom Door Blocked: Locked or Room Locked");
+            if ((Globals.keys['KeyS'] || Globals.keys['ArrowDown']) && !doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
+            else log("Bottom Door Blocked: Key/Lock/Room");
         }
     }
 }

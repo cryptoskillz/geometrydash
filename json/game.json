@@ -84,6 +84,8 @@
         }
     },
     "showTimer": false,
+    "showSpeedyTimer": true,
+    "showPerfectCount": true,
     "music": false,
     "pause": false,
     "items": true,
