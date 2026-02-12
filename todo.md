@@ -56,6 +56,7 @@ Bug fix  10
     unlock spawn that have already been already unlocked
 
     timer should not reset on the next level it is a game timer
+    store a tieme for each level starting at level 4 and lasting for howerver maany levels that are game.jsoin levelCount
 
     when you run into a biullet it gets stuck in you we should go back to the methid where the you ate the bullets and place the first shot so many 
     frames in from the player so its a prolonged push that eats the bullet not a simple move forward

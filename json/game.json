@@ -82,6 +82,7 @@
             "gun": "json/rewards/items/guns/enemy/peashooter.json"
         }
     },
+    "levelCount": 6,
     "showTimer": false,
     "showSpeedyTimer": false,
     "showGhostimer": true,

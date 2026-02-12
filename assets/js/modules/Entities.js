@@ -1068,10 +1068,10 @@ export function updateShooting() {
                 fireBullet(0, speed, Math.cos(centerAngle) * speed, Math.sin(centerAngle) * speed, centerAngle);
             }
             else {
-                if (Globals.keys['ArrowUp']) dirCode = 1;
-                else if (Globals.keys['ArrowDown']) dirCode = 3;
-                else if (Globals.keys['ArrowLeft']) dirCode = 4;
-                else if (Globals.keys['ArrowRight']) dirCode = 2;
+                if (Globals.keys['ArrowUp']) { dirCode = 1; Globals.player.lastShootX = 0; Globals.player.lastShootY = -1; }
+                else if (Globals.keys['ArrowDown']) { dirCode = 3; Globals.player.lastShootX = 0; Globals.player.lastShootY = 1; }
+                else if (Globals.keys['ArrowLeft']) { dirCode = 4; Globals.player.lastShootX = -1; Globals.player.lastShootY = 0; }
+                else if (Globals.keys['ArrowRight']) { dirCode = 2; Globals.player.lastShootX = 1; Globals.player.lastShootY = 0; }
 
                 // Call unified logic
                 const speed = Globals.gun.Bullet?.speed || 7;
@@ -4057,12 +4057,12 @@ export function drawPlayer() {
             Globals.ctx.restore();
         };
 
-        // 1. Main Barrel (Based on Shooting Direction, or Movement if not shooting)
+        // 1. Main Barrel (Based on Last Shooting Direction, then Movement)
         let aimAngle = 0;
         let shootX = 0;
         let shootY = 0;
 
-        // Check Shooting Keys
+        // Check Input (Real-time override)
         if (Globals.keys['ArrowUp']) shootY = -1;
         if (Globals.keys['ArrowDown']) shootY = 1;
         if (Globals.keys['ArrowLeft']) shootX = -1;
@@ -4070,7 +4070,14 @@ export function drawPlayer() {
 
         if (shootX !== 0 || shootY !== 0) {
             aimAngle = Math.atan2(shootY, shootX);
+            // Update lastShoot if actively pressing keys (failsafe if updateShooting lags)
+            Globals.player.lastShootX = shootX;
+            Globals.player.lastShootY = shootY;
+        } else if (Globals.player.lastShootX || Globals.player.lastShootY) {
+            // Use Last Shot Direction
+            aimAngle = Math.atan2(Globals.player.lastShootY, Globals.player.lastShootX);
         } else if (Globals.player.lastMoveX || Globals.player.lastMoveY) {
+            // Fallback to Movement
             aimAngle = Math.atan2(Globals.player.lastMoveY, Globals.player.lastMoveX);
         }
         drawBarrel(aimAngle);
