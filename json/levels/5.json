@@ -1,5 +1,5 @@
 {
-    "name": "Oh My God, LEVEL 5!",
+    "name": "Level 5",
     "description": "Oh My God, LEVEL 5!!",
     "NoRooms": 10,
     "startRoom": "json/rooms/special/start/room.json",
