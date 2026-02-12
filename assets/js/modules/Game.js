@@ -1224,8 +1224,8 @@ export function startGame(keepState = false) {
                     Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
                 }
             }     // Show Level Title
-            if (Globals.gameData.name) {
-                showLevelTitle(Globals.gameData.name);
+            if (Globals.gameData.description || Globals.gameData.name) {
+                showLevelTitle(Globals.gameData.description || Globals.gameData.name);
             }
 
             // Minimap Visibility
