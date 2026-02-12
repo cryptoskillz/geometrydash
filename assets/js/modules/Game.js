@@ -247,9 +247,20 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // 3. Load Level Specific Data
-        // Use nextLevel if provided, else check stored level (Restart/Continue), else defaults
+        // Use nextLevel if provided.
+        // If !isRestart (Welcome Screen), prioritize Start Level (Fresh Start).
+        // If isRestart (R Key), prioritize Stored Level (Current Level).
         const storedLevel = localStorage.getItem('rogue_current_level');
-        const levelFile = nextLevel || storedLevel || gData.startLevel;
+        let levelFile = nextLevel;
+
+        if (!levelFile) {
+            if (isRestart) {
+                levelFile = storedLevel || gData.startLevel;
+            } else {
+                levelFile = gData.startLevel || storedLevel;
+            }
+        }
+
         if (levelFile) {
             try {
                 log("Loading Level:", levelFile);
@@ -2472,7 +2483,7 @@ export function updateSFXToggle() {
     }
 }
 
-export async function restartGame(keepItems = false) {
+export async function restartGame(keepItems = false, targetLevel = null) {
     const isDebug = Globals.gameData && (
         Globals.gameData.showDebugWindow !== undefined
             ? Globals.gameData.showDebugWindow
@@ -2486,7 +2497,7 @@ export async function restartGame(keepItems = false) {
     Globals.screenShake.teleport = 1;
 
     // Wait for init to complete, then auto-start
-    await initGame(true, null, keepItems);
+    await initGame(true, targetLevel, keepItems);
     // startGame is called by initGame internal logic (via shouldAutoStart)
 }
 Globals.restartGame = restartGame;
