@@ -8,15 +8,6 @@ export function spawnChests(roomData) {
     if (!roomData.chests) return;
     log("Checking Chests for Room:", roomData.name, roomData.chests);
 
-    // Handle "chests" object structure
-    // Structure: { "chestID": { config... }, "manifest": "..." }
-    // Or maybe manifest is inside config?
-    // Snippet 2714 suggests manifest is a sibling of chest keys if defined at top level?
-    // User request: "bombs!": { "manfest": ... }
-
-    // We iterate keys. If key is "manifest" (or typo "manfest"), we skip or store globally?
-    // Let's assume keys that are NOT "manifest" are chests.
-
     const chestKeys = Object.keys(roomData.chests);
     chestKeys.forEach(key => {
         if (key === 'manifest' || key === 'manfest') return;
@@ -31,19 +22,14 @@ export function spawnChests(roomData) {
         if (config.instantSpawn === true) {
             shouldSpawnNow = true;
         } else if (typeof config.instantSpawn === 'object') {
-            if (config.instantSpawn.active !== false) { // Default active if object exists? Or strict true? User: "active": false.
+            if (config.instantSpawn.active !== false) {
                 if (config.instantSpawn.active === true) shouldSpawnNow = true;
-                // Add chance check? spawnChance
+                // Add chance check
                 if (shouldSpawnNow && config.instantSpawn.spawnChance !== undefined) {
                     if (Math.random() > config.instantSpawn.spawnChance) shouldSpawnNow = false;
                 }
             }
         } else if (config.instantSpawn === undefined) {
-            // Default? If spawnsOnClear is undefined, maybe default visible?
-            // User example has instantSpawn: { active: false }.
-            // If completely missing, assume visible? Or invisible?
-            // Usually config defaults to visible if not specified? 
-            // Let's assume visible unless spawnsOnClear is present.
             if (!config.spawnsOnClear && !config.spawnsOnClear) shouldSpawnNow = true;
         }
 
@@ -51,16 +37,14 @@ export function spawnChests(roomData) {
         const clearConfig = config.spawnsOnClear || config.spawnsOnClear;
         if (clearConfig) {
             let active = clearConfig === true;
-            if (typeof clearConfig === 'object' && clearConfig.active !== false) { // active: true
-                active = true; // Wait, user has active: false in snippet.
+            if (typeof clearConfig === 'object' && clearConfig.active !== false) {
+                active = true;
                 if (clearConfig.active === true) active = true;
                 else active = false;
             }
             if (active) shouldSpawnLater = true;
         }
 
-        // If neither, skip
-        log("Chest Spawn Decision:", key, "Now:", shouldSpawnNow, "Later:", shouldSpawnLater);
         if (!shouldSpawnNow && !shouldSpawnLater) return;
 
         const chest = {
@@ -70,9 +54,9 @@ export function spawnChests(roomData) {
             width: 40,
             height: 40,
             config: config,
-            state: shouldSpawnNow ? 'closed' : 'hidden', // 'hidden' for spawnsOnClear
+            state: shouldSpawnNow ? 'closed' : 'hidden',
             locked: config.locked === true,
-            solid: config.solid || false, // Default false
+            solid: config.solid || false,
             hp: 1,
             manifest: config.manfest || config.manifest || roomData.chests.manifest || roomData.chests.manfest
         };
@@ -81,7 +65,51 @@ export function spawnChests(roomData) {
     });
 }
 
+// Flag to ensure listener is added only once
+let chestListenerAdded = false;
+
 export function updateChests() {
+    if (!chestListenerAdded) {
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
+                // Interact logic here
+                // Check Game State
+                if (Globals.gameState !== STATES.PLAY && Globals.gameState !== 1) return; // 1 is often State.PLAY
+
+                Globals.chests.forEach(chest => {
+                    if (chest.state !== 'closed') return;
+
+                    const player = Globals.player;
+                    if (!player) return;
+
+                    const cx = chest.x + chest.width / 2;
+                    const cy = chest.y + chest.height / 2;
+                    const dist = Math.hypot(player.x - cx, player.y - cy);
+
+                    // Allow wider range for key interaction (120px)
+                    if (dist < 120) {
+                        console.log("Direct Key Interaction! Chest:", chest.id, "Dist:", dist);
+                        // Logic for Locked Chests
+                        if (chest.locked) {
+                            if (player.inventory.keys > 0) {
+                                player.inventory.keys--;
+                                openChest(chest);
+                                spawnFloatingText(chest.x, chest.y - 20, "Unlocked!", "#f1c40f");
+                            } else {
+                                spawnFloatingText(chest.x, chest.y - 20, "Locked", "#e74c3c");
+                            }
+                        } else {
+                            // Unlocked - Manual Open
+                            openChest(chest);
+                        }
+                    }
+                });
+            }
+        });
+        chestListenerAdded = true;
+        console.log("Chest Interaction Listener Added.");
+    }
+
     // Check Room Clear to reveal hidden chests
     const roomCleared = Globals.enemies.length === 0;
 
@@ -105,8 +133,6 @@ export function updateChests() {
 
         if (chest.state === 'despawned') return;
 
-        // If open, we usually skip unless solid
-        // If open, we still need collision?
         if (chest.state === 'open') {
             if (chest.solid) {
                 if (Globals.player && checkCollision(Globals.player, chest)) {
@@ -120,63 +146,27 @@ export function updateChests() {
         if (Globals.player) {
             const player = Globals.player;
 
-            // 1. Physics Collision (Solid pushback)
+            // 1. Physics Collision (Solid pushback only)
             if (checkCollision(player, chest)) {
                 if (chest.locked || chest.solid) {
                     resolveCollision(player, chest);
                 } else {
-                    // Non-solid, non-locked -> Auto Open on bump?
-                    // User said "if not locked space should open chest"
-                    // But also "locked space should use a key".
-                    // Does user want SPACE for UNLOCKED chests too?
-                    // Previous logic allowed auto-open for non-solid.
-                    // If SOLID, we must USE KEY (if locked) or USE KEY (if unlocked).
-                    // If NOT SOLID, maybe auto-open?
-                    // Assuming Space required for SOLID chests. 
-                    // Auto-open for non-solid.
+                    // Non-solid, non-locked -> Auto Open on bump (Legacy/Fallback)
+                    // If user insists on Space only, we can remove this.
+                    // But keeping it ensures non-solid chests are easy.
                     openChest(chest);
                 }
             }
-
-            // 2. Interaction (Proximity) - Space/E/Enter
-            const cx = chest.x + chest.width / 2;
-            const cy = chest.y + chest.height / 2;
-            const dist = Math.hypot(player.x - cx, player.y - cy);
-
-            if (dist < 90) {
-                if (Globals.keys['Space']) console.log("Space Pressed! Dist:", dist);
-                const isInteractKey = Globals.keys['Space'] || Globals.keys['Enter'] || Globals.keys['KeyE'];
-
-                if (isInteractKey) {
-                    // Consume Input
-                    Globals.keys['Space'] = false;
-                    Globals.keys['Enter'] = false;
-                    Globals.keys['KeyE'] = false;
-
-                    if (chest.locked) {
-                        if (Globals.player.inventory.keys > 0) {
-                            Globals.player.inventory.keys--;
-                            openChest(chest);
-                            spawnFloatingText(chest.x, chest.y - 20, "Unlocked!", "#f1c40f");
-                        } else {
-                            spawnFloatingText(chest.x, chest.y - 20, "Locked", "#e74c3c");
-                        }
-                    } else {
-                        // Unlocked - Manual Open (if solid prevented auto-open)
-                        openChest(chest);
-                    }
-                }
-            }
+            // Interaction handled by Listener
         }
     });
 
     // Check Bullet Collisions
     Globals.bullets.forEach(bullet => {
-        // Globals.bullets contains only active bullets. Remove !bullet.active check.
         Globals.chests.forEach(chest => {
             if (chest.state !== 'closed') return;
-            if (chest.locked) return; // Locked chests are immune to bullets
-            if (chest.config.canShoot === false) return; // Explicit check
+            if (chest.locked) return;
+            if (chest.config.canShoot === false) return;
 
             if (checkCollision(bullet, chest)) {
                 bullet.markedForDeletion = true;
@@ -185,26 +175,19 @@ export function updateChests() {
         });
     });
 
-    // Check Bomb Collisions (Explosions)
-    // Handled in Bomb update logic? 
-    // Or here: iterate particles/explosions?
-    // Usually explosions are momentary. 
-    // We can check Glboals.bombs (if active && exploding)
+    // Check Bomb Collisions
     Globals.bombs.forEach(bomb => {
-        if (bomb.exploding) { // Custom flag or check timer
-            // Check dist
+        if (bomb.exploding) {
             Globals.chests.forEach(chest => {
                 if (chest.state !== 'closed') return;
-                if (chest.locked) return; // Locked chests are immune to bombs
-                // Check boolean false
+                if (chest.locked) return;
                 if (chest.config.canBomb === false) return;
-                // Check object config
                 if (chest.config.canBomb && typeof chest.config.canBomb === 'object' && chest.config.canBomb.active === false && !chest.config.locked) return;
 
                 const dx = bomb.x - chest.x;
                 const dy = bomb.y - chest.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 100) { // Explosion radius
+                if (dist < 100) {
                     openChest(chest);
                 }
             });
@@ -213,24 +196,19 @@ export function updateChests() {
 }
 
 function checkCollision(a, b) {
-    // a = Entity (Player/Bullet) - Center Origin (size) or TopLeft (width)
-    // b = Chest - Top-Left Origin (width/height)
-
-    // A Bounds
     let aLeft, aRight, aTop, aBottom;
-    if (a.size && !a.width) { // Radius/Center logic (and no explicit width override)
+    if (a.size && !a.width) {
         aLeft = a.x - a.size;
         aRight = a.x + a.size;
         aTop = a.y - a.size;
         aBottom = a.y + a.size;
-    } else { // Top-Left logic (fallback)
+    } else {
         aLeft = a.x;
         aRight = a.x + (a.width || 30);
         aTop = a.y;
         aBottom = a.y + (a.height || 30);
     }
 
-    // B Bounds (Chest)
     const bLeft = b.x;
     const bRight = b.x + b.width;
     const bTop = b.y;
@@ -240,14 +218,12 @@ function checkCollision(a, b) {
 }
 
 function resolveCollision(player, chest) {
-    // PAD COLLISION to fix "20px into it"
-    const padding = 25; // Increased buffer for gun
+    const padding = 25;
     const chestW = chest.width + padding * 2;
     const chestH = chest.height + padding * 2;
     const chestX = chest.x - padding;
     const chestY = chest.y - padding;
 
-    // Use Player Size/Dimensions
     const pW = player.width || player.size || 30;
     const pH = player.height || player.size || 30;
 
@@ -280,7 +256,7 @@ async function openChest(chest) {
     console.log("Opening Chest:", chest.id);
     if (chest.state === 'open') return;
     chest.state = 'open';
-    SFX.doorUnlocked(); // Use unlock sound?
+    SFX.doorUnlocked();
 
     // Spawn Items
     if (!chest.manifest) {
@@ -314,16 +290,13 @@ async function openChest(chest) {
     if (!manifestData || !items) return;
 
     // Filter Items
-    const contains = chest.config.contains || []; // Regex strings
+    const contains = chest.config.contains || [];
     const pool = [];
 
     items.forEach(itemPath => {
         const match = contains.some(pattern => {
             const regexStr = pattern.replace(/\*/g, '.*');
-            const regex = new RegExp(`^${regexStr}`); // Remove $ to allow partial match if desired? User used "game*" vs "game/logic..."
-            // "game*" -> "^game.*" matches "game/logic/items"
-            // With ^ and $, "game*" matches "game/logic/items". 
-            // Correct.
+            const regex = new RegExp(`^${regexStr}`);
             return regex.test(itemPath);
         });
 
@@ -353,7 +326,7 @@ async function spawnItem(path, x, y, basePath = 'rewards/items/') {
         if (itemData.spawnable === false) return;
 
         Globals.groundItems.push({
-            x: x + 10 + (Math.random() - 0.5) * 20, // Spread spawn
+            x: x + 10 + (Math.random() - 0.5) * 20,
             y: y + 10 + (Math.random() - 0.5) * 20,
             data: itemData,
             roomX: Globals.roomData.x || 0,
@@ -374,13 +347,11 @@ export function drawChests() {
     Globals.chests.forEach(chest => {
         const ctx = Globals.ctx;
 
-        // --- DRAW CHEST GRAPHIC ---
-        // Box Body
         const x = chest.x;
         const y = chest.y;
         const w = chest.width;
         const h = chest.height;
-        const baseColor = chest.config.color || '#8e44ad'; // Purple default
+        const baseColor = chest.config.color || '#8e44ad';
 
         // Shadow/Base
         ctx.fillStyle = '#2c3e50';
@@ -391,74 +362,56 @@ export function drawChests() {
             ctx.fillStyle = baseColor;
             ctx.fillRect(x, y + 10, w, h - 10);
 
-            // Lid (Top part)
-            ctx.fillStyle = adjustColor(baseColor, 20); // Lighter
+            // Lid
+            ctx.fillStyle = adjustColor(baseColor, 20);
             ctx.fillRect(x, y, w, 10);
 
-            // Trim / Detail (Dark border or straps)
+            // Trim
             ctx.fillStyle = '#34495e';
-            ctx.fillRect(x + 5, y + 10, 5, h - 10); // Left strap
-            ctx.fillRect(x + w - 10, y + 10, 5, h - 10); // Right strap
+            ctx.fillRect(x + 5, y + 10, 5, h - 10);
+            ctx.fillRect(x + w - 10, y + 10, 5, h - 10);
 
             // Lock
             if (chest.locked) {
-                ctx.fillStyle = '#f1c40f'; // Gold lock
+                ctx.fillStyle = '#f1c40f';
                 ctx.fillRect(x + w / 2 - 5, y + 5, 10, 10);
-
-                // Keyhole
                 ctx.fillStyle = '#000';
                 ctx.fillRect(x + w / 2 - 2, y + 8, 4, 4);
             } else {
-                // Metal clasp
                 ctx.fillStyle = '#bdc3c7';
                 ctx.fillRect(x + w / 2 - 4, y + 5, 8, 8);
             }
         } else {
             // Open State
-            // Back of box (dark inside)
             ctx.fillStyle = '#2c3e50';
             ctx.fillRect(x, y + 10, w, h - 10);
-
-            // Front panel (fallen?) or just open box logic
-            // Let's draw open box (top flap open?)
-
-            // Front face (same color)
             ctx.fillStyle = baseColor;
             ctx.fillRect(x, y + 15, w, h - 15);
-
-            // Lid (Open, maybe slanted up)
             ctx.fillStyle = adjustColor(baseColor, 20);
-            // Draw Lid rotated? Simplified: Just a thin rect above?
             ctx.fillRect(x, y - 10, w, 10);
-
-            // Trim
             ctx.fillStyle = '#34495e';
             ctx.fillRect(x + 5, y + 15, 5, h - 15);
             ctx.fillRect(x + w - 10, y + 15, 5, h - 15);
         }
 
         // --- DRAW NAME ABOVE ---
-        // Name Logic: config.name || id
         const name = chest.config.name || chest.id || "Chest";
 
         ctx.save();
-        ctx.font = "12px 'Press Start 2P', monospace"; // Match game font if possible
+        ctx.font = "12px 'Press Start 2P', monospace";
         ctx.textAlign = "center";
 
-        // Text Shadow
         ctx.fillStyle = "black";
         ctx.fillText(name, x + w / 2 + 1, y - 8 + 1);
-
-        // Text Color
         ctx.fillStyle = "white";
         ctx.fillText(name, x + w / 2, y - 8);
 
         // INTERACTION PROMPT
         if (chest.state === 'closed') {
             const dist = Math.hypot(Globals.player.x - (x + w / 2), Globals.player.y - (y + h / 2));
-            if (dist < 60) {
+            if (dist < 120) { // Increased valid Visual Prompt distance to match logic
                 ctx.font = "10px 'Press Start 2P', monospace";
-                ctx.fillStyle = "#f1c40f"; // Gold
+                ctx.fillStyle = "#f1c40f";
                 ctx.fillText("SPACE", x + w / 2, y - 22);
             }
         }
@@ -466,8 +419,7 @@ export function drawChests() {
         ctx.restore();
     });
 }
-// Helper (Quick HSL adjust or similar would be better but simple hex logic is tricky without libs)
-// Placeholder for color adjust, just using hex for specific parts above.
+
 function adjustColor(color, amount) {
-    return color; // TODO: Implement color adjustment or use static variants
+    return color;
 }
