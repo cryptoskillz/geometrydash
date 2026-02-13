@@ -677,7 +677,8 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         spinAngle: 0,
         hitEnemies: [],
         ownerType: ownerType, // 'player' or 'enemy'
-        speed: Math.hypot(vx, vy) // Store initial speed for homing reliability
+        speed: Math.hypot(vx, vy), // Store initial speed for homing reliability
+        createdAt: Date.now()
     };
 
     // Calculate Color based on Rarity (if not overridden)
@@ -913,8 +914,22 @@ export function updateBulletsAndShards(aliveEnemies) {
                         return;
                     }
                 } else {
-                    // Harmless collision - Do NOT destroy bullet (Allow player to run through own slow bullets)
-                    // Globals.bullets.splice(i, 1);
+                    // Harmless collision - Eat bullet and Push Player
+                    // "Prolonged push that eats the bullet"
+
+                    // Safety: Wait before eating (100ms)
+                    if (Date.now() - (b.createdAt || 0) < 100) return;
+
+                    // Init velocity if missing
+                    if (typeof Globals.player.vx === 'undefined') Globals.player.vx = 0;
+                    if (typeof Globals.player.vy === 'undefined') Globals.player.vy = 0;
+
+                    // Transfer momentum (Push Strength)
+                    const pushFactor = 0.5;
+                    Globals.player.vx += b.vx * pushFactor;
+                    Globals.player.vy += b.vy * pushFactor;
+
+                    Globals.bullets.splice(i, 1);
                     return;
                 }
             }
@@ -3036,6 +3051,27 @@ export function updateMovementAndDoors(doors, roomLocked) {
         Globals.player.y += dy * 0.1;
         return;
     }
+
+    // --- PHYSICS MOMENTUM (Knockback/Slide) ---
+    if (Math.abs(Globals.player.vx || 0) > 0.1 || Math.abs(Globals.player.vy || 0) > 0.1) {
+        Globals.player.x += (Globals.player.vx || 0);
+        Globals.player.y += (Globals.player.vy || 0);
+
+        // Friction
+        Globals.player.vx *= 0.9;
+        Globals.player.vy *= 0.9;
+
+        // Stop if negligible
+        if (Math.abs(Globals.player.vx) < 0.1) Globals.player.vx = 0;
+        if (Math.abs(Globals.player.vy) < 0.1) Globals.player.vy = 0;
+
+        // Basic Boundary Clamp for Momentum
+        const s = Globals.roomShrinkSize || 0;
+        const p = Globals.player;
+        p.x = Math.max(BOUNDARY + s + p.size, Math.min(Globals.canvas.width - BOUNDARY - s - p.size, p.x));
+        p.y = Math.max(BOUNDARY + s + p.size, Math.min(Globals.canvas.height - BOUNDARY - s - p.size, p.y));
+    }
+
     // --- 4. MOVEMENT & DOOR COLLISION ---
     const moveKeys = { "KeyW": [0, -1, 'top'], "KeyS": [0, 1, 'bottom'], "KeyA": [-1, 0, 'left'], "KeyD": [1, 0, 'right'] };
 
