@@ -164,13 +164,22 @@ export function updateChests() {
     // Check Bullet Collisions
     Globals.bullets.forEach(bullet => {
         Globals.chests.forEach(chest => {
-            if (chest.state !== 'closed') return;
-            if (chest.locked) return;
-            if (chest.config.canShoot === false) return;
 
-            if (checkCollision(bullet, chest)) {
-                bullet.markedForDeletion = true;
+            // 1. Check Collision First
+            if (!checkCollision(bullet, chest)) return;
+
+            // 2. Try to Open (if Closed, Unlocked, Shootable)
+            if (chest.state === 'closed' && !chest.locked && chest.config.canShoot !== false) {
                 openChest(chest);
+                bullet.markedForDeletion = true;
+                return;
+            }
+
+            // 3. Block Bullet (If Solid)
+            // Even if open or locked, a solid chest should stop bullets
+            if (chest.solid) {
+                bullet.markedForDeletion = true;
+                // Optional: SFX.hitWall()
             }
         });
     });

@@ -168,7 +168,7 @@
                 "spawnChance": 1
             },
             "contains": [
-                "modifier/player*"
+                "modifiers/player*"
             ],
             "canShoot": true,
             "locked": false,
