@@ -104,32 +104,56 @@ export function setupInput(callbacks) {
 
 // Polling Handler (called in Game Loop)
 export function handleGlobalInputs(callbacks) {
-    // Restart
+    const isDebug = Globals.gameData && (
+        Globals.gameData.showDebugWindow !== undefined
+            ? Globals.gameData.showDebugWindow
+            : (Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true)
+    );
+
+    // Restart (R)
     if (Globals.keys['KeyR']) {
         // BUT if Ghost is SPAWNED (Hunting) in PLAY state, do NOT handle here (let Game.js handle trap)
         if (Globals.ghostSpawned) return;
 
         // Allow Restart in PLAY, GAMEOVER, WIN, MENU, GHOSTKILLED
         if (Globals.gameState === STATES.PLAY || Globals.gameState === STATES.GAMEOVER || Globals.gameState === STATES.WIN || Globals.gameState === STATES.GAMEMENU || Globals.ghostKilled) {
-            callbacks.restartGame();
+
+            // PRODUCTION MODE: R -> Start Level
+            if (!isDebug) {
+                const startLevel = Globals.gameData && Globals.gameData.startLevel;
+                // keepItems = false, targetLevel = startLevel
+                callbacks.restartGame(false, startLevel || null);
+            } else {
+                // DEBUG MODE: R -> Restart Current Level (Default)
+                callbacks.restartGame();
+            }
             return true;
         }
     }
-    // New Run (T)
-    if (Globals.keys['KeyT']) {
-        console.log("T key pressed. Current State:", Globals.gameState);
-        // Allow New Run in GAMEOVER, WIN, MENU, START, GHOSTKILLED
-        // BUT if Ghost is SPAWNED (Hunting) in PLAY state, do NOT handle here (let Game.js handle trap)
-        if (Globals.ghostSpawned) return;
 
+    // New Run (Y) - Restart on Level 4 (Debug Only?)
+    // User requested "T & Y do nothing if debug not active"
+    if (isDebug && Globals.keys['KeyY']) {
+        console.log("New Run key pressed (Y). Target: Level 4.");
+        if (Globals.ghostSpawned) return;
+        Globals.gameState = STATES.START;
+        if (callbacks.newRun) {
+            console.log("Calling newRun('levels/4.json')...");
+            callbacks.newRun('levels/4.json').catch(err => console.error("newRun failed:", err));
+            return true;
+        }
+    }
+
+    // New Run (T) - Restart Current Level, New Seed (Debug Only?)
+    // User requested "T & Y do nothing if debug not active"
+    if (isDebug && Globals.keys['KeyT']) {
+        console.log("New Run key pressed (T). Target: Current Level.");
+        if (Globals.ghostSpawned) return;
         if (Globals.gameState === STATES.PLAY || Globals.gameState === STATES.GAMEOVER || Globals.gameState === STATES.WIN || Globals.gameState === STATES.GAMEMENU || Globals.gameState === STATES.START || Globals.ghostKilled) {
-            console.log("Checking callbacks:", Object.keys(callbacks));
             if (callbacks.newRun) {
                 console.log("Calling newRun...");
-                callbacks.newRun().catch(err => console.error("newRun failed:", err)); // Async call safety catch
+                callbacks.newRun().catch(err => console.error("newRun failed:", err));
                 return true;
-            } else {
-                console.error("callbacks.newRun IS MISSING!");
             }
         }
     }

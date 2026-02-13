@@ -82,8 +82,10 @@
             "gun": "json/rewards/items/guns/enemy/peashooter.json"
         }
     },
+    "levelCount": 6,
     "showTimer": false,
     "showSpeedyTimer": false,
+    "showGhostimer": false,
     "showPerfectCount": false,
     "showNoDamageCount": false,
     "showShooterCount": false,
@@ -110,8 +112,9 @@
     "showKeys": false,
     "showRoom": false,
     "showOverlay": false,
-    "ShowEnemyNames": true,
-    "ShowEnemyHealth": false,
+    "showEnemyName": false,
+    "showEnemyHealth": false,
+    "showGhostHealth": false,
     "redShards": true,
     "greenShards": true,
     "ghost": {

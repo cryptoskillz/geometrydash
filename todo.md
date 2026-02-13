@@ -1,4 +1,11 @@
 bugs
+    unlock spawn that have already been already unlocked
+    fix debug logs 
+    the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
+    matrix room does not spawn untik after first boss
+    add god mode to the debug window
+ tried to run out of a room with a ghost and enemies it would not let me even though i blew it with a red bomb
+    speedytimer shoukd be set for standard peashooter time but adjust down for the more powerful gun you have we dont have to be super precise with this and min max it mayber have perOverPeashooter and it uses this to adjsut the speedy bonus accordingly, that can read speedy pea shooter bonuses
     bomb drop don has a big B
 level 0 = shows last screen a little before going to welcome screen (unlocks)
 level 1 = shows last screen a little before going to welcome screen (unlocks)
@@ -29,8 +36,7 @@ level 5 = loads credits fine then shows last screen a little before going to wel
 
 
 next up 
-  bug fix 10
-  sfx & ui updates
+ ui updates
         game settings
             inventory
             stats
@@ -42,35 +48,25 @@ next up
             unlocked guns
             unlocked bombs
     
-    ghost
+    ghostr
     rooms
     items
     balance
     unlocks / permance
     server    
 
-Bug fix  9 
-Check for Start Room Bonus (First Start) make the bousn look better
-    enemy health item
-    404571 spawns    no route to boss room
-    10539 so=pawns one room
-4   14200 spawns 4 roooms no biss
-   add critical gun
-    add freeze gun
-    angry gun
-    add fps item
-    add the counters to the session, end game and all time counts
-    when you run into a biullet it gets stuck in you we should go back to the methid where the you ate the bullets and place the first shot so many 
-    frames in from the player so its a prolonged push that eats the bullet not a simple move forward
-    somme gold doors wont unlock you have to clear the room go out and go back in and its fine it appers to be when you pick a key up in the room as if you leave and come back it is fine
-    fix debug logs 
-    add a ghsot timer, time survived with ghost and update ghsot timr session & real time
-    matrix romm shootable items (chests) that unlocck all of that item type
-    when you are facing north but shooting south the gun turret should be pointing south not north
-the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
-matrix room does not spawn untik after first boss
+    
+
+
+    
+   
+
+   
 
     ^^^^
+
+
+
  
   
 
@@ -119,13 +115,21 @@ achivements
 
 
 Balance
+
+you kill the ghost by buying the ghost trap and lettign hoim out in the ghost room
+    you have to buy the ghost trap for 10000 red shards, requires upgrading the shard system
+    yuo catch the ghost
+    you then got 5 seconds in the trap (never enough)
+    you have to upgrade the timer of the trap
+    you take the gost to a protal room and let him out
+    he dies
+    this is why he never goes in the portal room or the start room (which will have a portal)
     show an increasingf number of enemies type you killed to the welcome screen with the big ghost occasionally showing
     add what killed you to the game over screen
     count the number of dead enemies and show on dead complete screen, scroll the dead enemy types up
 
     add correct enemies to each room
 
- implement seed system to regenerate exact level so we can debug whilst the boss room does not always spawn
     beat the game to unlock permance mode 
        add restarts to the session and global stats
 
@@ -202,6 +206,8 @@ enemies
 
 
 ghost
+    if the ghost respawns his health i think so he should be really hard to kill you shuold clear the level go back coax him and have him chase you 
+    if you get to far away he stops following you and goes back to the void and comes back later fully healed. 
     add ghost to the welcome screen
     when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
     ghost non solid enmeies should be able to pass through bombs (they dont explode)
@@ -273,12 +279,18 @@ items
     inventory screen
     inventory screen should show the items that are unlocked
     only drop items that are unlocked
-    shield+
     speed+
     luck+
     randomstat+
     kick bombs
     speical item is game.json
+        add fps item
+
+    guns 
+
+        add critical gun
+        add freeze gun
+        angry gun
 
      bombs
         size

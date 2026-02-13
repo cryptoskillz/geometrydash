@@ -3,7 +3,7 @@ import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_
 import { log, deepMerge, triggerSpeech, generateLore, spawnFloatingText } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
-import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats } from './UI.js';
+import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats, saveGameStats } from './UI.js';
 import { renderDebugForm, updateDebugEditor } from './Debug.js';
 import { generateLevel } from './Level.js';
 import {
@@ -15,6 +15,7 @@ import {
     updateBombsPhysics, updateShooting, updateShield, updatePortal, updateGhost,
     handleLevelComplete
 } from './Entities.js';
+import { spawnChests, updateChests, drawChests } from './Chests.js';
 
 // Placeholders for functions to be appended
 export async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
@@ -33,8 +34,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     Globals.isInitializing = true;
 
     // Stats Init
-    loadGameStats();
-    if (!keepStats) resetSessionStats();
+    if (!keepStats) {
+        loadGameStats();
+        resetSessionStats();
+    }
 
     // Reset Ghost Trap State
     Globals.ghostTrapActive = false;
@@ -148,6 +151,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     Globals.bulletsInRoom = 0;
     Globals.player.roomY = 0;
     Globals.bulletsInRoom = 0;
+
+    // Only reset Ghost Timer on Fresh Start
+    if (!keepStats) {
+        Globals.ghostTime = 0; // Accumulated time with ghost (Run)
+        // Globals.ghostTimeSurvived must NOT be reset here! It is Lifetime.
+        Globals.ghostTimeSessionSurvived = 0;
+    }
+
+    Globals.lastUpdate = Date.now(); // For delta time
     Globals.hitsInRoom = 0;
 
     // SHARD CURRENCY INIT
@@ -247,9 +259,20 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // 3. Load Level Specific Data
-        // Use nextLevel if provided, else check stored level (Restart/Continue), else defaults
+        // Use nextLevel if provided.
+        // If !isRestart (Welcome Screen), prioritize Start Level (Fresh Start).
+        // If isRestart (R Key), prioritize Stored Level (Current Level).
         const storedLevel = localStorage.getItem('rogue_current_level');
-        const levelFile = nextLevel || storedLevel || gData.startLevel;
+        let levelFile = nextLevel;
+
+        if (!levelFile) {
+            if (isRestart) {
+                levelFile = storedLevel || gData.startLevel;
+            } else {
+                levelFile = gData.startLevel || storedLevel;
+            }
+        }
+
         if (levelFile) {
             try {
                 log("Loading Level:", levelFile);
@@ -262,7 +285,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 const url = `${JSON_PATHS.ROOT}${normalized}`;
                 const levelRes = await fetch(`${url}?t=${Date.now()}`);
                 if (levelRes.ok) {
+                    // Update Persistence so Restart (R) uses this level
+                    localStorage.setItem('rogue_current_level', levelFile);
+
+
                     const levelData = await levelRes.json();
+                    // Set the level name
+                    localStorage.setItem('current_level_name', levelData.name);
 
                     // AUTO-DETECT: If this file is a Room (has isBoss), ensure it's set as the bossRoom 
                     // so it gets loaded into templates correctly.
@@ -906,48 +935,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             spawnEnemies(Globals.roomData);
         }
 
-        // MATRIX ROOM: Spawn ALL Items
-        if (Globals.roomData.item && Globals.roomData.item.matrix) {
-            console.log("MATRIX ROOM DETECTED: Spawning all items...");
-            const items = window.allItemTemplates || Globals.itemTemplates || [];
-            if (items.length > 0) {
-                const cols = 8; // Items per row
-                const spacing = 85;
-                const startX = 100;
-                const startY = 100;
-
-                // Prevent overlap: Clear existing items in this room 0,0 first? 
-                // Or just clear all ground items if this is a "Matrix Mode" load
-                Globals.groundItems = Globals.groundItems.filter(i => i.roomX !== (Globals.roomData.x || 0) || i.roomY !== (Globals.roomData.y || 0));
-
-                items.forEach((itemTemplate, idx) => {
-                    if (!itemTemplate) return;
-
-                    const col = idx % cols;
-                    const row = Math.floor(idx / cols);
-
-                    Globals.groundItems.push({
-                        x: startX + (col * spacing),
-                        y: startY + (row * spacing),
-                        data: JSON.parse(JSON.stringify(itemTemplate)),
-                        roomX: Globals.roomData.x || 0, // Should be 0,0 locally
-                        roomY: Globals.roomData.y || 0,
-                        vx: 0, vy: 0,
-                        solid: true, moveable: true, friction: 0.9, size: 15,
-                        floatOffset: Math.random() * 100
-                    });
-                });
-                console.log(`Spawned ${items.length} items for Matrix Room.`);
-
-                // Move Player to Safe Spot (Bottom Center)
-                if (Globals.player) {
-                    Globals.player.x = 400;
-                    Globals.player.y = 500;
-                    console.log("Moved player to safe spot (400, 500) for Matrix Mode.");
-                }
-            }
-        }
-
         Globals.canvas.width = Globals.roomData.width || 800;
         Globals.canvas.height = Globals.roomData.height || 600;
 
@@ -961,11 +948,14 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // Start Run Timer
-        //on restart if its a new game
-        if (isRestart) {
+        // on restart if its a new game (NOT level transition)
+        if (isRestart && !nextLevel) {
             Globals.runStartTime = Date.now();
             Globals.runElapsedTime = 0;
         }
+
+        // Level Split Tracking
+        Globals.levelStartTime = Date.now();
 
         // AUTO START IF CONFIGURED (After everything is ready)
     } finally {
@@ -1075,6 +1065,8 @@ export function startGame(keepState = false) {
         Globals.runStartTime = Date.now();
         Globals.runElapsedTime = 0;
         Globals.SessionRunTime = 0; // Fix persisted welcome screen timer
+
+        resetSessionStats();
     }
 
     // Show Loading Screen immediately to block input/visuals
@@ -1191,8 +1183,8 @@ export function startGame(keepState = false) {
                     Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
                 }
             }     // Show Level Title
-            if (Globals.gameData.name) {
-                showLevelTitle(Globals.gameData.name);
+            if (Globals.gameData.description || Globals.gameData.name) {
+                showLevelTitle(Globals.gameData.description || Globals.gameData.name);
             }
 
             // Minimap Visibility
@@ -1204,6 +1196,7 @@ export function startGame(keepState = false) {
             }
 
             spawnEnemies();
+            spawnChests(Globals.roomData);
 
             // Check for Start Room Bonus (First Start)
             if (Globals.gameData.rewards && Globals.gameData.rewards.startroom) {
@@ -1352,6 +1345,22 @@ export function changeRoom(dx, dy) {
         } else {
             Globals.levelMap[currentCoord].savedItems = null;
         }
+
+        // SAVE CHESTS
+        if (Globals.chests && Globals.chests.length > 0) {
+            Globals.levelMap[currentCoord].savedChests = Globals.chests.map(c => ({
+                id: c.id,
+                x: c.x, y: c.y,
+                width: c.width, height: c.height,
+                config: c.config,
+                state: c.state,
+                locked: c.locked,
+                hp: c.hp,
+                manifest: c.manifest
+            }));
+        } else {
+            Globals.levelMap[currentCoord].savedChests = null;
+        }
     }
 
     // Reset Room Specific Flags
@@ -1476,6 +1485,28 @@ export function changeRoom(dx, dy) {
             Globals.groundItems.push(si);
         });
         log(`Restored ${Globals.levelMap[nextCoord].savedItems.length} items for ${nextCoord}`);
+    }
+
+    // RESTORE CHESTS
+    Globals.chests = [];
+    if (Globals.levelMap[nextCoord] && Globals.levelMap[nextCoord].savedChests) {
+        Globals.levelMap[nextCoord].savedChests.forEach(sc => {
+            Globals.chests.push(sc);
+        });
+    } else if (Globals.levelMap[nextCoord]) {
+        // If entering a room for first time OR no chests saved (but maybe existed?)
+        // If visited but savedChests is null, implies no chests.
+        // Wait. spawnChests should be called only if !visited?
+        // But generateLevel creates "visitedRooms" entry? No.
+        // Globals.visitedRooms only stores rooms we stepped in.
+        // Globals.levelMap stores ALL generated rooms.
+        // If we visited (has entry in visitedRooms?), then we use saved state.
+        // If savedChests is null and visited, means 0 chests.
+        // If NOT visited, spawn from template.
+
+        if (!Globals.visitedRooms[nextCoord]) {
+            spawnChests(Globals.levelMap[nextCoord].roomData);
+        }
     }
 
     // Check if Ghost should follow
@@ -1678,6 +1709,7 @@ export function update() {
 
     updateItems(); // Check for item pickups
     updateFloatingTexts(); // Animate floating texts
+    // Removed updateChests from here to fix collision order
 
     //const now = Date.now(); // Check for item pickups
 
@@ -1765,6 +1797,8 @@ export function update() {
     updateBombsPhysics(); // Bomb Physics (Push/Slide)
     updateMovementAndDoors(doors, roomLocked);
 
+    updateChests(); // Resolve new position collision
+
     // 3. Combat Logic
     updateShooting();
     // updateRemoteDetonation(); // moved up
@@ -1775,6 +1809,18 @@ export function update() {
     // Update Run Timer
     if (Globals.runStartTime > 0) {
         Globals.runElapsedTime = Date.now() - Globals.runStartTime;
+    }
+
+    // Update Ghost Time (Delta Time Calculation)
+    const now = Date.now();
+    const dt = now - (Globals.lastUpdate || now);
+    Globals.lastUpdate = now;
+
+    Globals.ghostTimerActive = Globals.enemies.some(e => e.type === 'ghost' && !e.isDead);
+    if (Globals.ghostTimerActive) {
+        Globals.ghostTime += dt;
+        Globals.ghostTimeSurvived += dt;
+        Globals.ghostTimeSessionSurvived += dt;
     }
 
     // 4. Transitions
@@ -1877,6 +1923,7 @@ export async function draw() {
     drawPlayer()
     drawBulletsAndShards()
     drawBombs(doors)
+    drawChests()
     drawItems() // Draw ground items
     drawEnemies()
     if (Globals.screenShake.power > 0) Globals.ctx.restore();
@@ -2199,6 +2246,8 @@ export function updateRoomLock() {
         // Fix: check timeTakenMs > 100 to avoid glitch "instant clears"
         if (speedyLimitMs > 0 && timeTakenMs > 100 && timeTakenMs <= speedyLimitMs) {
             console.log("SPEEDY BONUS AWARDED!");
+            Globals.speedyBonusCount++;
+            Globals.speedyBonusSessionCount++;
             if (Globals.gameData.rewards && Globals.gameData.rewards.speedy) {
                 const dropped = spawnRoomRewards(Globals.gameData.rewards.speedy);
                 if (dropped) {
@@ -2220,6 +2269,8 @@ export function updateRoomLock() {
 
         // --- PERFECT STREAK ---
         if (!Globals.player.tookDamageInRoom && hasCombat && perfectAccuracy) {
+            Globals.perfectRoomCount++;
+            Globals.perfectRoomSessionCount++;
             Globals.perfectStreak++;
             const goal = Globals.gameData.perfectGoal || 3;
 
@@ -2336,6 +2387,10 @@ export function gameOver() {
     // Determine state if not already set (default to GAMEOVER if just called independently)
     if (Globals.gameState !== STATES.WIN) Globals.gameState = STATES.GAMEOVER;
 
+    // Save Persistent Stats (Lifetime)
+    // Note: session stats are reset on next run, so current values are added to lifetime logic in saveGameStats.
+    saveGameStats();
+
     Globals.elements.overlay.style.display = 'flex';
     // Fix: Count unique visited rooms instead of displacement
     Globals.elements.stats.innerText = getGameStats(0);
@@ -2395,6 +2450,18 @@ export function gameOver() {
 
 export function gameWon() {
     Globals.gameState = STATES.WIN;
+
+    // Stats Update
+    Globals.gameBeatCount++;
+    Globals.gameBeatSessionCount++;
+    if (Globals.BestRunTime === 0 || Globals.SessionRunTime < Globals.BestRunTime) {
+        Globals.BestRunTime = Globals.SessionRunTime;
+        localStorage.setItem('bestRunTime', Globals.BestRunTime);
+    }
+
+    // Persist all stats
+    saveGameStats();
+
     overlayEl.style.display = 'flex';
     statsEl.innerText = getGameStats(1);
 
@@ -2469,7 +2536,7 @@ export function updateSFXToggle() {
     }
 }
 
-export async function restartGame(keepItems = false) {
+export async function restartGame(keepItems = false, targetLevel = null) {
     const isDebug = Globals.gameData && (
         Globals.gameData.showDebugWindow !== undefined
             ? Globals.gameData.showDebugWindow
@@ -2481,14 +2548,15 @@ export async function restartGame(keepItems = false) {
     Globals.screenShake.power = 20;
     Globals.screenShake.endAt = Date.now() + 600;
     Globals.screenShake.teleport = 1;
+    SFX.restart();
 
     // Wait for init to complete, then auto-start
-    await initGame(true, null, keepItems);
+    await initGame(true, targetLevel, keepItems);
     // startGame is called by initGame internal logic (via shouldAutoStart)
 }
 Globals.restartGame = restartGame;
 
-export async function newRun() {
+export async function newRun(targetLevel = null) {
 
     log("Starting New Run (Fresh Seed)");
     resetWeaponState();
@@ -2505,6 +2573,7 @@ export async function newRun() {
     Globals.screenShake.power = 20;
     Globals.screenShake.endAt = Date.now() + 600;
     Globals.screenShake.teleport = 1;
+    SFX.restart();
 
     // CRITICAL: We must clear the input box so startGame() doesn't overwrite our new random seed with the old input value.
     const seedInput = document.getElementById('seedInput');
@@ -2513,12 +2582,14 @@ export async function newRun() {
     // 2. Call initGame as if it's a restart (to skip welcome) but with the NEW seed already set?
     // Wait, initGame(true) RE-SETS seed to Globals.seed. 
     // So if we set Globals.seed then call initGame(true), it should work!
+    // If targetLevel is passed, use it (and use logic to restart AT that level)
 
-    await initGame(true);
+    await initGame(true, targetLevel);
 }
 Globals.newRun = newRun;
 
 export function goToWelcome() {
+    saveGameStats();
     resetWeaponState();
     initGame(false);
 }

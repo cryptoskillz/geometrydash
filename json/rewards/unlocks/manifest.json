@@ -11,10 +11,14 @@
         "game/logic/shards",
         "game/logic/timer",
         "game/logic/speedytimer",
+        "game/logic/ghosttimer",
         "game/logic/perfectcount",
         "game/logic/nodamagecount",
         "game/logic/shootercount",
         "game/logic/seed",
+        "game/logic/ghosthp",
+        "game/logic/enemyhp",
+        "game/logic/enemyname",
         "game/logic/_restart",
         "game/logic/_speedrun",
         "game/misc/enemies",
@@ -43,6 +47,7 @@
         "inventory/add5keys",
         "modifiers/player/add3dglasses",
         "modifiers/player/addMaxhp",
-        "modifiers/player/shield"
+        "modifiers/player/shield",
+        "modifiers/bullets/homing"
     ]
 }

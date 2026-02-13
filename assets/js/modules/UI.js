@@ -289,6 +289,37 @@ export async function updateUI() {
         }
     }
 
+    // --- GHOST TIMER ---
+    const ghostEl = document.getElementById('ghost-timer');
+    if (ghostEl) {
+        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        // Note: User property is "showGhostimer" (one T)
+        if (Globals.gameData.showGhostimer || unlockedIds.includes('ghosttimer')) {
+            ghostEl.style.display = 'block';
+
+            // Time is accumulated in Globals.ghostTime (ms)
+            const remaining = Globals.ghostTime || 0;
+
+            const sec = Math.floor(remaining / 1000);
+            const ms = Math.floor((remaining % 1000) / 10);
+
+            const valEl = document.getElementById('gt-val');
+            if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+
+            // Style: Grey if Inactive, Red if Active
+            if (Globals.ghostTimerActive) {
+                ghostEl.style.color = '#e74c3c'; // Active Red (matches CSS)
+                ghostEl.style.opacity = '1.0';
+            } else {
+                ghostEl.style.color = '#555'; // Inactive Grey
+                ghostEl.style.opacity = '0.5'; // Ghosted out
+            }
+
+        } else {
+            ghostEl.style.display = 'none';
+        }
+    }
+
     // --- PERFECT COUNT ---
     const perfectCountEl = document.getElementById('perfect-count');
     if (perfectCountEl) {
@@ -646,11 +677,36 @@ export function showCredits() {
                      <p>Player Deaths: <span style="color: #95a5a6">${Globals.playerDeathCount}</span></p>
                 </div>
 
+                <p style="font-size: 1.5em; margin: 20px 0; color: #9b59b6;">Special Feats</p>
+                <div style="color: #ccc; font-family: monospace; text-align: left; display: inline-block; margin: 0 auto;">
+                     <p>Perfect Rooms (Session): <span style="color: #e74c3c">${Globals.perfectRoomSessionCount}</span></p>
+                     <p>Total Perfect Rooms: <span style="color: #f1c40f">${Globals.perfectRoomCount}</span></p>
+                     <hr style="border-color: #555; margin: 10px 0;">
+                     <p>Speedy Bonuses (Session): <span style="color: #e74c3c">${Globals.speedyBonusSessionCount}</span></p>
+                     <p>Total Speedy Bonuses: <span style="color: #f1c40f">${Globals.speedyBonusCount}</span></p>
+                     <hr style="border-color: #555; margin: 10px 0;">
+                     <p>Games Beaten (Session): <span style="color: #e74c3c">${Globals.gameBeatSessionCount}</span></p>
+                     <p>Total Games Beaten: <span style="color: #f1c40f">${Globals.gameBeatCount}</span></p>
+                     <hr style="border-color: #555; margin: 10px 0;">
+                     <p>Ghost Time (Session): <span style="color: #e74c3c">${formatTime(Globals.ghostTimeSessionSurvived)}</span></p>
+                     <p>Total Ghost Time: <span style="color: #f1c40f">${formatTime(Globals.ghostTimeSurvived)}</span></p>
+                </div>
+
                 <p style="font-size: 1.5em; margin: 20px 0; color: #3498db;">Run Statistics</p>
                 <div style="color: #ccc; font-family: monospace; text-align: left; display: inline-block; margin: 0 auto;">
                      <p>Run Time: <span style="color: #f1c40f">${formatTime(Globals.SessionRunTime)}</span></p>
                      <p>Best Time: <span style="color: #f1c40f">${formatTime(Globals.BestRunTime)}</span></p>
                      <p>Total Runs: <span style="color: #95a5a6">${Globals.NumberOfRuns}</span></p>
+                     
+                     ${(Globals.levelSplits && Globals.levelSplits.length > 0) ? `
+                     <hr style="border-color: #555; margin: 10px 0;">
+                     <p style="text-decoration: underline; margin-bottom: 5px;">Level Splits</p>
+                     ${Globals.levelSplits.map((item, i) => {
+        const timeVal = (typeof item === 'object' && item.time) ? item.time : item;
+        const label = (typeof item === 'object' && item.name) ? item.name : `Level ${i + 1}`;
+        return `<p>${label}: <span style="color: #f1c40f">${formatTime(Number(timeVal))}</span></p>`;
+    }).join('')}
+                     ` : ''}
                 </div>
                 
                 
@@ -747,7 +803,12 @@ export function saveGameStats() {
     const stats = {
         kills: Globals.killEnemyCount,
         bossKills: Globals.killBossCount,
-        deaths: Globals.playerDeathCount
+        deaths: Globals.playerDeathCount,
+        // New Stats
+        perfectRooms: Globals.perfectRoomCount,
+        speedyBonuses: Globals.speedyBonusCount,
+        gameBeats: Globals.gameBeatCount,
+        ghostTime: Globals.ghostTimeSurvived
     };
     localStorage.setItem('rogue_stats', JSON.stringify(stats));
 }
@@ -759,6 +820,15 @@ export function loadGameStats() {
         Globals.killEnemyCount = stats.kills || 0;
         Globals.killBossCount = stats.bossKills || 0;
         Globals.playerDeathCount = stats.deaths || 0;
+        // New Stats
+        Globals.perfectRoomCount = stats.perfectRooms || 0;
+        Globals.speedyBonusCount = stats.speedyBonuses || 0;
+        Globals.gameBeatCount = stats.gameBeats || 0;
+        Globals.ghostTimeSurvived = stats.ghostTime || 0;
+
+        // Load Level Splits (Separate Key for array)
+        const splits = localStorage.getItem('rogue_level_splits');
+        if (splits) Globals.levelSplits = JSON.parse(splits);
     } else {
         saveGameStats(); // Init if missing
     }
@@ -768,6 +838,13 @@ export function resetSessionStats() {
     Globals.killEnemySessionCount = 0;
     Globals.killBossSessionCount = 0;
     Globals.playerDeathSessionCount = 0;
+
+    // New Stats
+    Globals.perfectRoomSessionCount = 0;
+    Globals.speedyBonusSessionCount = 0;
+    Globals.gameBeatSessionCount = 0;
+    Globals.ghostTimeSessionSurvived = 0;
+    Globals.levelSplits = [];
 
     // Reset Bonus Streaks
     Globals.perfectStreak = 0;

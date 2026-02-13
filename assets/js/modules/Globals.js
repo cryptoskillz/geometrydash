@@ -31,16 +31,27 @@ export const Globals = {
 
 
     //gane counters
-    playerDeathCount: 0,
+    playerDeathCount: parseInt(localStorage.getItem('playerDeathCount') || '0'),
     playerDeathSessionCount: 0,
-    //note we could extend this later to hold the number of each type of enemy killed and even their names, to keep the we are the bad 
-    //guy theme going
-    killEnemyCount: 0,
+
+    killEnemyCount: parseInt(localStorage.getItem('killEnemyCount') || '0'),
     killEnemySessionCount: 0,
-    killBossCount: 0,
+
+    killBossCount: parseInt(localStorage.getItem('killBossCount') || '0'),
     killBossSessionCount: 0,
-    killBossCount: 0,
-    killBossSessionCount: 0,
+
+    // New Counters
+    perfectRoomCount: parseInt(localStorage.getItem('perfectRoomCount') || '0'),
+    perfectRoomSessionCount: 0,
+
+    speedyBonusCount: parseInt(localStorage.getItem('speedyBonusCount') || '0'),
+    speedyBonusSessionCount: 0,
+
+    gameBeatCount: parseInt(localStorage.getItem('gameBeatCount') || '0'),
+    gameBeatSessionCount: 0,
+
+    ghostTimeSurvived: parseInt(localStorage.getItem('ghostTimeSurvived') || '0'),
+    ghostTimeSessionSurvived: 0,
 
     // Stats (Persisted)
     NumberOfRuns: parseInt(localStorage.getItem('numberOfRuns') || '0'),
@@ -85,6 +96,7 @@ export const Globals = {
     bombs: [],
     keys: {}, // Input keys
     groundItems: [],
+    chests: [],
     floatingTexts: [],
     debugLogs: [],
 
@@ -132,6 +144,8 @@ export const Globals = {
     // Run Timer
     runStartTime: 0,
     runElapsedTime: 0,
+    levelSplits: [],
+    levelStartTime: 0,
 
     perfectStreak: 0,
     pauseStartTime: 0,

@@ -3,7 +3,7 @@ import { log, spawnFloatingText, triggerSpeech } from './Utils.js';
 import { SFX, fadeIn } from './Audio.js';
 import { generateLore } from './Utils.js'; // Assuming generateLore is in Utils (or I need to extract it)
 import { CONFIG, STATES, BOUNDARY, DOOR_SIZE, JSON_PATHS } from './Constants.js';
-import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats } from './UI.js';
+import { updateWelcomeScreen, updateUI, drawTutorial, drawMinimap, drawBossIntro, updateFloatingTexts, drawFloatingTexts, showCredits, updateGameStats, saveGameStats } from './UI.js';
 
 // Functions will be appended below
 
@@ -268,6 +268,15 @@ export function spawnEnemies() {
             };
         }
 
+        if (Globals.ghostHP !== undefined && Globals.ghostHP > 0) {
+            inst.hp = Globals.ghostHP;
+        } else {
+            Globals.ghostHP = inst.hp;
+        }
+
+        inst.spawnTime = Date.now(); // FIX: Ensure spawnTime is set so lock timer works properly
+
+
 
         // Standard random placement or center
         inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
@@ -531,6 +540,29 @@ export async function dropBomb() {
         }
     }
 
+    // Check overlaps with chests
+    if (canDrop) {
+        for (const chest of Globals.chests) {
+            if (chest.state !== 'closed' && chest.state !== 'open') continue; // Only physical chests
+
+            // Simple Box Collision Check (Bomb is Point or Small Circle)
+            // Chest is Rect (x, y, w, h)
+            // Expand chest box by Bomb Radius roughly
+            const bombR = baseR || 15;
+            const buffer = 5;
+
+            if (dropX + bombR > chest.x - buffer &&
+                dropX - bombR < chest.x + chest.width + buffer &&
+                dropY + bombR > chest.y - buffer &&
+                dropY - bombR < chest.y + chest.height + buffer) {
+
+                canDrop = false;
+                log("Bomb drop blocked by Chest collision");
+                break;
+            }
+        }
+    }
+
     // Wall Check
     if (dropX < BOUNDARY || dropX > Globals.canvas.width - BOUNDARY || dropY < BOUNDARY || dropY > Globals.canvas.height - BOUNDARY) {
         if (!isMoving) {
@@ -645,7 +677,8 @@ export function spawnBullet(x, y, vx, vy, weaponSource, ownerType = "player", ow
         spinAngle: 0,
         hitEnemies: [],
         ownerType: ownerType, // 'player' or 'enemy'
-        speed: Math.hypot(vx, vy) // Store initial speed for homing reliability
+        speed: Math.hypot(vx, vy), // Store initial speed for homing reliability
+        createdAt: Date.now()
     };
 
     // Calculate Color based on Rarity (if not overridden)
@@ -852,7 +885,11 @@ export function reloadWeapon() {
     // SFX.reload(); 
 }
 export function updateBulletsAndShards(aliveEnemies) {
+    // Remove deleted bullets
+    Globals.bullets = Globals.bullets.filter(b => !b.markedForDeletion);
+
     Globals.bullets.forEach((b, i) => {
+
         // --- PLAYER COLLISION (Friendly Fire) ---
         const distToPlayer = Math.hypot(Globals.player.x - b.x, b.y - Globals.player.y);
         const collisionThreshold = Globals.player.size + b.size;
@@ -877,8 +914,22 @@ export function updateBulletsAndShards(aliveEnemies) {
                         return;
                     }
                 } else {
-                    // Harmless collision - Do NOT destroy bullet (Allow player to run through own slow bullets)
-                    // Globals.bullets.splice(i, 1);
+                    // Harmless collision - Eat bullet and Push Player
+                    // "Prolonged push that eats the bullet"
+
+                    // Safety: Wait before eating (100ms)
+                    if (Date.now() - (b.createdAt || 0) < 100) return;
+
+                    // Init velocity if missing
+                    if (typeof Globals.player.vx === 'undefined') Globals.player.vx = 0;
+                    if (typeof Globals.player.vy === 'undefined') Globals.player.vy = 0;
+
+                    // Transfer momentum (Push Strength)
+                    const pushFactor = 0.5;
+                    Globals.player.vx += b.vx * pushFactor;
+                    Globals.player.vy += b.vy * pushFactor;
+
+                    Globals.bullets.splice(i, 1);
                     return;
                 }
             }
@@ -1059,10 +1110,10 @@ export function updateShooting() {
                 fireBullet(0, speed, Math.cos(centerAngle) * speed, Math.sin(centerAngle) * speed, centerAngle);
             }
             else {
-                if (Globals.keys['ArrowUp']) dirCode = 1;
-                else if (Globals.keys['ArrowDown']) dirCode = 3;
-                else if (Globals.keys['ArrowLeft']) dirCode = 4;
-                else if (Globals.keys['ArrowRight']) dirCode = 2;
+                if (Globals.keys['ArrowUp']) { dirCode = 1; Globals.player.lastShootX = 0; Globals.player.lastShootY = -1; }
+                else if (Globals.keys['ArrowDown']) { dirCode = 3; Globals.player.lastShootX = 0; Globals.player.lastShootY = 1; }
+                else if (Globals.keys['ArrowLeft']) { dirCode = 4; Globals.player.lastShootX = -1; Globals.player.lastShootY = 0; }
+                else if (Globals.keys['ArrowRight']) { dirCode = 2; Globals.player.lastShootX = 1; Globals.player.lastShootY = 0; }
 
                 // Call unified logic
                 const speed = Globals.gun.Bullet?.speed || 7;
@@ -1158,7 +1209,13 @@ export function updateUse() {
 
     const roomLocked = Globals.isRoomLocked();
     const doors = Globals.roomData.doors || {};
-    if (roomLocked) return; // keep your existing rule: can't unlock while enemies alive
+
+    // Feedback for Room Lock
+    if (roomLocked) {
+        log("Cannot use doors - Room is Locked (Enemies active)");
+        spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Room Locked!", "red");
+        return;
+    }
 
     // Helper: are we close enough to a door?
     const inRangeTop = (door) => {
@@ -1220,6 +1277,7 @@ export function updateUse() {
             SFX.doorUnlocked();
         } else {
             log("Door is locked - no keys");
+            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Locked (Need Key)", "red");
             SFX.doorLocked();
         }
         return;
@@ -1700,6 +1758,7 @@ export function updateEnemies() {
 
                 if (!en.indestructible && !en.invulnerable && Date.now() >= Globals.bossIntroEndTime) { // Only damage if not invuln/indestructible AND intro finished
                     en.hp -= finalDamage;
+                    if (en.type === 'ghost') Globals.ghostHP = en.hp; // Sync Persistence
                     en.hitTimer = 10;
 
                     // Speech: Hit
@@ -2052,6 +2111,23 @@ export function handleLevelComplete() {
 }
 
 function proceedLevelComplete() {
+    // Save Stats before transition
+    saveGameStats();
+
+    // Track Level Split
+    if (Globals.levelStartTime) {
+        const split = Date.now() - Globals.levelStartTime;
+        Globals.levelSplits = Globals.levelSplits || [];
+
+        // Store Object: { name, time }
+        const levelName = localStorage.getItem('current_level_name') || Globals.gameData.name || `Level ${Globals.levelSplits.length + 1}`;
+        Globals.levelSplits.push({
+            name: levelName,
+            time: split
+        });
+        localStorage.setItem('rogue_level_splits', JSON.stringify(Globals.levelSplits));
+    }
+
     // 1. Next Level?
     if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
         log("Proceeding to Next Level:", Globals.roomData.nextLevel);
@@ -2199,6 +2275,14 @@ export function updateGhost() {
 
         // 2. SHRINK ROOM (after 2 timer cycles)
         if (elapsed > delay * 2) {
+            if (!ghost.hasSpokenGhostHealth) {
+                // Only speak if we actually have health bar to hide (and it's not already hidden locally)
+                if (!ghost.hideHealth) triggerSpeech(ghost, "", "HEALTH BAR BE GONE!!!!", false);
+
+                ghost.hasSpokenGhostHealth = true;
+                ghost.hideHealth = true; // Local hide, do not modify Global Config
+            }
+
             // Shrink the room!
             const maxShrink = (Globals.canvas.width / 2) - 60; // Leave a 120px box
             if (Globals.roomShrinkSize < maxShrink) {
@@ -2428,7 +2512,7 @@ export function drawEnemies() {
         Globals.ctx.fill();
 
         // Draw Name (After Fill to avoid color bleed)
-        if (Globals.gameData.ShowEnemyNames !== false && en.lore && en.lore.displayName && !en.isDead) {
+        if (Globals.gameData.showEnemyNames !== false && en.lore && en.lore.displayName && !en.isDead) {
             Globals.ctx.save(); // Isolate text styles
             Globals.ctx.textAlign = "center";
             Globals.ctx.textBaseline = "bottom";
@@ -2439,20 +2523,35 @@ export function drawEnemies() {
             Globals.ctx.restore();
         }
 
+        // DRAW HEALTH BAR, use ShowGhost health to draw the ghost
         // DRAW HEALTH BAR
-        if (Globals.gameData.ShowEnemyHealth !== false && !en.isDead && en.maxHp > 0 && en.hp < en.maxHp) {
-            const barWidth = 30;
-            const barHeight = 4;
-            const yOffset = en.size + 10; // Below enemy
-            const pct = Math.max(0, en.hp / en.maxHp);
+        if (Globals.gameData.showEnemyHealth !== false && !en.isDead && en.maxHp > 0 && en.hp <= en.maxHp) {
+            let skipDraw = false;
 
-            Globals.ctx.save();
-            Globals.ctx.fillStyle = "rgba(0,0,0,0.5)";
-            Globals.ctx.fillRect(en.x - barWidth / 2, en.y + yOffset, barWidth, barHeight);
+            // Ghost specific logic
+            if (en.type === 'ghost') {
+                // If globally disabled OR locally hidden (by lock)
+                if (Globals.gameData.showGhostHealth === false || en.hideHealth) {
+                    skipDraw = true;
+                    // Trigger Speech if it happens during lock event? 
+                    // No, logic handles speech. Drawing just stops here.
+                }
+            }
 
-            Globals.ctx.fillStyle = pct > 0.5 ? "#2ecc71" : (pct > 0.25 ? "#f1c40f" : "#e74c3c");
-            Globals.ctx.fillRect(en.x - barWidth / 2, en.y + yOffset, barWidth * pct, barHeight);
-            Globals.ctx.restore();
+            if (!skipDraw) {
+                const barWidth = 30;
+                const barHeight = 4;
+                const yOffset = en.size + 10; // Below enemy
+                const pct = Math.max(0, en.hp / en.maxHp);
+
+                Globals.ctx.save();
+                Globals.ctx.fillStyle = "rgba(0,0,0,0.5)";
+                Globals.ctx.fillRect(en.x - barWidth / 2, en.y + yOffset, barWidth, barHeight);
+
+                Globals.ctx.fillStyle = pct > 0.5 ? "#2ecc71" : (pct > 0.25 ? "#f1c40f" : "#e74c3c");
+                Globals.ctx.fillRect(en.x - barWidth / 2, en.y + yOffset, barWidth * pct, barHeight);
+                Globals.ctx.restore();
+            }
         }
 
         // DRAW SPEECH BUBBLE
@@ -2774,6 +2873,7 @@ export function drawBombs(doors) {
                         if (blocked) return;
 
                         en.hp -= b.damage;
+                        if (en.type === 'ghost') Globals.ghostHP = en.hp; // Sync Persistence
                         en.hitTimer = 10; // Visual flash
                         // Death Logic
                         if (en.hp <= 0 && !en.isDead) {
@@ -2958,6 +3058,27 @@ export function updateMovementAndDoors(doors, roomLocked) {
         Globals.player.y += dy * 0.1;
         return;
     }
+
+    // --- PHYSICS MOMENTUM (Knockback/Slide) ---
+    if (Math.abs(Globals.player.vx || 0) > 0.1 || Math.abs(Globals.player.vy || 0) > 0.1) {
+        Globals.player.x += (Globals.player.vx || 0);
+        Globals.player.y += (Globals.player.vy || 0);
+
+        // Friction
+        Globals.player.vx *= 0.9;
+        Globals.player.vy *= 0.9;
+
+        // Stop if negligible
+        if (Math.abs(Globals.player.vx) < 0.1) Globals.player.vx = 0;
+        if (Math.abs(Globals.player.vy) < 0.1) Globals.player.vy = 0;
+
+        // Basic Boundary Clamp for Momentum (Use simple boundary to allow door proximity)
+        const s = Globals.roomShrinkSize || 0;
+        const p = Globals.player;
+        p.x = Math.max(BOUNDARY + s, Math.min(Globals.canvas.width - BOUNDARY - s, p.x));
+        p.y = Math.max(BOUNDARY + s, Math.min(Globals.canvas.height - BOUNDARY - s, p.y));
+    }
+
     // --- 4. MOVEMENT & DOOR COLLISION ---
     const moveKeys = { "KeyW": [0, -1, 'top'], "KeyS": [0, 1, 'bottom'], "KeyA": [-1, 0, 'left'], "KeyD": [1, 0, 'right'] };
 
@@ -3190,10 +3311,23 @@ export async function pickupItem(item, index) {
 
             // Persistence for Instant ID
             const detailID = details.unlock || data.unlockId;
+            let historyUpdated = false;
+
             if (detailID && !history.includes(detailID)) {
                 history.push(detailID);
-                localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
+                historyUpdated = true;
                 log(`Instant Unlock Detail ID Saved: ${detailID}`);
+            }
+
+            // Fix: Also save the Manifest ID (data.unlockId) if different, to prevent respawning
+            if (data.unlockId && data.unlockId !== detailID && !history.includes(data.unlockId)) {
+                history.push(data.unlockId);
+                historyUpdated = true;
+                log(`Instant Unlock Manifest ID Saved: ${data.unlockId}`);
+            }
+
+            if (historyUpdated) {
+                localStorage.setItem('game_unlocked_ids', JSON.stringify(history));
             }
 
             // SPECIAL: Instant sound effect
@@ -3759,35 +3893,6 @@ export function spawnRoomRewards(dropConfig, label = null) {
 
     let anyDropped = false;
     const pendingDrops = [];
-
-    // MATRIX ROOM SPECIAL LOGIC
-    if (dropConfig.matrix === true) {
-        log("Matrix Room: Spawning ALL items...");
-        if (window.allItemTemplates) {
-            window.allItemTemplates.forEach(item => {
-                // SKIP items that are explicitly set to spawnable: false (e.g. Start Level 4)
-                if (item.spawnable === false) return;
-
-                // Determine Rarity (since it's not bucketed here)
-                let rarity = item.rarity || 'common';
-
-                // If it's an Item/Unlock without rarity, assume it's valuable
-                if (!item.rarity) {
-                    // Check MULTIPLE properties for Unlocks
-                    if (item.unlock || item.unlockId || item.type === 'unlock' || item.name === 'Minimap') {
-                        rarity = 'legendary'; // Upgrade to Legendary (Gold)
-                        log(`SpawnRoomRewards: Forcing LEGENDARY rarity for ${item.name} (Unlock ID: ${item.unlockId || item.unlock})`);
-                    }
-                    else if (item.type === 'gun') rarity = 'rare';     // Guns are decent
-                    else if (item.type === 'bomb') rarity = 'common';
-                }
-
-                // Spawn EVERYTHING without filtering
-                pendingDrops.push({ item: item, rarity: rarity });
-            });
-        }
-    }
-
     // 0. Fetch Unlock State
     const unlocks = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
     const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
@@ -4020,9 +4125,27 @@ export function drawPlayer() {
             Globals.ctx.restore();
         };
 
-        // 1. Main Barrel (Based on movement)
+        // 1. Main Barrel (Based on Last Shooting Direction, then Movement)
         let aimAngle = 0;
-        if (Globals.player.lastMoveX || Globals.player.lastMoveY) {
+        let shootX = 0;
+        let shootY = 0;
+
+        // Check Input (Real-time override)
+        if (Globals.keys['ArrowUp']) shootY = -1;
+        if (Globals.keys['ArrowDown']) shootY = 1;
+        if (Globals.keys['ArrowLeft']) shootX = -1;
+        if (Globals.keys['ArrowRight']) shootX = 1;
+
+        if (shootX !== 0 || shootY !== 0) {
+            aimAngle = Math.atan2(shootY, shootX);
+            // Update lastShoot if actively pressing keys (failsafe if updateShooting lags)
+            Globals.player.lastShootX = shootX;
+            Globals.player.lastShootY = shootY;
+        } else if (Globals.player.lastShootX || Globals.player.lastShootY) {
+            // Use Last Shot Direction
+            aimAngle = Math.atan2(Globals.player.lastShootY, Globals.player.lastShootX);
+        } else if (Globals.player.lastMoveX || Globals.player.lastMoveY) {
+            // Fallback to Movement
             aimAngle = Math.atan2(Globals.player.lastMoveY, Globals.player.lastMoveX);
         }
         drawBarrel(aimAngle);
@@ -4423,6 +4546,50 @@ export function updateItems() {
                 other.vy -= kvy;
             }
         }
+
+        // 3.6 Chest Collision (Push items away from solid chests)
+        Globals.chests.forEach(chest => {
+            if (chest.solid || chest.state !== 'hidden') { // Avoid all visible chests? User said "chest is solid!"
+                // Use AABB vs Circle
+                const padding = 5;
+                const cX = chest.x - padding;
+                const cY = chest.y - padding;
+                const cW = chest.width + padding * 2;
+                const cH = chest.height + padding * 2;
+
+                const iR = item.size || 15;
+
+                // Find closest point on AABB to Circle Center
+                const closestX = Math.max(cX, Math.min(item.x, cX + cW));
+                const closestY = Math.max(cY, Math.min(item.y, cY + cH));
+
+                const dx = item.x - closestX;
+                const dy = item.y - closestY;
+                const distSq = dx * dx + dy * dy;
+
+                if (distSq < iR * iR) {
+                    // Collision!
+                    const dist = Math.sqrt(distSq);
+                    const overlap = iR - dist;
+
+                    // Normal
+                    let nx = dx / dist;
+                    let ny = dy / dist;
+
+                    // Edge case: item inside chest center? dist=0
+                    if (dist === 0) {
+                        nx = 1; ny = 0; // Push right
+                    }
+
+                    item.x += nx * overlap;
+                    item.y += ny * overlap;
+
+                    // Bounce
+                    item.vx += nx * 2;
+                    item.vy += ny * 2;
+                }
+            }
+        });
 
         // Decrement Cooldown
         if (item.pickupCooldown > 0) item.pickupCooldown--;

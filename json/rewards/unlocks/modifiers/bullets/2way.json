@@ -1,0 +1,10 @@
+{
+    "name": "2 way",
+    "description": "Unlocks 2 way fire",
+    "unlock": "2way",
+    "json": "rewards/items/modifiers/bullets/2way.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true,
+    "instantTrigger": false
+}
