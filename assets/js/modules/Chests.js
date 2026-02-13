@@ -1,7 +1,7 @@
 import { Globals } from './Globals.js';
 import { log, spawnFloatingText } from './Utils.js';
 import { SFX } from './Audio.js';
-import { JSON_PATHS, STATES, TILE_SIZE } from './Constants.js';
+import { JSON_PATHS, STATES, TILE_SIZE, BOUNDARY } from './Constants.js';
 
 export function spawnChests(roomData) {
     Globals.chests = [];
@@ -57,6 +57,7 @@ export function spawnChests(roomData) {
             state: shouldSpawnNow ? 'closed' : 'hidden',
             locked: config.locked === true,
             solid: config.solid || false,
+            moveable: config.moveable || false,
             hp: 1,
             manifest: config.manfest || config.manifest || roomData.chests.manifest || roomData.chests.manfest
         };
@@ -88,7 +89,7 @@ export function updateChests() {
 
                     // Allow wider range for key interaction (120px)
                     if (dist < 120) {
-                        console.log("Direct Key Interaction! Chest:", chest.id, "Dist:", dist);
+                        console.log("Direct Key Interaction! Chest:", chest.id, "Locked:", chest.locked, "Dist:", dist);
                         // Logic for Locked Chests
                         if (chest.locked) {
                             if (player.inventory.keys > 0) {
@@ -96,10 +97,12 @@ export function updateChests() {
                                 openChest(chest);
                                 spawnFloatingText(chest.x, chest.y - 20, "Unlocked!", "#f1c40f");
                             } else {
+                                console.log("Chest locked and no keys.");
                                 spawnFloatingText(chest.x, chest.y - 20, "Locked", "#e74c3c");
                             }
                         } else {
                             // Unlocked - Manual Open
+                            console.log("Chest unlocked. Opening...");
                             openChest(chest);
                         }
                     }
@@ -152,14 +155,31 @@ export function updateChests() {
                     resolveCollision(player, chest);
                 } else {
                     // Non-solid, non-locked -> Auto Open on bump (Legacy/Fallback)
-                    // If user insists on Space only, we can remove this.
-                    // But keeping it ensures non-solid chests are easy.
                     openChest(chest);
                 }
             }
             // Interaction handled by Listener
         }
     });
+
+    // Resolving Chest-Chest Overlaps (Simple Iterative Solver)
+    // Run this AFTER player moves chests
+    const iterations = 2;
+    for (let it = 0; it < iterations; it++) {
+        for (let i = 0; i < Globals.chests.length; i++) {
+            const A = Globals.chests[i];
+            if (A.state !== 'closed') continue;
+
+            for (let j = i + 1; j < Globals.chests.length; j++) {
+                const B = Globals.chests[j];
+                if (B.state !== 'closed') continue;
+
+                if (checkCollision(A, B)) {
+                    resolveChestCollision(A, B);
+                }
+            }
+        }
+    }
 
     // Check Bullet Collisions
     Globals.bullets.forEach(bullet => {
@@ -251,6 +271,32 @@ function resolveCollision(player, chest) {
     const overlapY = combinedHalfH - Math.abs(dy);
 
     if (overlapX > 0 && overlapY > 0) {
+        // Moveable Chest Logic
+        if (chest.moveable && !chest.locked) {
+            const oldX = chest.x;
+            const oldY = chest.y;
+
+            if (overlapX < overlapY) {
+                if (dx > 0) chest.x -= overlapX;
+                else chest.x += overlapX;
+            } else {
+                if (dy > 0) chest.y -= overlapY;
+                else chest.y += overlapY;
+            }
+
+            // Check Bounds
+            if (chest.x < BOUNDARY) chest.x = BOUNDARY;
+            if (chest.x > Globals.canvas.width - BOUNDARY - chest.width) chest.x = Globals.canvas.width - BOUNDARY - chest.width;
+            if (chest.y < BOUNDARY) chest.y = BOUNDARY;
+            if (chest.y > Globals.canvas.height - BOUNDARY - chest.height) chest.y = Globals.canvas.height - BOUNDARY - chest.height;
+
+            // If chest moved, we are done. If it didn't (stuck), push player back.
+            if (Math.abs(chest.x - oldX) > 0.1 || Math.abs(chest.y - oldY) > 0.1) {
+                return;
+            }
+        }
+
+        // Static or Stuck Logic (Push Player)
         if (overlapX < overlapY) {
             if (dx > 0) player.x += overlapX;
             else player.x -= overlapX;
@@ -261,9 +307,87 @@ function resolveCollision(player, chest) {
     }
 }
 
+function resolveChestCollision(a, b) {
+    const aCX = a.x + a.width / 2;
+    const aCY = a.y + a.height / 2;
+    const bCX = b.x + b.width / 2;
+    const bCY = b.y + b.height / 2;
+
+    const dx = aCX - bCX;
+    const dy = aCY - bCY;
+
+    const combinedHalfW = a.width / 2 + b.width / 2;
+    const combinedHalfH = a.height / 2 + b.height / 2;
+
+    const overlapX = combinedHalfW - Math.abs(dx);
+    const overlapY = combinedHalfH - Math.abs(dy);
+
+    if (overlapX > 0 && overlapY > 0) {
+        // Assume both moveable or one moveable.
+        // If both moveable, split overlap.
+        // If one moveable, push it full overlap.
+
+        let moveA = a.moveable && !a.locked;
+        let moveB = b.moveable && !b.locked;
+
+        // If neither moveable (shouldn't happen if collided by push), force push apart anyway?
+        if (!moveA && !moveB) return;
+
+        if (moveA && moveB) {
+            // Split
+            const halfX = overlapX / 2;
+            const halfY = overlapY / 2;
+
+            if (overlapX < overlapY) {
+                if (dx > 0) { a.x += halfX; b.x -= halfX; }
+                else { a.x -= halfX; b.x += halfX; }
+            } else {
+                if (dy > 0) { a.y += halfY; b.y -= halfY; }
+                else { a.y -= halfY; b.y += halfY; }
+            }
+        } else if (moveA) {
+            // Push A
+            if (overlapX < overlapY) {
+                if (dx > 0) a.x += overlapX;
+                else a.x -= overlapX;
+            } else {
+                if (dy > 0) a.y += overlapY;
+                else a.y -= overlapY;
+            }
+        } else if (moveB) {
+            // Push B
+            if (overlapX < overlapY) {
+                if (dx > 0) b.x -= overlapX; // dx is A-B. If dx>0 (A right of B), push B Left. Correct?
+                // If A Right of B, dx>0. A-B > 0.
+                // Push B Left means b.x decreasing.
+                // Previous logic: if dx>0 (A right), push B Left. YES.
+                else b.x += overlapX;
+            } else {
+                if (dy > 0) b.y -= overlapY;
+                else b.y += overlapY;
+            }
+        }
+        // Need to clamp bounds here too?
+        // Since we modify x/y directly, we should clamp if possible.
+        // Or assume loop handles it iteratively?
+        // Clamp for safety.
+        if (moveA) clamp(a);
+        if (moveB) clamp(b);
+    }
+}
+
+function clamp(chest) {
+    if (chest.x < BOUNDARY) chest.x = BOUNDARY;
+    if (chest.x > Globals.canvas.width - BOUNDARY - chest.width) chest.x = Globals.canvas.width - BOUNDARY - chest.width;
+    if (chest.y < BOUNDARY) chest.y = BOUNDARY;
+    if (chest.y > Globals.canvas.height - BOUNDARY - chest.height) chest.y = Globals.canvas.height - BOUNDARY - chest.height;
+}
+
 async function openChest(chest) {
     console.log("Opening Chest:", chest.id);
     if (chest.state === 'open') return;
+
+    // Set Open State
     chest.state = 'open';
     SFX.doorUnlocked();
 
@@ -418,7 +542,7 @@ export function drawChests() {
         // INTERACTION PROMPT
         if (chest.state === 'closed') {
             const dist = Math.hypot(Globals.player.x - (x + w / 2), Globals.player.y - (y + h / 2));
-            if (dist < 120) { // Increased valid Visual Prompt distance to match logic
+            if (dist < 120) {
                 ctx.font = "10px 'Press Start 2P', monospace";
                 ctx.fillStyle = "#f1c40f";
                 ctx.fillText("SPACE", x + w / 2, y - 22);
