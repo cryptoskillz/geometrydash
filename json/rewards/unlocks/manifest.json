@@ -47,6 +47,7 @@
         "inventory/add5keys",
         "modifiers/player/add3dglasses",
         "modifiers/player/addMaxhp",
-        "modifiers/player/shield"
+        "modifiers/player/shield",
+        "modifiers/bullets/homing"
     ]
 }

@@ -1,0 +1,10 @@
+{
+    "name": "homing",
+    "description": "Unlocks homing missiles",
+    "unlock": "homing",
+    "json": "rewards/items/modifiers/bullets/homing.json",
+    "attr": "",
+    "value": true,
+    "spawnable": true,
+    "instantTrigger": false
+}

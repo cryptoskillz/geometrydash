@@ -96,6 +96,7 @@ export const Globals = {
     bombs: [],
     keys: {}, // Input keys
     groundItems: [],
+    chests: [],
     floatingTexts: [],
     debugLogs: [],
 

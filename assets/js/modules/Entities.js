@@ -861,7 +861,11 @@ export function reloadWeapon() {
     // SFX.reload(); 
 }
 export function updateBulletsAndShards(aliveEnemies) {
+    // Remove deleted bullets
+    Globals.bullets = Globals.bullets.filter(b => !b.markedForDeletion);
+
     Globals.bullets.forEach((b, i) => {
+
         // --- PLAYER COLLISION (Friendly Fire) ---
         const distToPlayer = Math.hypot(Globals.player.x - b.x, b.y - Globals.player.y);
         const collisionThreshold = Globals.player.size + b.size;
@@ -3810,35 +3814,6 @@ export function spawnRoomRewards(dropConfig, label = null) {
 
     let anyDropped = false;
     const pendingDrops = [];
-
-    // MATRIX ROOM SPECIAL LOGIC
-    if (dropConfig.matrix === true) {
-        log("Matrix Room: Spawning ALL items...");
-        if (window.allItemTemplates) {
-            window.allItemTemplates.forEach(item => {
-                // SKIP items that are explicitly set to spawnable: false (e.g. Start Level 4)
-                if (item.spawnable === false) return;
-
-                // Determine Rarity (since it's not bucketed here)
-                let rarity = item.rarity || 'common';
-
-                // If it's an Item/Unlock without rarity, assume it's valuable
-                if (!item.rarity) {
-                    // Check MULTIPLE properties for Unlocks
-                    if (item.unlock || item.unlockId || item.type === 'unlock' || item.name === 'Minimap') {
-                        rarity = 'legendary'; // Upgrade to Legendary (Gold)
-                        log(`SpawnRoomRewards: Forcing LEGENDARY rarity for ${item.name} (Unlock ID: ${item.unlockId || item.unlock})`);
-                    }
-                    else if (item.type === 'gun') rarity = 'rare';     // Guns are decent
-                    else if (item.type === 'bomb') rarity = 'common';
-                }
-
-                // Spawn EVERYTHING without filtering
-                pendingDrops.push({ item: item, rarity: rarity });
-            });
-        }
-    }
-
     // 0. Fetch Unlock State
     const unlocks = JSON.parse(localStorage.getItem('game_unlocks') || '{}');
     const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');

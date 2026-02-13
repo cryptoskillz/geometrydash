@@ -29,6 +29,28 @@
             "y": 300
         }
     },
+    "chests": {
+        "manfest": "rewards/unlocks/manifest.json",
+        "bombs!": {
+            "instantSpawn": {
+                "active": true,
+                "spawnChance": 1
+            },
+            "spawnsOnClear": {
+                "active": false,
+                "spawnChance": 1
+            },
+            "contains": [
+                "bombs*"
+            ],
+            "canShoot": true,
+            "locked": true,
+            "canBomb": true,
+            "x": 100,
+            "y": 100,
+            "solid": true
+        }
+    },
     "width": 900,
     "height": 900,
     "enemies": []

@@ -15,6 +15,7 @@ import {
     updateBombsPhysics, updateShooting, updateShield, updatePortal, updateGhost,
     handleLevelComplete
 } from './Entities.js';
+import { spawnChests, updateChests, drawChests } from './Chests.js';
 
 // Placeholders for functions to be appended
 export async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
@@ -934,48 +935,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             spawnEnemies(Globals.roomData);
         }
 
-        // MATRIX ROOM: Spawn ALL Items
-        if (Globals.roomData.item && Globals.roomData.item.matrix) {
-            console.log("MATRIX ROOM DETECTED: Spawning all items...");
-            const items = window.allItemTemplates || Globals.itemTemplates || [];
-            if (items.length > 0) {
-                const cols = 8; // Items per row
-                const spacing = 85;
-                const startX = 100;
-                const startY = 100;
-
-                // Prevent overlap: Clear existing items in this room 0,0 first? 
-                // Or just clear all ground items if this is a "Matrix Mode" load
-                Globals.groundItems = Globals.groundItems.filter(i => i.roomX !== (Globals.roomData.x || 0) || i.roomY !== (Globals.roomData.y || 0));
-
-                items.forEach((itemTemplate, idx) => {
-                    if (!itemTemplate) return;
-
-                    const col = idx % cols;
-                    const row = Math.floor(idx / cols);
-
-                    Globals.groundItems.push({
-                        x: startX + (col * spacing),
-                        y: startY + (row * spacing),
-                        data: JSON.parse(JSON.stringify(itemTemplate)),
-                        roomX: Globals.roomData.x || 0, // Should be 0,0 locally
-                        roomY: Globals.roomData.y || 0,
-                        vx: 0, vy: 0,
-                        solid: true, moveable: true, friction: 0.9, size: 15,
-                        floatOffset: Math.random() * 100
-                    });
-                });
-                console.log(`Spawned ${items.length} items for Matrix Room.`);
-
-                // Move Player to Safe Spot (Bottom Center)
-                if (Globals.player) {
-                    Globals.player.x = 400;
-                    Globals.player.y = 500;
-                    console.log("Moved player to safe spot (400, 500) for Matrix Mode.");
-                }
-            }
-        }
-
         Globals.canvas.width = Globals.roomData.width || 800;
         Globals.canvas.height = Globals.roomData.height || 600;
 
@@ -1237,6 +1196,7 @@ export function startGame(keepState = false) {
             }
 
             spawnEnemies();
+            spawnChests(Globals.roomData);
 
             // Check for Start Room Bonus (First Start)
             if (Globals.gameData.rewards && Globals.gameData.rewards.startroom) {
@@ -1385,6 +1345,22 @@ export function changeRoom(dx, dy) {
         } else {
             Globals.levelMap[currentCoord].savedItems = null;
         }
+
+        // SAVE CHESTS
+        if (Globals.chests && Globals.chests.length > 0) {
+            Globals.levelMap[currentCoord].savedChests = Globals.chests.map(c => ({
+                id: c.id,
+                x: c.x, y: c.y,
+                width: c.width, height: c.height,
+                config: c.config,
+                state: c.state,
+                locked: c.locked,
+                hp: c.hp,
+                manifest: c.manifest
+            }));
+        } else {
+            Globals.levelMap[currentCoord].savedChests = null;
+        }
     }
 
     // Reset Room Specific Flags
@@ -1509,6 +1485,28 @@ export function changeRoom(dx, dy) {
             Globals.groundItems.push(si);
         });
         log(`Restored ${Globals.levelMap[nextCoord].savedItems.length} items for ${nextCoord}`);
+    }
+
+    // RESTORE CHESTS
+    Globals.chests = [];
+    if (Globals.levelMap[nextCoord] && Globals.levelMap[nextCoord].savedChests) {
+        Globals.levelMap[nextCoord].savedChests.forEach(sc => {
+            Globals.chests.push(sc);
+        });
+    } else if (Globals.levelMap[nextCoord]) {
+        // If entering a room for first time OR no chests saved (but maybe existed?)
+        // If visited but savedChests is null, implies no chests.
+        // Wait. spawnChests should be called only if !visited?
+        // But generateLevel creates "visitedRooms" entry? No.
+        // Globals.visitedRooms only stores rooms we stepped in.
+        // Globals.levelMap stores ALL generated rooms.
+        // If we visited (has entry in visitedRooms?), then we use saved state.
+        // If savedChests is null and visited, means 0 chests.
+        // If NOT visited, spawn from template.
+
+        if (!Globals.visitedRooms[nextCoord]) {
+            spawnChests(Globals.levelMap[nextCoord].roomData);
+        }
     }
 
     // Check if Ghost should follow
@@ -1710,6 +1708,7 @@ export function update() {
     if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
 
     updateItems(); // Check for item pickups
+    updateChests();
     updateFloatingTexts(); // Animate floating texts
 
     //const now = Date.now(); // Check for item pickups
@@ -1922,6 +1921,7 @@ export async function draw() {
     drawPlayer()
     drawBulletsAndShards()
     drawBombs(doors)
+    drawChests()
     drawItems() // Draw ground items
     drawEnemies()
     if (Globals.screenShake.power > 0) Globals.ctx.restore();

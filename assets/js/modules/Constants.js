@@ -3,6 +3,7 @@ export const STATES = { START: 0, PLAY: 1, GAMEOVER: 2, GAMEMENU: 3, WIN: 4, CRE
 export const BOUNDARY = 20;
 export const DOOR_SIZE = 50;
 export const DOOR_THICKNESS = 15;
+export const TILE_SIZE = 40;
 
 // JSON Paths
 export const JSON_PATHS = {
