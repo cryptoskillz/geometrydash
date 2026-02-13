@@ -98,6 +98,7 @@ export function updateChests() {
                                 spawnFloatingText(chest.x, chest.y - 20, "Unlocked!", "#f1c40f");
                             } else {
                                 console.log("Chest locked and no keys.");
+                                SFX.cantDoIt();
                                 spawnFloatingText(chest.x, chest.y - 20, "Locked", "#e74c3c");
                             }
                         } else {
@@ -193,6 +194,10 @@ export function updateChests() {
                 openChest(chest);
                 bullet.markedForDeletion = true;
                 return;
+            }
+            else {
+                if (chest.state === 'closed')
+                    SFX.cantDoIt();
             }
 
             // 3. Block Bullet (If Solid)
@@ -506,6 +511,7 @@ export function drawChests() {
 
             // Lock
             if (chest.locked) {
+
                 ctx.fillStyle = '#f1c40f';
                 ctx.fillRect(x + w / 2 - 5, y + 5, 10, 10);
                 ctx.fillStyle = '#000';

@@ -45,12 +45,12 @@
                 "bombs*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": true,
             "canBomb": true,
             "x": 100,
             "y": 400,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "item clothing!": {
             "manfest": "rewards/items/manifest.json",
@@ -113,7 +113,7 @@
             "x": 550,
             "y": 400,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "item inventory!": {
             "manfest": "rewards/items/manifest.json",
@@ -134,7 +134,7 @@
             "x": 700,
             "y": 400,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "item bullet modifiers!": {
             "manfest": "rewards/items/manifest.json",
@@ -155,7 +155,7 @@
             "x": 100,
             "y": 500,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "item player modifiers!": {
             "manfest": "rewards/items/manifest.json",
@@ -176,7 +176,7 @@
             "x": 250,
             "y": 500,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "unlock bombs!": {
             "manfest": "rewards/unlocks/manifest.json",
@@ -197,7 +197,7 @@
             "x": 100,
             "y": 100,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "unlock clothing": {
             "manfest": "rewards/unlocks/manifest.json",
@@ -218,7 +218,7 @@
             "x": 250,
             "y": 100,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "unlock game": {
             "manfest": "rewards/unlocks/manifest.json",
@@ -239,7 +239,7 @@
             "x": 400,
             "y": 100,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "unlock player guns!": {
             "manfest": "rewards/unlocks/manifest.json",
@@ -260,7 +260,7 @@
             "x": 550,
             "y": 100,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "unlock inventory!": {
             "manfest": "rewards/unlocks/manifest.json",
@@ -281,7 +281,7 @@
             "x": 700,
             "y": 100,
             "solid": true,
-            "moveable": true
+            "moveable": false
         },
         "unlock modifiers!": {
             "manfest": "rewards/unlocks/manifest.json",
@@ -302,7 +302,7 @@
             "x": 100,
             "y": 200,
             "solid": true,
-            "moveable": true
+            "moveable": false
         }
     },
     "width": 900,

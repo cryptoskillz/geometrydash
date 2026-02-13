@@ -540,6 +540,29 @@ export async function dropBomb() {
         }
     }
 
+    // Check overlaps with chests
+    if (canDrop) {
+        for (const chest of Globals.chests) {
+            if (chest.state !== 'closed' && chest.state !== 'open') continue; // Only physical chests
+
+            // Simple Box Collision Check (Bomb is Point or Small Circle)
+            // Chest is Rect (x, y, w, h)
+            // Expand chest box by Bomb Radius roughly
+            const bombR = baseR || 15;
+            const buffer = 5;
+
+            if (dropX + bombR > chest.x - buffer &&
+                dropX - bombR < chest.x + chest.width + buffer &&
+                dropY + bombR > chest.y - buffer &&
+                dropY - bombR < chest.y + chest.height + buffer) {
+
+                canDrop = false;
+                log("Bomb drop blocked by Chest collision");
+                break;
+            }
+        }
+    }
+
     // Wall Check
     if (dropX < BOUNDARY || dropX > Globals.canvas.width - BOUNDARY || dropY < BOUNDARY || dropY > Globals.canvas.height - BOUNDARY) {
         if (!isMoving) {
