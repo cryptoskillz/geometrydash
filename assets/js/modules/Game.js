@@ -1538,6 +1538,17 @@ export function changeRoom(dx, dy) {
     // Transition to the pre-generated room
     const nextEntry = Globals.levelMap[nextCoord];
     if (nextEntry) {
+        // RESET PORTAL STATE ON ROOM CHANGE
+        // This ensures portals from other rooms (like Start/Matrix) don't bleed over.
+        if (Globals.portal) {
+            Globals.portal.active = false;
+            Globals.portal.finished = false;
+            Globals.portal.scrapping = false;
+            Globals.portal.color = null; // Reset color override
+            Globals.portal.x = 0;
+            Globals.portal.y = 0;
+        }
+
         Globals.roomData = nextEntry.roomData;
         Globals.visitedRooms[nextCoord] = nextEntry; // Add to visited for minimap
 
@@ -1910,7 +1921,15 @@ export async function draw() {
 
     // Global Matrix Effect (Background)
     if (Globals.roomData && Globals.roomData.name === "Guns Lots of Guns") {
+        Globals.portal.active = true;
+        Globals.roomData.isBoss = true;
+        // Fix: Set Coordinates so it draws on screen (center)
+        Globals.portal.x = Globals.canvas.width / 2;
+        Globals.portal.y = Globals.canvas.height / 2;
+        Globals.portal.color = 'green';
+
         drawMatrixRain();
+        // createPortal is drawn at end of loop if active
     }
     // Ghost Trap Effect
     if (Globals.ghostTrapActive) {
@@ -1993,26 +2012,41 @@ export async function draw() {
     requestAnimationFrame(() => { update(); draw(); });
 }
 
-export function drawPortal() {
-    // Only draw if active AND in the boss room
-    if (!Globals.portal.active || !Globals.roomData.isBoss) return;
+export function drawPortal(overrideColor = null) {
+    // Only draw if active
+    // console.log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
+    if (!Globals.portal.active) return;
     const time = Date.now() / 500;
 
     Globals.ctx.save();
     Globals.ctx.translate(Globals.portal.x, Globals.portal.y);
 
+    // Determine Colors based on Room (Matrix Room = Green/Used)
+    let mainColor = "#8e44ad"; // Default Purple
+    let glowColor = "#8e44ad";
+    let swirlColor = "#ffffff";
+
+    // Check Override, Portal Obj Prop, or Room Name (Deprecated room name check)
+    const colorMode = overrideColor || Globals.portal.color || 'purple';
+
+    if (colorMode === 'green') {
+        mainColor = "#2ecc71"; // Matrix Green
+        glowColor = "#00ff00"; // Bright Green
+        swirlColor = "#aaffaa"; // Light Green Swirl
+    }
+
     // Outer glow
     Globals.ctx.shadowBlur = 20;
-    Globals.ctx.shadowColor = "#8e44ad";
+    Globals.ctx.shadowColor = glowColor;
 
     // Portal shape
-    Globals.ctx.fillStyle = "#8e44ad";
+    Globals.ctx.fillStyle = mainColor;
     Globals.ctx.beginPath();
     Globals.ctx.ellipse(0, 0, 30, 50, 0, 0, Math.PI * 2);
     Globals.ctx.fill();
 
     // Swirl effect
-    Globals.ctx.strokeStyle = "#ffffff";
+    Globals.ctx.strokeStyle = swirlColor;
     Globals.ctx.lineWidth = 3;
     Globals.ctx.beginPath();
     Globals.ctx.ellipse(0, 0, 20 + Math.sin(time) * 5, 40 + Math.cos(time) * 5, time, 0, Math.PI * 2);

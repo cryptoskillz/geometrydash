@@ -1997,8 +1997,8 @@ export function updateEnemies() {
 export function updatePortal() {
     if (!Globals.portal.active) return;
     const currentCoord = `${Globals.player.roomX},${Globals.player.roomY}`;
-    // Only interact if in Boss Room (should match draw logic)
-    if (!Globals.roomData.isBoss) return;
+    // Only interact if active
+    // if (!Globals.roomData.isBoss) return; // Allow anywhere per user request
 
     const dist = Math.hypot(Globals.player.x - Globals.portal.x, Globals.player.y - Globals.portal.y);
     if (dist < 30) {

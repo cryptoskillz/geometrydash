@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, CONFIG, STORAGE_KEYS } from './Constants.js';
-import { drawSwitch } from './Game.js'
+import { drawPortal } from './Game.js'
 // Utils might be needed if logging
 import { log } from './Utils.js';
 
@@ -385,7 +385,13 @@ export function drawTutorial() {
         //uodate start room name in the UI
         if (Globals.elements.roomName) Globals.elements.roomName.innerText = Globals.roomData.name;
 
-        drawSwitch()
+        // Force Portal Active & Centered for Start Room
+        Globals.portal.active = true;
+        Globals.portal.x = Globals.canvas.width / 2;
+        Globals.portal.y = Globals.canvas.height / 2;
+        Globals.portal.color = 'green';
+        drawPortal('green'); // Pass override just in case
+
         // Internal helper for keycaps
         const drawKey = (text, x, y) => {
             Globals.ctx.fillStyle = "rgba(0, 0, 0, 0.3)";

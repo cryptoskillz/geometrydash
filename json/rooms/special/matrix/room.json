@@ -10,7 +10,7 @@
     "doors": {
         "top": {
             "locked": 1,
-            "active": 1,
+            "active": 0,
             "x": 400
         },
         "bottom": {
@@ -20,12 +20,12 @@
         },
         "left": {
             "locked": 0,
-            "active": 1,
+            "active": 0,
             "y": 300
         },
         "right": {
             "locked": 0,
-            "active": 1,
+            "active": 0,
             "y": 300
         }
     },
@@ -90,7 +90,7 @@
             "locked": false,
             "canBomb": true,
             "x": 400,
-            "y": 400,
+            "y": 700,
             "solid": true,
             "moveable": true
         },
