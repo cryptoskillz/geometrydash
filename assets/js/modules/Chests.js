@@ -64,6 +64,63 @@ export function spawnChests(roomData) {
 
         Globals.chests.push(chest);
     });
+
+    // Resolve Dynamic Data (Async)
+    resolveChestData();
+}
+
+async function resolveChestData() {
+    for (const chest of Globals.chests) {
+        if (!chest.config.contains || !Array.isArray(chest.config.contains)) continue;
+
+        // Find first file path content
+        const filePath = chest.config.contains.find(c => c.endsWith('.json'));
+        if (!filePath) continue;
+
+        try {
+            const url = filePath.startsWith('/') ? JSON_PATHS.ROOT + filePath.substring(1) : JSON_PATHS.ROOT + filePath;
+            // Prevent double slash if JSON_PATHS.ROOT has one?
+            // Actually JSON_PATHS.ROOT is normally empty string or path prefix.
+            // Let's rely on standard fetch relative path if needed, or constructed path.
+            // Assuming filePath like "/items/bombs/golden.json" -> "json/items/bombs/golden.json" if ROOT is "json/"?
+            // Let's use the same logic as spawnItem: 
+            // if starts with /, relative to root? 
+            // Actually, let's just try to fetch it relative to current location if it starts with /? 
+            // Wait, "json/" is usually the root for data. 
+            // If user puts "/items/...", it likely means "json/items/...".
+
+            // Fix path construction:
+            let fetchUrl = filePath;
+            if (filePath.startsWith('/')) fetchUrl = 'json' + filePath;
+            else if (!filePath.startsWith('json/')) fetchUrl = 'json/' + filePath;
+
+
+            const res = await fetch(fetchUrl + '?t=' + Date.now());
+            if (res.ok) {
+                const itemData = await res.json();
+
+                // 1. Update Name
+                if (itemData.name) {
+                    chest.config.name = itemData.name;
+                    chest.id = itemData.name; // Optional: update ID too?
+                }
+
+                // 2. Update Lock Cost
+                if (chest.locked && chest.config.locked && itemData.shardCost) {
+                    const type = (chest.config.locked.unlockType || 'key').toLowerCase();
+                    if (type.includes('green') && itemData.shardCost.green) {
+                        chest.config.locked.cost = itemData.shardCost.green;
+                        // log(`Updated Chest Lock Cost (Green): ${itemData.shardCost.green}`);
+                    } else if (type.includes('red') && itemData.shardCost.red) {
+                        chest.config.locked.cost = itemData.shardCost.red;
+                        // log(`Updated Chest Lock Cost (Red): ${itemData.shardCost.red}`);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to resolve dynamic chest data:", filePath, e);
+        }
+    }
 }
 
 // Flag to ensure listener is added only once
@@ -481,8 +538,17 @@ async function openChest(chest) {
     const contains = chest.config.contains || [];
     const pool = [];
 
+    // 1. Direct File Paths (Bypasses Manifest Filter)
+    contains.forEach(p => {
+        if (typeof p === 'string' && p.endsWith('.json')) {
+            pool.push(p);
+        }
+    });
+
+    // 2. Manifest Pattern Matching
     items.forEach(itemPath => {
         const match = contains.some(pattern => {
+            if (pattern.endsWith('.json')) return false; // Handled above
             const regexStr = pattern.replace(/\*/g, '.*');
             const regex = new RegExp(`^${regexStr}`);
             return regex.test(itemPath);
@@ -508,8 +574,14 @@ async function spawnItem(path, x, y, basePath = 'rewards/items/') {
         fullPath = basePath + path;
     }
 
+    // Ensure correct extension handling
+    if (fullPath.endsWith('.json')) {
+        // If it ends in json, we use it as is (but ensure no double .json on fetch)
+    }
+
     try {
-        const res = await fetch(`${JSON_PATHS.ROOT}${fullPath}.json?t=${Date.now()}`);
+        const url = fullPath.endsWith('.json') ? `${JSON_PATHS.ROOT}${fullPath}` : `${JSON_PATHS.ROOT}${fullPath}.json`;
+        const res = await fetch(`${url}?t=${Date.now()}`);
         const itemData = await res.json();
         if (itemData.spawnable === false) return;
 

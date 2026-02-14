@@ -1,4 +1,6 @@
 bugs
+    add stich to shuffle chests
+    locked chests are not moveable
     remove swithc from tutorial
     chests lock with shards is not moveable
     ghost spawns in shop and is in ghost locked mode

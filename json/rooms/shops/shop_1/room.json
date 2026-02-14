@@ -33,7 +33,7 @@
     },
     "chests": {
         "name": "Bomb Unlocks!",
-        "item bombs!": {
+        "Chest 1": {
             "manfest": "rewards/items/manifest.json",
             "instantSpawn": {
                 "active": true,
@@ -41,17 +41,15 @@
             },
             "spawnsOnClear": {
                 "active": true,
-                "unlockType": "greenshard",
-                "cost": 100
+                "unlockType": "greenshard"
             },
             "contains": [
-                "bombs*"
+                "/rewards/items/bombs/golden.json"
             ],
             "canShoot": true,
             "locked": {
                 "active": true,
-                "unlockType": "greenshard",
-                "cost": 100
+                "unlockType": "greenshard"
             },
             "canBomb": true,
             "x": 100,
@@ -75,8 +73,7 @@
             "canShoot": true,
             "locked": {
                 "active": true,
-                "unlockType": "greenshard",
-                "cost": 100
+                "unlockType": "greenshard"
             },
             "canBomb": true,
             "x": 250,
@@ -100,8 +97,7 @@
             "canShoot": true,
             "locked": {
                 "active": true,
-                "unlockType": "greenshard",
-                "cost": 100
+                "unlockType": "greenshard"
             },
             "canBomb": true,
             "x": 400,
