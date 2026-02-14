@@ -3,7 +3,7 @@
     "purchasable": {
         "active": true,
         "purchaseType": "greenshards",
-        "cost": 100
+        "cost": 300
     },
     "description": "the red bomb good for doors",
     "drawType": "arc",

@@ -1,5 +1,5 @@
 bugs
-    speedy time should not start on cleared room
+gun turret requrie its x y back (if it spawns off screen move it until it is on screen)
     remove the matrix att in room and use id instead
     add speech attr to enemy, used for bosses, enter, die
     if ghost / enemy speech is at top of screen you cant read it so make it show below the enemy
@@ -49,12 +49,6 @@ level 5 = loads credits fine then shows last screen a little before going to wel
     add shop room 
     add home room
     add trophy room
-
-Switch
-    add a switch json, that draws a switch
-    have a number of amount of switchers we can add
-    have am action timer (stand on it for x time), follow, simong says, weighted.
-
 
 
     modifiers
@@ -136,13 +130,7 @@ achivements
 
 Balance
 
-you kill the ghost by buying the ghost trap and lettign hoim out in the ghost room
-    you have to buy the ghost trap for 10000 red shards, requires upgrading the shard system
-    yuo catch the ghost
-    you then got 5 seconds in the trap (never enough)
-    you have to upgrade the timer of the trap
-    you take the gost to a protal room and let him out
-    he dies
+
     this is why he never goes in the portal room or the start room (which will have a portal)
     show an increasingf number of enemies type you killed to the welcome screen with the big ghost occasionally showing
     add what killed you to the game over screen
@@ -215,7 +203,7 @@ enemies
 
 
 ghost
-    if the ghost respawns his health i think so he should be really hard to kill you shuold clear the level go back coax him and have him chase you 
+    if the ghost respawns his health is reset think so he should be really hard to kill you shuold clear the level go back coax him and have him chase you 
     if you get to far away he stops following you and goes back to the void and comes back later fully healed. 
     add ghost to the welcome screen
     when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
@@ -229,18 +217,19 @@ ghost
     ghost wont enter a room with an indestrcutible enemy
     add a timer to show you how long you survice
     ghost wont enter a start or boss room what is he scared of?
-
+you kill the ghost by buying the ghost trap and lettign hoim out in the ghost room
+    you have to buy the ghost trap for 10000 red shards, requires upgrading the shard system
+    yuo catch the ghost
+    you then got 5 seconds in the trap (never enough)
+    you have to upgrade the timer of the trap
+    you take the gost to a protal room and let him out
+    he dies
 
 NPCsds
     shop keeper 
 
 rooms
     number of rooms json change this to per level if used
-    change the drop chane from 100% once we are finished testing
-    if movetype has an x,y start it there
-    Boss room
-    shop
-        shows up once a round (have to add coins)
     secrets roons
         secret room generate at random and can be hidden behind walls etc these do not render in the golden path special things unlock them
     special room
@@ -269,10 +258,7 @@ editor
 
 enemies
     add enemy hit and enemy death sound  from json
-    [x] boss should not get name from names.json he already has a name from json
-    maybe if ghost is x rooms away we just spawn him in the new room
     add pyshics to the enemies json instead of having them hard coded in logic.js
-    add more shapes
     transformer boss square, circle, 4 rectnagles for legs and you have to take out each limb
         have swarm enemies that run away unless there are x of them
     enemy move types

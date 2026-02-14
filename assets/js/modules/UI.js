@@ -264,6 +264,7 @@ export async function updateUI() {
     if (speedyEl) {
         const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
         if (Globals.gameData.showSpeedyTimer || unlockedIds.includes('speedytimer')) {
+            if (Globals.roomData.cleared) return;
             speedyEl.style.display = 'block';
             // Logic: Limit - (Now - FreezeEnd)
             // Default limit 5000ms if not set

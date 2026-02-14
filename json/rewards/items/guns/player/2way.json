@@ -1,6 +1,11 @@
 {
     "name": "2 way gun",
     "description": "the 2 way gun",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 100
+    },
     "location": "rewards/items/guns/player/2way.json",
     "type": "gun",
     "starter": false,
