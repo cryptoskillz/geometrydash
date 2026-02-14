@@ -1,5 +1,10 @@
 {
     "name": "Golden Bomb",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 300
+    },
     "description": "the biggest bomb we have. Press SPACE to detonate.",
     "drawType": "arc",
     "playerDraw": "arc",

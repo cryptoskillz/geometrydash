@@ -124,10 +124,28 @@ export function generateLevel(length) {
 
     if (shopTmpl && Globals.gameData.shop && Globals.gameData.shop.active) {
         // Find candidates: Any room that is NOT Start and NOT Boss
-        let candidates = fullMapCoords.filter(c => c !== "0,0" && c !== Globals.bossCoord);
+        // Priority: Dead Ends (1 neighbor) to ensure single door
+        let candidates = fullMapCoords.filter(c => {
+            if (c === "0,0" || c === Globals.bossCoord) return false;
+
+            const [x, y] = c.split(',').map(Number);
+            let neighbors = 0;
+            dirs.forEach(d => {
+                if (fullMapCoords.includes(`${x + d.dx},${y + d.dy}`)) neighbors++;
+            });
+            return neighbors === 1;
+        });
+
         if (candidates.length > 0) {
             shopCoord = candidates[Math.floor(Globals.random() * candidates.length)];
-            log("Shop placed at:", shopCoord);
+            log("Shop placed at (Dead End):", shopCoord);
+        } else {
+            // Fallback: If no dead ends (unlikely), pick random valid
+            let backup = fullMapCoords.filter(c => c !== "0,0" && c !== Globals.bossCoord);
+            if (backup.length > 0) {
+                shopCoord = backup[Math.floor(Globals.random() * backup.length)];
+                log("Shop placed at (Random - No DeadEnd):", shopCoord);
+            }
         }
     }
 
@@ -196,9 +214,23 @@ export function generateLevel(length) {
                 // Keep locked status if template specifically had it, otherwise 0
                 if (data.doors[d.name].locked === undefined) data.doors[d.name].locked = 0;
 
-                // FORCE UNLOCK AND ACTIVE on Golden Path
+                // FORCE UNLOCK AND ACTIVE on Golden Path (unless it's the shop?)
+                // Actually Shop can be on Golden Path?
+                // Logic says Shop is "not boss coord" and "not 0,0".
+                // If Shop ends up on golden path (possible if Dead End logic fails or path has dead end?),
+                // we still want to lock it.
+                // Priority: Lock Shop > Golden Path Unlock?
+                // Usually Golden Path should be openable.
+                // If Shop is blocking Golden Path (unlikely if it's dead end), user must have key.
+                // But generally Shop is a branch.
                 if (Globals.goldenPath.includes(coord) && Globals.goldenPath.includes(neighborCoord)) {
                     data.doors[d.name].locked = 0;
+                    data.doors[d.name].active = 1;
+                }
+
+                // SHOP LOCK LOGIC (Overrides Golden Path if conflict)
+                if ((coord === shopCoord || neighborCoord === shopCoord) && shopCoord !== null) {
+                    data.doors[d.name].locked = 1; // 1 = Key
                     data.doors[d.name].active = 1;
                 }
 

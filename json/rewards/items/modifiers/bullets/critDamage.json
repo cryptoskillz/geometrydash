@@ -1,6 +1,11 @@
 {
     "name": "Critical Damage",
     "description": "bullets that deal more damage on critical hits",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/bullets/critDamage.json",
     "type": "modifier",
     "modify": "gun",
@@ -14,5 +19,5 @@
         "active": false,
         "modifyType": "session"
     },
-    "rarity": "uncommon"
+    "rarity": "common"
 }

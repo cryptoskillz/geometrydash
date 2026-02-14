@@ -1,6 +1,11 @@
 {
     "name": "Bomb +3",
     "description": "Adds 3 bombs to your inventory",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/inventory/add3bombs.json",
     "type": "modifier",
     "modify": "player",

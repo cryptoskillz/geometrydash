@@ -1,6 +1,11 @@
 {
     "name": "geometry gun",
     "description": "Maths is fun",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 300
+    },
     "location": "rewards/items/guns/player/geometry.json",
     "type": "gun",
     "starter": false,

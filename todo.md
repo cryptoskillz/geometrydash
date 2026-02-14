@@ -1,7 +1,5 @@
 bugs
-    shops should always be lockde
-    add stich to shuffle chests
-    remove swithc from tutorial
+    speedy time should not start on cleared room
     remove the matrix att in room and use id instead
     add speech attr to enemy, used for bosses, enter, die
     if ghost / enemy speech is at top of screen you cant read it so make it show below the enemy

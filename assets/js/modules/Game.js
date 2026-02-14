@@ -16,6 +16,7 @@ import {
     handleLevelComplete
 } from './Entities.js';
 import { spawnChests, updateChests, drawChests } from './Chests.js';
+import { spawnSwitches, updateSwitches, drawSwitches } from './Switches.js';
 
 // Placeholders for functions to be appended
 export async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
@@ -104,6 +105,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     Globals.bombs = [];
     Globals.particles = [];
     Globals.enemies = [];
+    Globals.switches = [];
     if (Globals.portal) {
         Globals.portal.active = false;
         Globals.portal.finished = false;
@@ -939,6 +941,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
             console.log("Debug/Direct Load: Spawning Enemies for 0,0");
             spawnEnemies(Globals.roomData);
+            spawnChests(Globals.roomData);
+            spawnSwitches(Globals.roomData);
         }
 
         Globals.canvas.width = Globals.roomData.width || 800;
@@ -1516,6 +1520,11 @@ export function changeRoom(dx, dy) {
         }
     }
 
+    // Spawn Switches (Always reload from template for now)
+    if (Globals.levelMap[nextCoord]) {
+        spawnSwitches(Globals.levelMap[nextCoord].roomData);
+    }
+
     // Check if Ghost should follow
     const ghostConfig = Globals.gameData.ghost || { spawn: true, roomGhostTimer: 10000, roomFollow: false };
     const activeGhost = Globals.enemies.find(e => e.type === 'ghost' && !e.isDead);
@@ -1817,6 +1826,7 @@ export function update() {
     updateMovementAndDoors(doors, roomLocked);
 
     updateChests(); // Resolve new position collision
+    updateSwitches();
 
     // 3. Combat Logic
     updateShooting();
@@ -1948,6 +1958,7 @@ export async function draw() {
     drawDoors()
     drawBossSwitch() // Draw switch underneath entities
     drawStartRoomObjects(); // New: Draw start room specific floor items
+    drawSwitches();
     drawPortal(); // Draw portal on floor
     drawPlayer()
     drawBulletsAndShards()
@@ -2089,7 +2100,7 @@ export function drawBossSwitch() {
 export function drawStartRoomObjects() {
     // Check if we are in Start Room
     if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0) {
-        drawSwitch(100, 100, 40);
+
     }
 }
 

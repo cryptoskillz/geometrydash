@@ -1,6 +1,11 @@
 {
     "name": "2 way fire",
     "description": "bullets that fire in forward and reverse directions",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/bullets/2way.json",
     "type": "modifier",
     "modify": "gun",

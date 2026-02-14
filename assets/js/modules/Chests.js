@@ -13,6 +13,7 @@ export function spawnChests(roomData) {
         if (key === 'manifest' || key === 'manfest') return;
 
         const config = roomData.chests[key];
+        if (!config || typeof config !== 'object') return;
 
         // Check Instant Spawn
         let shouldSpawnNow = false;
@@ -102,19 +103,34 @@ async function resolveChestData() {
                 // 1. Update Name
                 if (itemData.name) {
                     chest.config.name = itemData.name;
-                    chest.id = itemData.name; // Optional: update ID too?
+                    chest.id = itemData.name;
                 }
 
-                // 2. Update Lock Cost
-                if (chest.locked && chest.config.locked && itemData.shardCost) {
+                // 2. Update Cost from Purchasable Data
+                if (itemData.purchasable && itemData.purchasable.active) {
+                    chest.locked = true;
+                    chest.config.locked = {
+                        unlockType: itemData.purchasable.purchaseType || 'greenshards',
+                        cost: itemData.purchasable.cost || 0
+                    };
+                }
+                // Legacy shardCost support
+                else if (chest.locked && chest.config.locked && itemData.shardCost) {
                     const type = (chest.config.locked.unlockType || 'key').toLowerCase();
                     if (type.includes('green') && itemData.shardCost.green) {
                         chest.config.locked.cost = itemData.shardCost.green;
-                        // log(`Updated Chest Lock Cost (Green): ${itemData.shardCost.green}`);
                     } else if (type.includes('red') && itemData.shardCost.red) {
                         chest.config.locked.cost = itemData.shardCost.red;
-                        // log(`Updated Chest Lock Cost (Red): ${itemData.shardCost.red}`);
                     }
+                }
+
+                // 3. Shop Force Lock Fallback
+                if (!chest.locked && Globals.roomData && Globals.roomData.type === 'shop') {
+                    chest.locked = true;
+                    chest.config.locked = {
+                        unlockType: 'greenshards',
+                        cost: 100 // Default Shop Price
+                    };
                 }
             }
         } catch (e) {
@@ -178,10 +194,10 @@ export function updateChests() {
                                     player.inventory.redShards -= cost;
                                     localStorage.setItem('currency_red', player.inventory.redShards);
                                     canOpen = true;
-                                    msg = `-${cost} Red`;
+                                    msg = `-${cost} Shards`;
                                     color = "#e74c3c";
                                 } else {
-                                    msg = `Need ${cost} Red Shards`;
+                                    msg = `Need ${cost}  Shards`;
                                     color = "#e74c3c";
                                 }
                             } else if (type === 'greenshard') {
@@ -189,10 +205,10 @@ export function updateChests() {
                                 if (current >= cost) {
                                     player.inventory.greenShards -= cost;
                                     canOpen = true;
-                                    msg = `-${cost} Green`;
+                                    msg = `-${cost} Shards`;
                                     color = "#2ecc71";
                                 } else {
-                                    msg = `Need ${cost} Green Shards`;
+                                    msg = `Need ${cost} Shards`;
                                     color = "#2ecc71";
                                 }
                             } else {
@@ -687,7 +703,7 @@ export function drawChests() {
                     label = (cost > 1) ? `${cost} KEYS` : "LOCKED (KEY)";
                     color = "#f1c40f";
                 } else {
-                    label = `${cost} ${type.toUpperCase()}`;
+                    label = `${cost} SHARDS`;
                     color = (type === 'red') ? '#e74c3c' : '#2ecc71';
                 }
 

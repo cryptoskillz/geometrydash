@@ -41,8 +41,9 @@
     "gunType": "",
     "inventory": {
         "keys": 0,
+        "houseKey": false,
         "bombs": 0,
-        "greenShards": 500,
+        "greenShards": 50,
         "redShards": 0,
         "maxKeys": 3,
         "maxBombs": 5,

@@ -1,6 +1,11 @@
 {
     "name": "4 way gun",
     "description": "the 4 way gun",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 200
+    },
     "location": "rewards/items/guns/player/4way.json",
     "type": "gun",
     "starter": false,

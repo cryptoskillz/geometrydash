@@ -1,6 +1,11 @@
 {
     "name": "peashooter",
     "description": "the Basic gun",
+    "purchasable": {
+        "active": false,
+        "purchaseType": "greenshards",
+        "cost": 100
+    },
     "location": "rewards/items/guns/enemy/peashooter.json",
     "type": "gun",
     "starter": true,

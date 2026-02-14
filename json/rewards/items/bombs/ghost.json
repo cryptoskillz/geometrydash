@@ -3,7 +3,7 @@
     "purchasable": {
         "active": true,
         "purchaseType": "greenshards",
-        "cost": 100
+        "cost": 1000
     },
     "description": "the ghost bomb Wooooo",
     "drawType": "arc",

@@ -1,5 +1,10 @@
 {
     "name": "pierce bullets",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 250
+    },
     "description": "bullets that pierce through enemies",
     "location": "rewards/items/modifiers/bullets/pierce.json",
     "type": "modifier",
@@ -14,5 +19,5 @@
         "active": false,
         "modifyType": "session"
     },
-    "rarity": "uncommon"
+    "rarity": "common"
 }

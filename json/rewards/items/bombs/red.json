@@ -1,5 +1,10 @@
 {
     "name": "red bomb",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 100
+    },
     "description": "the red bomb good for doors",
     "drawType": "arc",
     "playerDraw": "arc",
