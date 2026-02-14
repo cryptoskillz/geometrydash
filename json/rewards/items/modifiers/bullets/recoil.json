@@ -1,5 +1,10 @@
 {
     "name": "Recoil",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "description": "Increase the recoil of the gun",
     "location": "rewards/items/modifiers/bullets/recoil.json",
     "type": "modifier",

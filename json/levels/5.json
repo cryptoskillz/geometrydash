@@ -4,18 +4,22 @@
     "NoRooms": 10,
     "startRoom": "json/rooms/special/start/room.json",
     "bossRoom": "json/rooms/bosses/boss5/room.json",
+    "shop": {
+        "active": true,
+        "shopRoom": "rooms/shops/shop_1/room.json"
+    },
     "availablerooms": [
-        "json/rooms/1_angry_tank/room.json",
-        "json/rooms/2_gun_room_1/room.json",
-        "json/rooms/3_easy_room_1/room.json",
-        "json/rooms/4_easy_room_2/room.json",
-        "json/rooms/5_hard_room_1/room.json",
-        "json/rooms/6_lots_of_turrets/room.json",
-        "json/rooms/7_fast_room_1/room.json",
-        "json/rooms/8_treasure_room_1/room.json",
-        "json/rooms/9_very_hard_room_1/room.json",
-        "json/rooms/10_1_big_enemy/room.json",
-        "json/rooms/11_1_big_enemy_and_friends/room.json"
+        "json/rooms/normal/1_angry_tank/room.json",
+        "json/rooms/normal/2_gun_room_1/room.json",
+        "json/rooms/normal/3_easy_room_1/room.json",
+        "json/rooms/normal/4_easy_room_2/room.json",
+        "json/rooms/normal/5_hard_room_1/room.json",
+        "json/rooms/normal/6_lots_of_turrets/room.json",
+        "json/rooms/normal/7_fast_room_1/room.json",
+        "json/rooms/normal/8_treasure_room_1/room.json",
+        "json/rooms/normal/9_very_hard_room_1/room.json",
+        "json/rooms/normal/10_1_big_enemy/room.json",
+        "json/rooms/normal/11_1_big_enemy_and_friends/room.json"
     ],
     "specialrooms": [
         ""

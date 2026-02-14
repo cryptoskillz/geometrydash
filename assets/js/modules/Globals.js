@@ -6,6 +6,10 @@ export const Globals = {
     mctx: null,
     statsPanel: null,
 
+    randomGreenMinCount: 1,
+    randomGreenMaxCount: 100,
+    randomGreenPerAward: 30,
+
     // UI Elements
     elements: {
         hp: null,
@@ -141,6 +145,7 @@ export const Globals = {
 
     roomFreezeUntil: 0,
     bossIntroEndTime: 0,
+    roomIntroEndTime: 0,
     // Run Timer
     runStartTime: 0,
     runElapsedTime: 0,

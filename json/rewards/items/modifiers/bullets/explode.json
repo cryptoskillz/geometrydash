@@ -1,6 +1,11 @@
 {
     "name": "explode",
     "description": "bullets that explode on impact",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/bullets/explode.json",
     "type": "modifier",
     "modify": "gun",
@@ -14,5 +19,5 @@
         "active": false,
         "modifyType": "session"
     },
-    "rarity": "uncommon"
+    "rarity": "common"
 }

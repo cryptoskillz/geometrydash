@@ -1,6 +1,11 @@
 {
     "name": "Key +1",
     "description": "Adds a key to your inventory",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/inventory/addkey.json",
     "type": "modifier",
     "modify": "player",

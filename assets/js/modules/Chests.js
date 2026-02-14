@@ -13,6 +13,7 @@ export function spawnChests(roomData) {
         if (key === 'manifest' || key === 'manfest') return;
 
         const config = roomData.chests[key];
+        if (!config || typeof config !== 'object') return;
 
         // Check Instant Spawn
         let shouldSpawnNow = false;
@@ -55,7 +56,7 @@ export function spawnChests(roomData) {
             height: 40,
             config: config,
             state: shouldSpawnNow ? 'closed' : 'hidden',
-            locked: config.locked === true,
+            locked: config.locked === true || (typeof config.locked === 'object' && config.locked.active),
             solid: config.solid || false,
             moveable: config.moveable || false,
             hp: 1,
@@ -64,6 +65,78 @@ export function spawnChests(roomData) {
 
         Globals.chests.push(chest);
     });
+
+    // Resolve Dynamic Data (Async)
+    resolveChestData();
+}
+
+async function resolveChestData() {
+    for (const chest of Globals.chests) {
+        if (!chest.config.contains || !Array.isArray(chest.config.contains)) continue;
+
+        // Find first file path content
+        const filePath = chest.config.contains.find(c => c.endsWith('.json'));
+        if (!filePath) continue;
+
+        try {
+            const url = filePath.startsWith('/') ? JSON_PATHS.ROOT + filePath.substring(1) : JSON_PATHS.ROOT + filePath;
+            // Prevent double slash if JSON_PATHS.ROOT has one?
+            // Actually JSON_PATHS.ROOT is normally empty string or path prefix.
+            // Let's rely on standard fetch relative path if needed, or constructed path.
+            // Assuming filePath like "/items/bombs/golden.json" -> "json/items/bombs/golden.json" if ROOT is "json/"?
+            // Let's use the same logic as spawnItem: 
+            // if starts with /, relative to root? 
+            // Actually, let's just try to fetch it relative to current location if it starts with /? 
+            // Wait, "json/" is usually the root for data. 
+            // If user puts "/items/...", it likely means "json/items/...".
+
+            // Fix path construction:
+            let fetchUrl = filePath;
+            if (filePath.startsWith('/')) fetchUrl = 'json' + filePath;
+            else if (!filePath.startsWith('json/')) fetchUrl = 'json/' + filePath;
+
+
+            const res = await fetch(fetchUrl + '?t=' + Date.now());
+            if (res.ok) {
+                const itemData = await res.json();
+
+                // 1. Update Name
+                if (itemData.name) {
+                    chest.config.name = itemData.name;
+                    chest.id = itemData.name;
+                }
+
+                // 2. Update Cost from Purchasable Data
+                if (itemData.purchasable && itemData.purchasable.active) {
+                    chest.locked = true;
+                    chest.config.locked = {
+                        unlockType: itemData.purchasable.purchaseType || 'greenshards',
+                        cost: itemData.purchasable.cost || 0
+                    };
+                }
+                // Legacy shardCost support
+                else if (chest.locked && chest.config.locked && itemData.shardCost) {
+                    const type = (chest.config.locked.unlockType || 'key').toLowerCase();
+                    if (type.includes('green') && itemData.shardCost.green) {
+                        chest.config.locked.cost = itemData.shardCost.green;
+                    } else if (type.includes('red') && itemData.shardCost.red) {
+                        chest.config.locked.cost = itemData.shardCost.red;
+                    }
+                }
+
+                // 3. Shop Force Lock Fallback
+                if (!chest.locked && Globals.roomData && Globals.roomData.type === 'shop') {
+                    chest.locked = true;
+                    chest.config.locked = {
+                        unlockType: 'greenshards',
+                        cost: 100 // Default Shop Price
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to resolve dynamic chest data:", filePath, e);
+        }
+    }
 }
 
 // Flag to ensure listener is added only once
@@ -90,16 +163,66 @@ export function updateChests() {
                     // Allow wider range for key interaction (120px)
                     if (dist < 120) {
                         console.log("Direct Key Interaction! Chest:", chest.id, "Locked:", chest.locked, "Dist:", dist);
-                        // Logic for Locked Chests
+
+                        // Unified Lock Logic
                         if (chest.locked) {
-                            if (player.inventory.keys > 0) {
-                                player.inventory.keys--;
-                                openChest(chest);
-                                spawnFloatingText(chest.x, chest.y - 20, "Unlocked!", "#f1c40f");
+                            const lockConfig = (typeof chest.config.locked === 'object') ? chest.config.locked : { unlockType: 'key', cost: 1 };
+                            let type = (lockConfig.unlockType || 'key').toLowerCase();
+                            if (type.includes('red')) type = 'redshard';
+                            if (type.includes('green') || type.includes('geen')) type = 'greenshard'; // handle typo
+
+                            const cost = parseInt(lockConfig.cost || 1);
+
+                            // Check Inventory based on Type
+                            let canOpen = false;
+                            let msg = "";
+                            let color = "#fff";
+
+                            if (type === 'key') {
+                                if (player.inventory.keys >= cost) {
+                                    player.inventory.keys -= cost;
+                                    canOpen = true;
+                                    msg = "Unlocked!";
+                                    color = "#f1c40f";
+                                } else {
+                                    msg = "Locked (Need Key)";
+                                    color = "#e74c3c";
+                                }
+                            } else if (type === 'redshard') {
+                                const current = player.inventory.redShards || 0;
+                                if (current >= cost) {
+                                    player.inventory.redShards -= cost;
+                                    localStorage.setItem('currency_red', player.inventory.redShards);
+                                    canOpen = true;
+                                    msg = `-${cost} Shards`;
+                                    color = "#e74c3c";
+                                } else {
+                                    msg = `Need ${cost}  Shards`;
+                                    color = "#e74c3c";
+                                }
+                            } else if (type === 'greenshard') {
+                                const current = player.inventory.greenShards || 0;
+                                if (current >= cost) {
+                                    player.inventory.greenShards -= cost;
+                                    canOpen = true;
+                                    msg = `-${cost} Shards`;
+                                    color = "#2ecc71";
+                                } else {
+                                    msg = `Need ${cost} Shards`;
+                                    color = "#2ecc71";
+                                }
                             } else {
-                                console.log("Chest locked and no keys.");
+                                // Fallback for unknown types
+                                canOpen = true;
+                            }
+
+                            if (canOpen) {
+                                SFX.doorUnlocked();
+                                if (msg) spawnFloatingText(chest.x, chest.y - 20, msg, color);
+                                openChest(chest);
+                            } else {
                                 SFX.cantDoIt();
-                                spawnFloatingText(chest.x, chest.y - 20, "Locked", "#e74c3c");
+                                if (msg) spawnFloatingText(chest.x, chest.y - 20, msg, color);
                             }
                         } else {
                             // Unlocked - Manual Open
@@ -277,7 +400,7 @@ function resolveCollision(player, chest) {
 
     if (overlapX > 0 && overlapY > 0) {
         // Moveable Chest Logic
-        if (chest.moveable && !chest.locked) {
+        if (chest.moveable) {
             const oldX = chest.x;
             const oldY = chest.y;
 
@@ -332,8 +455,8 @@ function resolveChestCollision(a, b) {
         // If both moveable, split overlap.
         // If one moveable, push it full overlap.
 
-        let moveA = a.moveable && !a.locked;
-        let moveB = b.moveable && !b.locked;
+        let moveA = a.moveable;
+        let moveB = b.moveable;
 
         // If neither moveable (shouldn't happen if collided by push), force push apart anyway?
         if (!moveA && !moveB) return;
@@ -431,8 +554,17 @@ async function openChest(chest) {
     const contains = chest.config.contains || [];
     const pool = [];
 
+    // 1. Direct File Paths (Bypasses Manifest Filter)
+    contains.forEach(p => {
+        if (typeof p === 'string' && p.endsWith('.json')) {
+            pool.push(p);
+        }
+    });
+
+    // 2. Manifest Pattern Matching
     items.forEach(itemPath => {
         const match = contains.some(pattern => {
+            if (pattern.endsWith('.json')) return false; // Handled above
             const regexStr = pattern.replace(/\*/g, '.*');
             const regex = new RegExp(`^${regexStr}`);
             return regex.test(itemPath);
@@ -458,8 +590,14 @@ async function spawnItem(path, x, y, basePath = 'rewards/items/') {
         fullPath = basePath + path;
     }
 
+    // Ensure correct extension handling
+    if (fullPath.endsWith('.json')) {
+        // If it ends in json, we use it as is (but ensure no double .json on fetch)
+    }
+
     try {
-        const res = await fetch(`${JSON_PATHS.ROOT}${fullPath}.json?t=${Date.now()}`);
+        const url = fullPath.endsWith('.json') ? `${JSON_PATHS.ROOT}${fullPath}` : `${JSON_PATHS.ROOT}${fullPath}.json`;
+        const res = await fetch(`${url}?t=${Date.now()}`);
         const itemData = await res.json();
         if (itemData.spawnable === false) return;
 
@@ -548,6 +686,34 @@ export function drawChests() {
         // INTERACTION PROMPT
         if (chest.state === 'closed') {
             const dist = Math.hypot(Globals.player.x - (x + w / 2), Globals.player.y - (y + h / 2));
+
+            // Show Lock Cost
+            if (chest.locked) {
+                const lockConfig = (typeof chest.config.locked === 'object') ? chest.config.locked : { unlockType: 'key', cost: 1 };
+                let type = (lockConfig.unlockType || 'key').toLowerCase();
+                if (type.includes('red')) type = 'red';
+                else if (type.includes('green') || type.includes('geen')) type = 'green'; // handle typo
+
+                const cost = parseInt(lockConfig.cost || 1);
+
+                let label = "";
+                let color = "#fff";
+
+                if (type === 'key') {
+                    label = (cost > 1) ? `${cost} KEYS` : "LOCKED (KEY)";
+                    color = "#f1c40f";
+                } else {
+                    label = `${cost} SHARDS`;
+                    color = (type === 'red') ? '#e74c3c' : '#2ecc71';
+                }
+
+                ctx.font = "10px 'Press Start 2P', monospace";
+                ctx.fillStyle = "#000";
+                ctx.fillText(label, x + w / 2 + 2, y - 38); // Shadow
+                ctx.fillStyle = color;
+                ctx.fillText(label, x + w / 2, y - 40);
+            }
+
             if (dist < 120) {
                 ctx.font = "10px 'Press Start 2P', monospace";
                 ctx.fillStyle = "#f1c40f";

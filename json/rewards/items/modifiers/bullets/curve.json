@@ -2,6 +2,11 @@
     "name": "curve",
     "description": "bullets that curve",
     "location": "rewards/items/modifiers/bullets/curve.json",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "type": "modifier",
     "modify": "gun",
     "modifiers": {

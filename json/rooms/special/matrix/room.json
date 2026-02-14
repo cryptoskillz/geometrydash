@@ -10,23 +10,19 @@
     "doors": {
         "top": {
             "locked": 1,
-            "active": 1,
-            "x": 400
+            "active": 0
         },
         "bottom": {
             "locked": 0,
-            "active": 0,
-            "x": 400
+            "active": 0
         },
         "left": {
             "locked": 0,
-            "active": 1,
-            "y": 300
+            "active": 0
         },
         "right": {
             "locked": 0,
-            "active": 1,
-            "y": 300
+            "active": 0
         }
     },
     "chests": {
@@ -45,7 +41,11 @@
                 "bombs*"
             ],
             "canShoot": true,
-            "locked": true,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 100,
             "y": 400,
@@ -66,7 +66,11 @@
                 "clothing*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 250,
             "y": 400,
@@ -87,10 +91,13 @@
                 "game/*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
-            "x": 400,
-            "y": 400,
+            "y": 700,
             "solid": true,
             "moveable": true
         },
@@ -108,7 +115,11 @@
                 "guns/player*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": true,
+                "unlockType": "greenshard",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 550,
             "y": 400,
@@ -129,7 +140,11 @@
                 "inventory*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 700,
             "y": 400,
@@ -150,7 +165,11 @@
                 "modifier/bullets*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 100,
             "y": 500,
@@ -171,7 +190,11 @@
                 "modifiers/player*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 250,
             "y": 500,
@@ -192,7 +215,11 @@
                 "bombs*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 100,
             "y": 100,
@@ -213,7 +240,11 @@
                 "clothing*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 250,
             "y": 100,
@@ -234,9 +265,12 @@
                 "game*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
-            "x": 400,
             "y": 100,
             "solid": true,
             "moveable": false
@@ -255,7 +289,11 @@
                 "guns/player*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 550,
             "y": 100,
@@ -276,7 +314,11 @@
                 "inventory*"
             ],
             "canShoot": true,
-            "locked": false,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 700,
             "y": 100,
@@ -297,7 +339,11 @@
                 "modifiers*"
             ],
             "canShoot": true,
-            "locked": true,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
             "canBomb": true,
             "x": 100,
             "y": 200,

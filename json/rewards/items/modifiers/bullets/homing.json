@@ -1,6 +1,11 @@
 {
     "name": "homing bullets",
     "description": "bullets that home in on enemies",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 150
+    },
     "location": "rewards/items/modifiers/bullets/homing.json",
     "type": "modifier",
     "modify": "gun",
@@ -14,5 +19,5 @@
         "active": false,
         "modifyType": "session"
     },
-    "rarity": "uncommon"
+    "rarity": "common"
 }

@@ -1,5 +1,10 @@
 {
     "name": "normal bomb",
+    "purchasable": {
+        "active": false,
+        "purchaseType": "greenshards",
+        "cost": 100
+    },
     "description": "the Basic bomb",
     "drawType": "arc",
     "playerDraw": "arc",

@@ -1,6 +1,11 @@
 {
     "name": "speed boost",
     "description": "boosts bullet speed",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/bullets/speed.json",
     "type": "modifier",
     "modify": "gun",

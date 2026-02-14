@@ -1,6 +1,11 @@
 {
     "name": "Bullet +1",
     "description": "Increase Number of bullets",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/bullets/number.json",
     "type": "modifier",
     "modify": "gun",

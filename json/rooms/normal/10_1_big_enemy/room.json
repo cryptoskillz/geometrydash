@@ -1,6 +1,6 @@
 {
-    "name": "Big Enemy Room 2",
-    "description": "He's brought his pals!",
+    "name": "Big Enemy Room",
+    "description": "He's too big!",
     "hardness": 4,
     "keyBonus": 1.0,
     "speedGoal": 10000,
@@ -25,23 +25,19 @@
     "doors": {
         "top": {
             "locked": 1,
-            "active": 0,
-            "x": 400
+            "active": 1
         },
         "bottom": {
             "locked": 0,
-            "active": 1,
-            "x": 400
+            "active": 1
         },
         "left": {
             "locked": 0,
-            "active": 1,
-            "y": 300
+            "active": 1
         },
         "right": {
             "locked": 0,
-            "active": 1,
-            "y": 300
+            "active": 1
         }
     },
     "width": 800,
@@ -57,17 +53,6 @@
             "randomiseColour": false,
             "modifiers": {},
             "count": 1
-        },
-        {
-            "type": "grunt",
-            "variant": "gunner",
-            "shape": "triangle",
-            "mode": "normal",
-            "randomiseVariant": false,
-            "randomiseShape": false,
-            "randomiseColour": false,
-            "modifiers": {},
-            "count": 5
         }
     ]
 }

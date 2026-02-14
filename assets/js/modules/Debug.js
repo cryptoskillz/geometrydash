@@ -1,5 +1,5 @@
 import { Globals } from './Globals.js';
-import { JSON_PATHS } from './Constants.js';
+import { JSON_PATHS, DEBUG_FLAGS } from './Constants.js';
 import { SFX, introMusic, fadeIn, fadeOut } from './Audio.js'; // Assuming SFX is exported
 import { log } from './Utils.js';
 import { updateUI } from './UI.js';
@@ -96,6 +96,19 @@ export function renderDebugForm() {
 
             localStorage.setItem('setting_sfx', Globals.gameData.soundEffects);
             log(Globals.gameData.soundEffects ? "SFX Enabled" : "SFX Disabled");
+            renderDebugForm();
+        });
+
+        const godModeState = DEBUG_FLAGS.GODMODE ? 'ON' : 'OFF';
+        createBtn(`GOD MODE (${godModeState})`, "#f39c12", () => {
+            const newVal = !DEBUG_FLAGS.GODMODE;
+            DEBUG_FLAGS.GODMODE = newVal;
+
+            // Sync to Game Data (used in Entities.js)
+            if (!Globals.gameData.debug) Globals.gameData.debug = {};
+            Globals.gameData.debug.godMode = newVal;
+
+            log("God Mode:", newVal);
             renderDebugForm();
         });
 
@@ -406,6 +419,21 @@ export function renderDebugForm() {
             opt.innerText = b.toUpperCase();
             select.appendChild(opt);
         });
+
+        // Append Shop Rooms (Dynamic)
+        fetch('json/rooms/shops/manfiest.json')
+            .then(res => res.json())
+            .then(data => {
+                if (data.rooms) {
+                    data.rooms.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = "shops/" + s;
+                        opt.innerText = "SHOP: " + s.toUpperCase();
+                        select.appendChild(opt);
+                    });
+                }
+            })
+            .catch(e => console.warn("No shop manifest found", e));
 
         const loadBtn = document.createElement('button');
         loadBtn.innerText = "GO TO ROOM";

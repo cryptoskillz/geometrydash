@@ -1,6 +1,11 @@
 {
     "name": "spread rate boost",
     "description": "boosts bullet spread rate",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/bullets/spreadrate.json",
     "type": "modifier",
     "modify": "gun",
@@ -14,5 +19,5 @@
         "active": false,
         "modifyType": "session"
     },
-    "rarity": "uncommon"
+    "rarity": "common"
 }

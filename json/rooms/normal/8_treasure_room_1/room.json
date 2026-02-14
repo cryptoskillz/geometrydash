@@ -1,17 +1,17 @@
 {
-    "name": "Easy Room 1",
-    "description": "Just a few small enemies to get you warmed up.",
+    "name": "Treasure Room 1",
+    "description": "Lots of loot in here",
     "hardness": 3,
     "keyBonus": 1.0,
-    "speedGoal": 1000,
+    "speedGoal": 10000,
     "item": {
         "common": {
             "count": 1,
-            "dropChance": 0.1
+            "dropChance": 0
         },
         "uncommon": {
             "count": 1,
-            "dropChance": 0.01
+            "dropChance": 0
         },
         "rare": {
             "count": 1,
@@ -19,33 +19,29 @@
         },
         "legendary": {
             "count": 1,
-            "dropChance": 0
+            "dropChance": 1
         }
     },
     "doors": {
         "top": {
             "locked": 1,
-            "active": 1,
-            "x": 200
+            "active": 1
         },
         "bottom": {
             "locked": 0,
-            "active": 1,
-            "x": 200
+            "active": 1
         },
         "left": {
             "locked": 0,
-            "active": 0,
-            "y": 300
+            "active": 1
         },
         "right": {
             "locked": 0,
-            "active": 1,
-            "y": 300
+            "active": 1
         }
     },
-    "width": 400,
-    "height": 600,
+    "width": 500,
+    "height": 500,
     "enemies": [
         {
             "type": "grunt",
@@ -54,9 +50,9 @@
             "mode": "normal",
             "randomiseVariant": false,
             "randomiseShape": false,
-            "randomiseColour": false,
+            "randomiseColour": true,
             "modifiers": {},
-            "count": 2,
+            "count": 20,
             "moveType": {}
         }
     ]

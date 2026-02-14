@@ -3,19 +3,20 @@ import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_
 import { log, deepMerge, triggerSpeech, generateLore, spawnFloatingText } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
-import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats, saveGameStats } from './UI.js';
+import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawRoomIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats, saveGameStats } from './UI.js';
 import { renderDebugForm, updateDebugEditor } from './Debug.js';
 import { generateLevel } from './Level.js';
 import {
     spawnEnemies, updateEnemies, updateBulletsAndShards,
     pickupItem, applyModifierToGun, spawnRoomRewards,
-    drawPlayer, drawBulletsAndShards, spawnShards, spawnShard, drawItems, drawEnemies,
+    drawPlayer, drawBulletsAndShards, spawnBulletShards, spawnCurrencyShard, drawItems, drawEnemies,
     spawnBullet, dropBomb, drawBombs, updateBombDropping, updateMovementAndDoors, updateItems,
     updateRestart, updateRemoteDetonation, updateBombInteraction, updateUse, checkRemoteExplosions,
     updateBombsPhysics, updateShooting, updateShield, updatePortal, updateGhost,
     handleLevelComplete
 } from './Entities.js';
 import { spawnChests, updateChests, drawChests } from './Chests.js';
+import { spawnSwitches, updateSwitches, drawSwitches } from './Switches.js';
 
 // Placeholders for functions to be appended
 export async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
@@ -104,6 +105,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     Globals.bombs = [];
     Globals.particles = [];
     Globals.enemies = [];
+    Globals.switches = [];
     if (Globals.portal) {
         Globals.portal.active = false;
         Globals.portal.finished = false;
@@ -860,6 +862,11 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         bosses = bosses.filter(p => p && p.trim() !== "");
         bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
 
+        // C. Shop Room
+        if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.shopRoom) {
+            roomProtos.push(loadRoomFile(Globals.gameData.shop.shopRoom, 'shop'));
+        }
+
 
 
         await Promise.all(roomProtos);
@@ -924,6 +931,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         const startEntry = Globals.levelMap["0,0"];
         Globals.roomData = startEntry.roomData;
+        Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
         Globals.visitedRooms["0,0"] = startEntry;
 
         // If we loaded a specific room/level (via nextLevel or debug), we need to ensure enemies are spawned
@@ -933,6 +941,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
             console.log("Debug/Direct Load: Spawning Enemies for 0,0");
             spawnEnemies(Globals.roomData);
+            spawnChests(Globals.roomData);
+            spawnSwitches(Globals.roomData);
         }
 
         Globals.canvas.width = Globals.roomData.width || 800;
@@ -1038,6 +1048,7 @@ export function startGame(keepState = false) {
         // Also must respawn enemies for the start room (0,0) as generateLevel resets map
         if (Globals.levelMap["0,0"]) {
             Globals.roomData = Globals.levelMap["0,0"].roomData;
+            Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
             // spawnEnemies(Globals.roomData); // spawnEnemies uses Globals.roomData by default
             // Actually, initGame does NOT spawn enemies for 0,0 by default? 
             // updateEnemies loop handles it if they exist?
@@ -1509,6 +1520,11 @@ export function changeRoom(dx, dy) {
         }
     }
 
+    // Spawn Switches (Always reload from template for now)
+    if (Globals.levelMap[nextCoord]) {
+        spawnSwitches(Globals.levelMap[nextCoord].roomData);
+    }
+
     // Check if Ghost should follow
     const ghostConfig = Globals.gameData.ghost || { spawn: true, roomGhostTimer: 10000, roomFollow: false };
     const activeGhost = Globals.enemies.find(e => e.type === 'ghost' && !e.isDead);
@@ -1538,7 +1554,19 @@ export function changeRoom(dx, dy) {
     // Transition to the pre-generated room
     const nextEntry = Globals.levelMap[nextCoord];
     if (nextEntry) {
+        // RESET PORTAL STATE ON ROOM CHANGE
+        // This ensures portals from other rooms (like Start/Matrix) don't bleed over.
+        if (Globals.portal) {
+            Globals.portal.active = false;
+            Globals.portal.finished = false;
+            Globals.portal.scrapping = false;
+            Globals.portal.color = null; // Reset color override
+            Globals.portal.x = 0;
+            Globals.portal.y = 0;
+        }
+
         Globals.roomData = nextEntry.roomData;
+        Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
         Globals.visitedRooms[nextCoord] = nextEntry; // Add to visited for minimap
 
         Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
@@ -1570,7 +1598,7 @@ export function changeRoom(dx, dy) {
 
         // GHOST FOLLOW LOGIC
         // If ghost was chasing and follow is on, fast-forward the timer so he appears immediately
-        if (shouldFollow && !(Globals.player.roomX === 0 && Globals.player.roomY === 0) && !Globals.roomData.isBoss) {
+        if (shouldFollow && !(Globals.player.roomX === 0 && Globals.player.roomY === 0) && !Globals.roomData.isBoss && Globals.roomData.type !== 'shop') {
             log("The Ghost follows you...");
             // Trigger time = desired spawn time
             // roomStartTime = Now - (ConfigTime - TravelTime)
@@ -1798,6 +1826,7 @@ export function update() {
     updateMovementAndDoors(doors, roomLocked);
 
     updateChests(); // Resolve new position collision
+    updateSwitches();
 
     // 3. Combat Logic
     updateShooting();
@@ -1910,7 +1939,15 @@ export async function draw() {
 
     // Global Matrix Effect (Background)
     if (Globals.roomData && Globals.roomData.name === "Guns Lots of Guns") {
+        Globals.portal.active = true;
+        Globals.roomData.isBoss = true;
+        // Fix: Set Coordinates so it draws on screen (center)
+        Globals.portal.x = Globals.canvas.width / 2;
+        Globals.portal.y = Globals.canvas.height / 2;
+        Globals.portal.color = 'green';
+
         drawMatrixRain();
+        // createPortal is drawn at end of loop if active
     }
     // Ghost Trap Effect
     if (Globals.ghostTrapActive) {
@@ -1920,6 +1957,9 @@ export async function draw() {
     drawShake()
     drawDoors()
     drawBossSwitch() // Draw switch underneath entities
+    drawStartRoomObjects(); // New: Draw start room specific floor items
+    drawSwitches();
+    drawPortal(); // Draw portal on floor
     drawPlayer()
     drawBulletsAndShards()
     drawBombs(doors)
@@ -1987,32 +2027,48 @@ export async function draw() {
     drawMinimap();
     if (!DEBUG_FLAGS.TEST_ROOM) drawTutorial();
     drawBossIntro();
-    drawPortal();
+    drawRoomIntro();
+    // drawPortal() moved to before drawPlayer
     drawFloatingTexts(); // Draw notification texts on top
     drawDebugLogs();
     requestAnimationFrame(() => { update(); draw(); });
 }
 
-export function drawPortal() {
-    // Only draw if active AND in the boss room
-    if (!Globals.portal.active || !Globals.roomData.isBoss) return;
+export function drawPortal(overrideColor = null) {
+    // Only draw if active
+    // console.log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
+    if (!Globals.portal.active) return;
     const time = Date.now() / 500;
 
     Globals.ctx.save();
     Globals.ctx.translate(Globals.portal.x, Globals.portal.y);
 
+    // Determine Colors based on Room (Matrix Room = Green/Used)
+    let mainColor = "#8e44ad"; // Default Purple
+    let glowColor = "#8e44ad";
+    let swirlColor = "#ffffff";
+
+    // Check Override, Portal Obj Prop, or Room Name (Deprecated room name check)
+    const colorMode = overrideColor || Globals.portal.color || 'purple';
+
+    if (colorMode === 'green') {
+        mainColor = "#2ecc71"; // Matrix Green
+        glowColor = "#00ff00"; // Bright Green
+        swirlColor = "#aaffaa"; // Light Green Swirl
+    }
+
     // Outer glow
     Globals.ctx.shadowBlur = 20;
-    Globals.ctx.shadowColor = "#8e44ad";
+    Globals.ctx.shadowColor = glowColor;
 
     // Portal shape
-    Globals.ctx.fillStyle = "#8e44ad";
+    Globals.ctx.fillStyle = mainColor;
     Globals.ctx.beginPath();
     Globals.ctx.ellipse(0, 0, 30, 50, 0, 0, Math.PI * 2);
     Globals.ctx.fill();
 
     // Swirl effect
-    Globals.ctx.strokeStyle = "#ffffff";
+    Globals.ctx.strokeStyle = swirlColor;
     Globals.ctx.lineWidth = 3;
     Globals.ctx.beginPath();
     Globals.ctx.ellipse(0, 0, 20 + Math.sin(time) * 5, 40 + Math.cos(time) * 5, time, 0, Math.PI * 2);
@@ -2021,12 +2077,8 @@ export function drawPortal() {
     Globals.ctx.restore();
 }
 
-export function drawBossSwitch() {
-    if (!Globals.roomData.isBoss) return;
+export function drawSwitch(cx = Globals.canvas.width / 2, cy = Globals.canvas.height / 2, size = 40) {
 
-    const cx = Globals.canvas.width / 2;
-    const cy = Globals.canvas.height / 2;
-    const size = 40; // Smaller to be hidden by portal
 
     Globals.ctx.save();
     Globals.ctx.fillStyle = "#9b59b6"; // Purple
@@ -2038,6 +2090,18 @@ export function drawBossSwitch() {
     Globals.ctx.strokeRect(cx - size / 2, cy - size / 2, size, size);
 
     Globals.ctx.restore();
+}
+
+export function drawBossSwitch() {
+    if (!Globals.roomData.isBoss) return;
+    drawSwitch()
+}
+
+export function drawStartRoomObjects() {
+    // Check if we are in Start Room
+    if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0) {
+
+    }
 }
 
 export function updateMusicToggle() {
@@ -2095,28 +2159,32 @@ export function updateRoomTransitions(doors, roomLocked) {
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
     // Left Door - Require Push Left (A/ArrowLeft)
     if (Globals.player.x < t + shrink && doors.left?.active) {
-        if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
+        const doorY = doors.left.y !== undefined ? doors.left.y : Globals.canvas.height / 2;
+        if (Math.abs(Globals.player.y - doorY) < doorW) {
             if ((Globals.keys['KeyA'] || Globals.keys['ArrowLeft']) && !doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
             else log("Left Door Blocked: Key/Lock/Room");
         }
     }
     // Right Door - Require Push Right (D/ArrowRight)
     else if (Globals.player.x > Globals.canvas.width - t - shrink && doors.right?.active) {
-        if (Math.abs(Globals.player.y - Globals.canvas.height / 2) < doorW) {
+        const doorY = doors.right.y !== undefined ? doors.right.y : Globals.canvas.height / 2;
+        if (Math.abs(Globals.player.y - doorY) < doorW) {
             if ((Globals.keys['KeyD'] || Globals.keys['ArrowRight']) && !doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
             else log("Right Door Blocked: Key/Lock/Room");
         }
     }
     // Top Door - Require Push Up (W/ArrowUp)
     else if (Globals.player.y < t + shrink && doors.top?.active) {
-        if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
+        const doorX = doors.top.x !== undefined ? doors.top.x : Globals.canvas.width / 2;
+        if (Math.abs(Globals.player.x - doorX) < doorW) {
             if ((Globals.keys['KeyW'] || Globals.keys['ArrowUp']) && !doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
             else log("Top Door Blocked: Key/Lock/Room");
         }
     }
     // Bottom Door - Require Push Down (S/ArrowDown)
     else if (Globals.player.y > Globals.canvas.height - t - shrink && doors.bottom?.active) {
-        if (Math.abs(Globals.player.x - Globals.canvas.width / 2) < doorW) {
+        const doorX = doors.bottom.x !== undefined ? doors.bottom.x : Globals.canvas.width / 2;
+        if (Math.abs(Globals.player.x - doorX) < doorW) {
             if ((Globals.keys['KeyS'] || Globals.keys['ArrowDown']) && !doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
             else log("Bottom Door Blocked: Key/Lock/Room");
         }

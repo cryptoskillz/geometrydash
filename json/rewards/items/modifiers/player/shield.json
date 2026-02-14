@@ -1,6 +1,11 @@
 {
     "name": "Shield",
     "description": "the Basic shield",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/player/shield.json",
     "type": "modifier",
     "modify": "player",

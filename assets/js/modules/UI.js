@@ -1,5 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, CONFIG, STORAGE_KEYS } from './Constants.js';
+import { drawPortal, drawSwitch } from './Game.js'
 // Utils might be needed if logging
 import { log } from './Utils.js';
 
@@ -263,6 +264,7 @@ export async function updateUI() {
     if (speedyEl) {
         const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
         if (Globals.gameData.showSpeedyTimer || unlockedIds.includes('speedytimer')) {
+            if (Globals.roomData.cleared) return;
             speedyEl.style.display = 'block';
             // Logic: Limit - (Now - FreezeEnd)
             // Default limit 5000ms if not set
@@ -382,6 +384,13 @@ export function drawTutorial() {
 
         //uodate start room name in the UI
         if (Globals.elements.roomName) Globals.elements.roomName.innerText = Globals.roomData.name;
+
+        // Force Portal Active & Centered for Start Room
+        Globals.portal.active = true;
+        Globals.portal.x = Globals.canvas.width / 2;
+        Globals.portal.y = Globals.canvas.height / 2;
+        Globals.portal.color = 'green';
+        drawPortal('green'); // Pass override just in case
 
         // Internal helper for keycaps
         const drawKey = (text, x, y) => {
@@ -629,6 +638,41 @@ export function drawBossIntro() {
         Globals.ctx.shadowBlur = 0;
         Globals.ctx.fillText(bossDesc, Globals.canvas.width / 2, Globals.canvas.height / 2 + 30);
 
+    }
+}
+
+export function drawRoomIntro() {
+    // Only if configured to show
+    if (!Globals.roomData || !Globals.roomData.showIntro) return;
+
+    const now = Date.now();
+    if (now < Globals.roomIntroEndTime) {
+        Globals.ctx.save();
+        Globals.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        Globals.ctx.fillRect(0, 0, Globals.canvas.width, Globals.canvas.height);
+
+        const name = Globals.roomData.name || "Unknown Room";
+        const desc = Globals.roomData.description || "";
+
+        Globals.ctx.textAlign = "center";
+        Globals.ctx.textBaseline = "middle";
+
+        // Title
+        Globals.ctx.font = "bold 60px 'Courier New'";
+        Globals.ctx.fillStyle = "#3498db"; // Blue for Room Intro (Boss is Red)
+        Globals.ctx.shadowColor = "#2980b9";
+        Globals.ctx.shadowBlur = 20;
+        Globals.ctx.fillText(name.toUpperCase(), Globals.canvas.width / 2, Globals.canvas.height / 2 - 40);
+
+        // Subtitle
+        if (desc) {
+            Globals.ctx.font = "italic 24px 'Courier New'";
+            Globals.ctx.fillStyle = "#ecf0f1";
+            Globals.ctx.shadowBlur = 0;
+            Globals.ctx.fillText(desc, Globals.canvas.width / 2, Globals.canvas.height / 2 + 30);
+        }
+
+        Globals.ctx.restore();
     }
 }
 

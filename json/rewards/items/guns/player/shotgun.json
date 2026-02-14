@@ -1,6 +1,11 @@
 {
     "name": "Shotgun",
     "description": "the shotgun",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 400
+    },
     "location": "rewards/items/guns/player/shotgun.json",
     "type": "gun",
     "starter": false,

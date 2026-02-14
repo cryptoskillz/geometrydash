@@ -1,4 +1,26 @@
 bugs
+    when debug log is active send to green debug and console log, if its disabed dont send to console log
+    never spaw a shop next to the start room as you start with a locked door
+    show the shop on the mini map as another colour
+    gun turret requrie its x y back (if it spawns off screen move it until it is on screen)
+    remove the matrix att in room and use id instead
+    add speech attr to enemy, used for bosses, enter, die
+    if ghost / enemy speech is at top of screen you cant read it so make it show below the enemy
+    unlock spawns is slow after boss kill
+    golden path bonus shows on the perfect bonus counter
+    now you turret goes the way you last fire, this should only be when you fire a bullet if you are moving and not shooting is should 
+    revert to pointing the way you are moving,
+    ublock drop that have already been locked
+    implement can go through bullets modifier
+    "staysAngryWhenHit": false  ,
+    dont spawn same unock twice
+    give red shards if their are no unlocks left
+    enemes spawm outside the room if they are very big
+    shield shows when you go into the portal
+    bomb goes blue when you leave the room and go back in
+    dont use the same enmy name in a room
+    add back old ghost gun
+    bombs are blue when you leave and reenter a room s
     unlock spawn that have already been already unlocked
     fix debug logs 
     the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
@@ -27,6 +49,10 @@ level 5 = loads credits fine then shows last screen a little before going to wel
     add event to boss speech (entry and death)
     max bullet+1 didnt stay on next level same with pierce , modify etc
     you pick up 360 gun and drop 360 (the name)
+    add shop room 
+    add home room
+    add trophy room
+
 
     modifiers
         when you chnage gun all the modifiers are removed a nice item to unlock would be global gun / bomb modifiers
@@ -36,7 +62,7 @@ level 5 = loads credits fine then shows last screen a little before going to wel
 
 
 next up 
- ui updates
+SFX  ui updates and new items
         game settings
             inventory
             stats
@@ -55,32 +81,23 @@ next up
     unlocks / permance
     server    
 
+sound
+    different sound for each gun
+    different sound for each type yelp angry etc
+    add sound effects to button presses 
+    sound effect when you go past secret room (add seret room)
+    different guns have different sounds
+    when the enemies speak give them a speech sound (different for each enemy)
+
+Welcome screen
+    Settings screen
+    Unlock screen
+    Character collect
+    Trohpy room
+
+Shop room
+
     
-
-
-    
-   
-
-   
-
-    ^^^^
-
-
-
- 
-  
-
-    implement can go through bullets modifier
-    "staysAngryWhenHit": false  ,
-    dont spawn same unock twice
-    give red shards if their are no unlocks left
-    enemes spawm outside the room if they are very big
-    shield shows when you go into the portal
-    bomb goes blue when you leave the room and go back in
-    dont use the same enmy name in a room
-    add back old ghost gun
-    bombs are blue when you leave and reenter a room 
-
     
 Levels
     Level 5 harder boss (with gun)
@@ -116,13 +133,7 @@ achivements
 
 Balance
 
-you kill the ghost by buying the ghost trap and lettign hoim out in the ghost room
-    you have to buy the ghost trap for 10000 red shards, requires upgrading the shard system
-    yuo catch the ghost
-    you then got 5 seconds in the trap (never enough)
-    you have to upgrade the timer of the trap
-    you take the gost to a protal room and let him out
-    he dies
+
     this is why he never goes in the portal room or the start room (which will have a portal)
     show an increasingf number of enemies type you killed to the welcome screen with the big ghost occasionally showing
     add what killed you to the game over screen
@@ -156,17 +167,6 @@ you kill the ghost by buying the ghost trap and lettign hoim out in the ghost ro
 
     if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
 
-sound
-    sound effect for portal
-    sound effect for bomb
-    sound effect for item spswn
-    different sound for each gun
-    different sound for each type yelp angry etc
-    add sound effects to button presses 
-    sound effect when you go past secret room (add seret room)
-    WHNE YOU CNT PIcK UP AN ITEM GIVE A fail SOUND
-    different guns have different sounds
-    when the enemies speak give them a speech sound (different for each enemy)
 
 
 enemies
@@ -206,7 +206,7 @@ enemies
 
 
 ghost
-    if the ghost respawns his health i think so he should be really hard to kill you shuold clear the level go back coax him and have him chase you 
+    if the ghost respawns his health is reset think so he should be really hard to kill you shuold clear the level go back coax him and have him chase you 
     if you get to far away he stops following you and goes back to the void and comes back later fully healed. 
     add ghost to the welcome screen
     when you drop a bomb inside the ghost when it eats you as its not solid it never explodes (maybe kick mechanic is firing)
@@ -220,18 +220,19 @@ ghost
     ghost wont enter a room with an indestrcutible enemy
     add a timer to show you how long you survice
     ghost wont enter a start or boss room what is he scared of?
-
+you kill the ghost by buying the ghost trap and lettign hoim out in the ghost room
+    you have to buy the ghost trap for 10000 red shards, requires upgrading the shard system
+    yuo catch the ghost
+    you then got 5 seconds in the trap (never enough)
+    you have to upgrade the timer of the trap
+    you take the gost to a protal room and let him out
+    he dies
 
 NPCsds
     shop keeper 
 
 rooms
     number of rooms json change this to per level if used
-    change the drop chane from 100% once we are finished testing
-    if movetype has an x,y start it there
-    Boss room
-    shop
-        shows up once a round (have to add coins)
     secrets roons
         secret room generate at random and can be hidden behind walls etc these do not render in the golden path special things unlock them
     special room
@@ -260,10 +261,7 @@ editor
 
 enemies
     add enemy hit and enemy death sound  from json
-    [x] boss should not get name from names.json he already has a name from json
-    maybe if ghost is x rooms away we just spawn him in the new room
     add pyshics to the enemies json instead of having them hard coded in logic.js
-    add more shapes
     transformer boss square, circle, 4 rectnagles for legs and you have to take out each limb
         have swarm enemies that run away unless there are x of them
     enemy move types

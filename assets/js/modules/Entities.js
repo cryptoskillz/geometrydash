@@ -1012,7 +1012,7 @@ export function updateBulletsAndShards(aliveEnemies) {
             } else {
                 // Check for wallExplode OR general explode on impact if not a shard
                 if (Globals.gun.Bullet?.Explode?.active && !b.isShard) {
-                    if (Globals.gun.Bullet.Explode.wallExplode) spawnShards(b); // Can count as hit? Maybe.
+                    if (Globals.gun.Bullet.Explode.wallExplode) spawnBulletShards(b); // Can count as hit? Maybe.
                     // If it explodes, maybe NOT a miss? But usually wall hit = miss.
                 }
                 if (!b.isShard && b.ownerType !== 'enemy' && !b.hasHit) {
@@ -1840,7 +1840,7 @@ export function updateEnemies() {
                     en.freezeEnd = now + (Globals.gun.Bullet?.freezeDuration || 1000);
                 }
 
-                if (Globals.gun.Bullet?.Explode?.active && !b.isShard) spawnShards(b);
+                if (Globals.gun.Bullet?.Explode?.active && !b.isShard) spawnBulletShards(b);
 
                 if (Globals.gun.Bullet?.pierce) {
                     if (!b.hitEnemies) b.hitEnemies = [];
@@ -1866,7 +1866,7 @@ export function updateEnemies() {
                 updateGameStats('kill');
 
                 if (amount > 0) {
-                    spawnShard(en.x, en.y, 'green', amount);
+                    spawnCurrencyShard(en.x, en.y, 'green', amount);
                 }
 
                 // UNLOCK ITEM DROP (New Logic for Normal Enemies)
@@ -1893,7 +1893,7 @@ export function updateEnemies() {
                 const amount = calculateShardDrop('red', 'killBoss', en);
                 //update kill enemy global counter
                 updateGameStats('bossKill');
-                spawnShard(en.x, en.y, 'red', amount);
+                spawnCurrencyShard(en.x, en.y, 'red', amount);
 
                 Globals.bossKilled = true;
 
@@ -1997,8 +1997,8 @@ export function updateEnemies() {
 export function updatePortal() {
     if (!Globals.portal.active) return;
     const currentCoord = `${Globals.player.roomX},${Globals.player.roomY}`;
-    // Only interact if in Boss Room (should match draw logic)
-    if (!Globals.roomData.isBoss) return;
+    // Only interact if active
+    // if (!Globals.roomData.isBoss) return; // Allow anywhere per user request
 
     const dist = Math.hypot(Globals.player.x - Globals.portal.x, Globals.player.y - Globals.portal.y);
     if (dist < 30) {
@@ -2200,6 +2200,7 @@ export function updateGhost() {
     // 3. Time exceeded
     if (ghostConfig.spawn && !Globals.ghostSpawned && (now - Globals.roomStartTime > ghostConfig.roomGhostTimer)) {
         if (Globals.player.roomX === 0 && Globals.player.roomY === 0) return; // Stop ghost in start room (Fixes welcome screen spawn)
+        if (Globals.roomData.type === 'shop') return; // Stop ghost in shop
 
         log("THE GHOST APPEARS!");
         Globals.ghostSpawned = true;
@@ -3770,7 +3771,7 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
 
         if (available.length === 0) {
             log("All items unlocked! Spawning EXTRA Shards!");
-            spawnShard(x, y, 'red', 25);
+            spawnCurrencyShard(x, y, 'red', 25);
             return;
         }
 
@@ -3814,7 +3815,7 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
         } else if (candidates.length > 0) {
             nextUnlockId = candidates[Math.floor(Math.random() * candidates.length)];
         } else {
-            spawnShard(x, y, 'red', 25);
+            spawnCurrencyShard(x, y, 'red', 25);
             return;
         }
         log("Spawning Unlock Item:", nextUnlockId);
@@ -4048,7 +4049,7 @@ export function spawnRoomRewards(dropConfig, label = null) {
             // I need to decide where to spawn it.
             // I'll spawn it near the player for now, or calculate a safe spot.
             // Let's spawn near player to be safe.
-            spawnShard(Globals.player.x, Globals.player.y - 20, 'red', shardReward);
+            spawnCurrencyShard(Globals.player.x, Globals.player.y - 20, 'red', shardReward);
             return; // Skip spawn
         }
 
@@ -4417,7 +4418,7 @@ export function drawBulletsAndShards() {
 }
 
 // --- RESTORED SHARD LOGIC ---
-export function spawnShard(x, y, type, amount) {
+export function spawnCurrencyShard(x, y, type, amount) {
     // Check config
     if (!Globals.gameData.redShards && type === 'red') return;
     if (!Globals.gameData.greenShards && type === 'green') return;
@@ -4426,6 +4427,9 @@ export function spawnShard(x, y, type, amount) {
     const offset = 30 + Math.random() * 20;
     const spawnX = x + Math.cos(angle) * offset;
     const spawnY = y + Math.sin(angle) * offset;
+    let shardMessage = 'shard'
+    if (amount > 1)
+        shardMessage = 'shards'
 
     Globals.groundItems.push({
         x: spawnX, y: spawnY,
@@ -4438,18 +4442,19 @@ export function spawnShard(x, y, type, amount) {
         size: 10,
         floatOffset: Math.random() * 100,
         pickupCooldown: 30, // 0.5s cooldown
+
         data: {
             type: 'shard',
             shardType: type, // 'red' or 'green'
             amount: amount,
-            name: type === 'red' ? "Red Shard" : "Green Shard",
+            name: type === 'red' ? `${amount} Red ${shardMessage}` : `${amount} Green ${shardMessage}`,
             rarity: 'common',
             colour: type === 'red' ? "#e74c3c" : "#2ecc71"
         }
     });
 }
 
-export function spawnShards(b) {
+export function spawnBulletShards(b) {
     const ex = Globals.gun.Bullet.Explode;
     for (let j = 0; j < ex.shards; j++) {
         const angle = (Math.PI * 2 / ex.shards) * j;
@@ -4806,7 +4811,7 @@ export function drawItems() {
 
 function calculateShardDrop(type, sourceKey, entity) {
     const rewards = Globals.gameData.rewards;
-    if (!rewards || !rewards.shards) return 1; // Default fallback
+    if (!rewards || !rewards.shards) return 0; // Default fallback
 
     const config = rewards.shards[type];
     if (!config) return 1;
@@ -4830,14 +4835,20 @@ function calculateShardDrop(type, sourceKey, entity) {
         // enterPortal has no bonus logic yet (just min/max)
     }
 
-    if (!dropConfig) return 1;
+    if (!dropConfig) return 0;
 
     const min = dropConfig.minCount || 1;
     const max = dropConfig.maxCount || 1;
 
     // Random between min and max, plus bonus
-    const base = Math.floor(min + Math.random() * (max - min + 1));
-    return base + bonus;
+    //60% of the time override and award no bonus
+    const awardIt = Math.floor(Math.random() * (Globals.randomGreenMaxCount - Globals.randomGreenMinCount) + Globals.randomGreenMinCount)
+    if (awardIt < Globals.randomGreenPerAward) {
+        const base = Math.floor(min + Math.random() * (max - min + 1));
+        return base + bonus
+    }
+    else
+        return 0;
 }
 // Helper for Item Colors based on Type
 function getItemTypeColor(type, data) {

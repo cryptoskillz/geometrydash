@@ -18,7 +18,7 @@ export const JSON_PATHS = {
     BOSSES: "/json/rooms/bosses/",
     MANIFESTS: {
         PLAYERS: "/json/players/manifest.json",
-        ROOMS: "json/rooms/manifest.json",
+        ROOMS: "json/rooms/normal/manifest.json",
         ITEMS: "json/rewards/items/manifest.json"
     },
     DEFAULTS: {

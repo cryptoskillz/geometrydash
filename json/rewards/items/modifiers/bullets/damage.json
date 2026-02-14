@@ -1,6 +1,11 @@
 {
     "name": "damage boost",
     "description": "boosts bullet damage",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
     "location": "rewards/items/modifiers/bullets/damage.json",
     "type": "modifier",
     "modify": "gun",
@@ -14,5 +19,5 @@
         "active": false,
         "modifyType": "session"
     },
-    "rarity": "uncommon"
+    "rarity": "common"
 }
