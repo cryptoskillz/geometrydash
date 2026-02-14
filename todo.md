@@ -1,5 +1,7 @@
 bugs
-gun turret requrie its x y back (if it spawns off screen move it until it is on screen)
+    never spaw a shop next to the start room as you start with a locked door
+    show the shop on the mini map as another colour
+    gun turret requrie its x y back (if it spawns off screen move it until it is on screen)
     remove the matrix att in room and use id instead
     add speech attr to enemy, used for bosses, enter, die
     if ghost / enemy speech is at top of screen you cant read it so make it show below the enemy
