@@ -1,4 +1,25 @@
 bugs
+    add a shard cost to open chests then we effitvetly have shops
+    
+    make the player move over the switch not behind its in draaw switch
+    why do i ahve a spawnshard and a spawnshards function   
+    add speech attr to enemy, used for bosses, enter, die
+    if ghost / enemy speech is at top of screen you cant read it so make it show below the enemy
+    unlock spawns slowly after boss kill
+    golden path bonus shows on the perfect bonus counter
+    now you turret goes the way you last fire, this should only be when you fire a bullet if you are moving and not shooting is should 
+    revert to pointing the way you are moving,
+    ublock drop that have already been locked
+    implement can go through bullets modifier
+    "staysAngryWhenHit": false  ,
+    dont spawn same unock twice
+    give red shards if their are no unlocks left
+    enemes spawm outside the room if they are very big
+    shield shows when you go into the portal
+    bomb goes blue when you leave the room and go back in
+    dont use the same enmy name in a room
+    add back old ghost gun
+    bombs are blue when you leave and reenter a room s
     unlock spawn that have already been already unlocked
     fix debug logs 
     the bomb raudis should not hit you at once as the wave is coming to you should be able to run but make add wave speed as its a little slow
@@ -36,7 +57,7 @@ level 5 = loads credits fine then shows last screen a little before going to wel
 
 
 next up 
- ui updates
+SFX  ui updates and new items
         game settings
             inventory
             stats
@@ -55,32 +76,23 @@ next up
     unlocks / permance
     server    
 
+sound
+    different sound for each gun
+    different sound for each type yelp angry etc
+    add sound effects to button presses 
+    sound effect when you go past secret room (add seret room)
+    different guns have different sounds
+    when the enemies speak give them a speech sound (different for each enemy)
+
+Welcome screen
+    Settings screen
+    Unlock screen
+    Character collect
+    Trohpy room
+
+Shop room
+
     
-
-
-    
-   
-
-   
-
-    ^^^^
-
-
-
- 
-  
-
-    implement can go through bullets modifier
-    "staysAngryWhenHit": false  ,
-    dont spawn same unock twice
-    give red shards if their are no unlocks left
-    enemes spawm outside the room if they are very big
-    shield shows when you go into the portal
-    bomb goes blue when you leave the room and go back in
-    dont use the same enmy name in a room
-    add back old ghost gun
-    bombs are blue when you leave and reenter a room 
-
     
 Levels
     Level 5 harder boss (with gun)
@@ -156,17 +168,6 @@ you kill the ghost by buying the ghost trap and lettign hoim out in the ghost ro
 
     if there is a secret in the room some enemies will quickly look in its direction the look away after a second or two
 
-sound
-    sound effect for portal
-    sound effect for bomb
-    sound effect for item spswn
-    different sound for each gun
-    different sound for each type yelp angry etc
-    add sound effects to button presses 
-    sound effect when you go past secret room (add seret room)
-    WHNE YOU CNT PIcK UP AN ITEM GIVE A fail SOUND
-    different guns have different sounds
-    when the enemies speak give them a speech sound (different for each enemy)
 
 
 enemies

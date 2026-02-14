@@ -55,7 +55,7 @@ export function spawnChests(roomData) {
             height: 40,
             config: config,
             state: shouldSpawnNow ? 'closed' : 'hidden',
-            locked: config.locked === true,
+            locked: config.locked === true || (typeof config.locked === 'object' && config.locked.active),
             solid: config.solid || false,
             moveable: config.moveable || false,
             hp: 1,
@@ -90,16 +90,66 @@ export function updateChests() {
                     // Allow wider range for key interaction (120px)
                     if (dist < 120) {
                         console.log("Direct Key Interaction! Chest:", chest.id, "Locked:", chest.locked, "Dist:", dist);
-                        // Logic for Locked Chests
+
+                        // Unified Lock Logic
                         if (chest.locked) {
-                            if (player.inventory.keys > 0) {
-                                player.inventory.keys--;
-                                openChest(chest);
-                                spawnFloatingText(chest.x, chest.y - 20, "Unlocked!", "#f1c40f");
+                            const lockConfig = (typeof chest.config.locked === 'object') ? chest.config.locked : { unlockType: 'key', cost: 1 };
+                            let type = (lockConfig.unlockType || 'key').toLowerCase();
+                            if (type.includes('red')) type = 'redshard';
+                            if (type.includes('green') || type.includes('geen')) type = 'greenshard'; // handle typo
+
+                            const cost = parseInt(lockConfig.cost || 1);
+
+                            // Check Inventory based on Type
+                            let canOpen = false;
+                            let msg = "";
+                            let color = "#fff";
+
+                            if (type === 'key') {
+                                if (player.inventory.keys >= cost) {
+                                    player.inventory.keys -= cost;
+                                    canOpen = true;
+                                    msg = "Unlocked!";
+                                    color = "#f1c40f";
+                                } else {
+                                    msg = "Locked (Need Key)";
+                                    color = "#e74c3c";
+                                }
+                            } else if (type === 'redshard') {
+                                const current = player.inventory.redShards || 0;
+                                if (current >= cost) {
+                                    player.inventory.redShards -= cost;
+                                    localStorage.setItem('currency_red', player.inventory.redShards);
+                                    canOpen = true;
+                                    msg = `-${cost} Red`;
+                                    color = "#e74c3c";
+                                } else {
+                                    msg = `Need ${cost} Red Shards`;
+                                    color = "#e74c3c";
+                                }
+                            } else if (type === 'greenshard') {
+                                const current = player.inventory.greenShards || 0;
+                                if (current >= cost) {
+                                    player.inventory.greenShards -= cost;
+                                    canOpen = true;
+                                    msg = `-${cost} Green`;
+                                    color = "#2ecc71";
+                                } else {
+                                    msg = `Need ${cost} Green Shards`;
+                                    color = "#2ecc71";
+                                }
                             } else {
-                                console.log("Chest locked and no keys.");
+                                // Fallback for unknown types
+                                canOpen = true;
+                            }
+
+                            if (canOpen) {
+                                SFX.doorUnlocked();
+                                if (msg) spawnFloatingText(chest.x, chest.y - 20, msg, color);
+                                openChest(chest);
+                            } else {
                                 SFX.cantDoIt();
-                                spawnFloatingText(chest.x, chest.y - 20, "Locked", "#e74c3c");
+                                if (msg) spawnFloatingText(chest.x, chest.y - 20, msg, color);
                             }
                         } else {
                             // Unlocked - Manual Open
@@ -548,6 +598,34 @@ export function drawChests() {
         // INTERACTION PROMPT
         if (chest.state === 'closed') {
             const dist = Math.hypot(Globals.player.x - (x + w / 2), Globals.player.y - (y + h / 2));
+
+            // Show Lock Cost
+            if (chest.locked) {
+                const lockConfig = (typeof chest.config.locked === 'object') ? chest.config.locked : { unlockType: 'key', cost: 1 };
+                let type = (lockConfig.unlockType || 'key').toLowerCase();
+                if (type.includes('red')) type = 'red';
+                else if (type.includes('green') || type.includes('geen')) type = 'green'; // handle typo
+
+                const cost = parseInt(lockConfig.cost || 1);
+
+                let label = "";
+                let color = "#fff";
+
+                if (type === 'key') {
+                    label = (cost > 1) ? `${cost} KEYS` : "LOCKED (KEY)";
+                    color = "#f1c40f";
+                } else {
+                    label = `${cost} ${type.toUpperCase()}`;
+                    color = (type === 'red') ? '#e74c3c' : '#2ecc71';
+                }
+
+                ctx.font = "10px 'Press Start 2P', monospace";
+                ctx.fillStyle = "#000";
+                ctx.fillText(label, x + w / 2 + 2, y - 38); // Shadow
+                ctx.fillStyle = color;
+                ctx.fillText(label, x + w / 2, y - 40);
+            }
+
             if (dist < 120) {
                 ctx.font = "10px 'Press Start 2P', monospace";
                 ctx.fillStyle = "#f1c40f";
