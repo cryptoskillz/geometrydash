@@ -244,7 +244,7 @@ async function loadAssetManifests() {
 
         // Load Room Manifest
         try {
-            const resRooms = await fetch('json/rooms/manifest.json');
+            const resRooms = await fetch('json/rooms/normal/manifest.json');
             const manifestRooms = await resRooms.json();
             // Manifest is just IDs: ["1", "2", "testit"]
             loadedAssets.rooms = manifestRooms.rooms.map(r => ({

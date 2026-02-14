@@ -1,6 +1,6 @@
 {
     "name": "Trophy Room",
-    "id": "trophy",
+    "type": "trophy",
     "description": "Got to kill them all",
     "hardness": 8,
     "keyBonus": 1.0,

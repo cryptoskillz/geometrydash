@@ -1,0 +1,89 @@
+{
+    "name": "Shop 1",
+    "description": "Shop",
+    "type": "shop",
+    "hardness": 8,
+    "keyBonus": 1.0,
+    "speedGoal": 10000,
+    "item": {
+        "matrix": true
+    },
+    "doors": {
+        "top": {
+            "locked": 1,
+            "active": 0,
+            "x": 400
+        },
+        "bottom": {
+            "locked": 0,
+            "active": 0,
+            "x": 400
+        },
+        "left": {
+            "locked": 0,
+            "active": 0,
+            "y": 300
+        },
+        "right": {
+            "locked": 0,
+            "active": 0,
+            "y": 300
+        }
+    },
+    "chests": {
+        "name": "Bomb Unlocks!",
+        "item bombs!": {
+            "manfest": "rewards/items/manifest.json",
+            "instantSpawn": {
+                "active": true,
+                "spawnChance": 1
+            },
+            "spawnsOnClear": {
+                "active": false,
+                "spawnChance": 1
+            },
+            "contains": [
+                "bombs*"
+            ],
+            "canShoot": true,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
+            "canBomb": true,
+            "x": 100,
+            "y": 400,
+            "solid": true,
+            "moveable": false
+        },
+        "item clothing!": {
+            "manfest": "rewards/items/manifest.json",
+            "instantSpawn": {
+                "active": true,
+                "spawnChance": 1
+            },
+            "spawnsOnClear": {
+                "active": false,
+                "spawnChance": 1
+            },
+            "contains": [
+                "clothing*"
+            ],
+            "canShoot": true,
+            "locked": {
+                "active": false,
+                "unlockType": "key",
+                "cost": 1
+            },
+            "canBomb": true,
+            "x": 250,
+            "y": 400,
+            "solid": true,
+            "moveable": true
+        }
+    },
+    "width": 900,
+    "height": 900,
+    "enemies": []
+}
