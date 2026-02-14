@@ -693,7 +693,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (!fetchedGun) {
             console.error("CRITICAL: Could not load ANY gun. Player will be unarmed.");
             Globals.gun = { Bullet: { NoBullets: true } };
-            spawnFloatingText(canvas.width / 2, canvas.height / 2, "ERROR: GUN LOAD FAILED", "red");
         } else {
             Globals.gun = fetchedGun;
             log("Loaded Gun Data:", Globals.gun.name);
