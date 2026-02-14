@@ -1939,6 +1939,8 @@ export async function draw() {
     drawShake()
     drawDoors()
     drawBossSwitch() // Draw switch underneath entities
+    drawStartRoomObjects(); // New: Draw start room specific floor items
+    drawPortal(); // Draw portal on floor
     drawPlayer()
     drawBulletsAndShards()
     drawBombs(doors)
@@ -2006,7 +2008,7 @@ export async function draw() {
     drawMinimap();
     if (!DEBUG_FLAGS.TEST_ROOM) drawTutorial();
     drawBossIntro();
-    drawPortal();
+    // drawPortal() moved to before drawPlayer
     drawFloatingTexts(); // Draw notification texts on top
     drawDebugLogs();
     requestAnimationFrame(() => { update(); draw(); });
@@ -2055,10 +2057,8 @@ export function drawPortal(overrideColor = null) {
     Globals.ctx.restore();
 }
 
-export function drawSwitch() {
-    const cx = Globals.canvas.width / 2;
-    const cy = Globals.canvas.height / 2;
-    const size = 40; // Smaller to be hidden by portal
+export function drawSwitch(cx = Globals.canvas.width / 2, cy = Globals.canvas.height / 2, size = 40) {
+
 
     Globals.ctx.save();
     Globals.ctx.fillStyle = "#9b59b6"; // Purple
@@ -2075,6 +2075,13 @@ export function drawSwitch() {
 export function drawBossSwitch() {
     if (!Globals.roomData.isBoss) return;
     drawSwitch()
+}
+
+export function drawStartRoomObjects() {
+    // Check if we are in Start Room
+    if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0) {
+        drawSwitch(100, 100, 40);
+    }
 }
 
 export function updateMusicToggle() {

@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, CONFIG, STORAGE_KEYS } from './Constants.js';
-import { drawPortal } from './Game.js'
+import { drawPortal, drawSwitch } from './Game.js'
 // Utils might be needed if logging
 import { log } from './Utils.js';
 
@@ -380,7 +380,6 @@ export function drawTutorial() {
 
     if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
         Globals.ctx.save();
-
 
         //uodate start room name in the UI
         if (Globals.elements.roomName) Globals.elements.roomName.innerText = Globals.roomData.name;
