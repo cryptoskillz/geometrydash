@@ -1589,7 +1589,7 @@ export function changeRoom(dx, dy) {
 
         // GHOST FOLLOW LOGIC
         // If ghost was chasing and follow is on, fast-forward the timer so he appears immediately
-        if (shouldFollow && !(Globals.player.roomX === 0 && Globals.player.roomY === 0) && !Globals.roomData.isBoss) {
+        if (shouldFollow && !(Globals.player.roomX === 0 && Globals.player.roomY === 0) && !Globals.roomData.isBoss && Globals.roomData.type !== 'shop') {
             log("The Ghost follows you...");
             // Trigger time = desired spawn time
             // roomStartTime = Now - (ConfigTime - TravelTime)

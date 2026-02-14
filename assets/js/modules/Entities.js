@@ -2200,6 +2200,7 @@ export function updateGhost() {
     // 3. Time exceeded
     if (ghostConfig.spawn && !Globals.ghostSpawned && (now - Globals.roomStartTime > ghostConfig.roomGhostTimer)) {
         if (Globals.player.roomX === 0 && Globals.player.roomY === 0) return; // Stop ghost in start room (Fixes welcome screen spawn)
+        if (Globals.roomData.type === 'shop') return; // Stop ghost in shop
 
         log("THE GHOST APPEARS!");
         Globals.ghostSpawned = true;
