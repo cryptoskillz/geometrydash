@@ -40,17 +40,18 @@
                 "spawnChance": 1
             },
             "spawnsOnClear": {
-                "active": false,
-                "spawnChance": 1
+                "active": true,
+                "unlockType": "greenshard",
+                "cost": 100
             },
             "contains": [
                 "bombs*"
             ],
             "canShoot": true,
             "locked": {
-                "active": false,
-                "unlockType": "key",
-                "cost": 1
+                "active": true,
+                "unlockType": "greenshard",
+                "cost": 100
             },
             "canBomb": true,
             "x": 100,
@@ -73,12 +74,37 @@
             ],
             "canShoot": true,
             "locked": {
-                "active": false,
-                "unlockType": "key",
-                "cost": 1
+                "active": true,
+                "unlockType": "greenshard",
+                "cost": 100
             },
             "canBomb": true,
             "x": 250,
+            "y": 400,
+            "solid": true,
+            "moveable": true
+        },
+        "item clothing2!": {
+            "manfest": "rewards/items/manifest.json",
+            "instantSpawn": {
+                "active": true,
+                "spawnChance": 1
+            },
+            "spawnsOnClear": {
+                "active": false,
+                "spawnChance": 1
+            },
+            "contains": [
+                "clothing*"
+            ],
+            "canShoot": true,
+            "locked": {
+                "active": true,
+                "unlockType": "greenshard",
+                "cost": 100
+            },
+            "canBomb": true,
+            "x": 400,
             "y": 400,
             "solid": true,
             "moveable": true

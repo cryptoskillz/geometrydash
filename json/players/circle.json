@@ -42,7 +42,7 @@
     "inventory": {
         "keys": 0,
         "bombs": 0,
-        "greenShards": 10,
+        "greenShards": 500,
         "redShards": 0,
         "maxKeys": 3,
         "maxBombs": 5,

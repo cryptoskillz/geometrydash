@@ -103,18 +103,49 @@ export function generateLevel(length) {
     const startTmpl = findStartTemplate();
     const bossTmpl = findBossTemplate();
 
+    // Shop Placement Logic
+    const findShopTemplate = () => {
+        const templates = Globals.roomTemplates;
+        // 1. Try explicit "shop" (legacy)
+        if (templates["shop"]) return templates["shop"];
+
+        // 2. Try any room tagged as shop
+        const allKeys = Object.keys(templates).sort();
+        const shopKey = allKeys.find(k => templates[k]._type === 'shop');
+        if (shopKey) {
+            log("Found Shop Template:", shopKey);
+            return templates[shopKey];
+        }
+        return null;
+    };
+
+    const shopTmpl = findShopTemplate();
+    let shopCoord = null;
+
+    if (shopTmpl && Globals.gameData.shop && Globals.gameData.shop.active) {
+        // Find candidates: Any room that is NOT Start and NOT Boss
+        let candidates = fullMapCoords.filter(c => c !== "0,0" && c !== Globals.bossCoord);
+        if (candidates.length > 0) {
+            shopCoord = candidates[Math.floor(Globals.random() * candidates.length)];
+            log("Shop placed at:", shopCoord);
+        }
+    }
+
     fullMapCoords.forEach(coord => {
         let template;
         if (coord === "0,0") {
             template = startTmpl;
         } else if (coord === Globals.bossCoord) {
             template = bossTmpl;
+        } else if (coord === shopCoord) {
+            template = shopTmpl;
         } else {
             // Random Normal Room
             const templates = Globals.roomTemplates;
             const keys = Object.keys(templates).sort().filter(k =>
                 templates[k] !== startTmpl && templates[k] !== bossTmpl &&
-                (!templates[k]._type || templates[k]._type !== 'boss')
+                templates[k] !== shopTmpl &&
+                (!templates[k]._type || (templates[k]._type !== 'boss' && templates[k]._type !== 'shop'))
             );
 
             if (keys.length > 0) {

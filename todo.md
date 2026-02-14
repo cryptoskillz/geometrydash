@@ -1,11 +1,11 @@
 bugs
-    add a shard cost to open chests then we effitvetly have shops
-    
-    make the player move over the switch not behind its in draaw switch
-    why do i ahve a spawnshard and a spawnshards function   
+    remove swithc from tutorial
+    chests lock with shards is not moveable
+    ghost spawns in shop and is in ghost locked mode
+    remove the matrix att in room and use id instead
     add speech attr to enemy, used for bosses, enter, die
     if ghost / enemy speech is at top of screen you cant read it so make it show below the enemy
-    unlock spawns slowly after boss kill
+    unlock spawns is slow after boss kill
     golden path bonus shows on the perfect bonus counter
     now you turret goes the way you last fire, this should only be when you fire a bullet if you are moving and not shooting is should 
     revert to pointing the way you are moving,
@@ -48,6 +48,16 @@ level 5 = loads credits fine then shows last screen a little before going to wel
     add event to boss speech (entry and death)
     max bullet+1 didnt stay on next level same with pierce , modify etc
     you pick up 360 gun and drop 360 (the name)
+    add shop room 
+    add home room
+    add trophy room
+
+Switch
+    add a switch json, that draws a switch
+    have a number of amount of switchers we can add
+    have am action timer (stand on it for x time), follow, simong says, weighted.
+
+
 
     modifiers
         when you chnage gun all the modifiers are removed a nice item to unlock would be global gun / bomb modifiers
