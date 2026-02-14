@@ -12,23 +12,19 @@
     "doors": {
         "top": {
             "locked": 1,
-            "active": 0,
-            "x": 400
+            "active": 0
         },
         "bottom": {
             "locked": 0,
-            "active": 0,
-            "x": 400
+            "active": 0
         },
         "left": {
             "locked": 0,
-            "active": 0,
-            "y": 300
+            "active": 0
         },
         "right": {
             "locked": 0,
-            "active": 0,
-            "y": 300
+            "active": 0
         }
     },
     "chests": {
@@ -52,8 +48,8 @@
                 "unlockType": "greenshard"
             },
             "canBomb": true,
-            "x": 100,
-            "y": 400,
+            "x": 30,
+            "y": 100,
             "solid": true,
             "moveable": false
         },
@@ -76,8 +72,8 @@
                 "unlockType": "greenshard"
             },
             "canBomb": true,
-            "x": 250,
-            "y": 400,
+            "x": 210,
+            "y": 100,
             "solid": true,
             "moveable": true
         },
@@ -100,13 +96,13 @@
                 "unlockType": "greenshard"
             },
             "canBomb": true,
-            "x": 400,
-            "y": 400,
+            "x": 330,
+            "y": 100,
             "solid": true,
             "moveable": true
         }
     },
-    "width": 900,
-    "height": 900,
+    "width": 400,
+    "height": 300,
     "enemies": []
 }

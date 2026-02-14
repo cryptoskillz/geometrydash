@@ -384,7 +384,7 @@ function resolveCollision(player, chest) {
 
     if (overlapX > 0 && overlapY > 0) {
         // Moveable Chest Logic
-        if (chest.moveable && !chest.locked) {
+        if (chest.moveable) {
             const oldX = chest.x;
             const oldY = chest.y;
 
@@ -439,8 +439,8 @@ function resolveChestCollision(a, b) {
         // If both moveable, split overlap.
         // If one moveable, push it full overlap.
 
-        let moveA = a.moveable && !a.locked;
-        let moveB = b.moveable && !b.locked;
+        let moveA = a.moveable;
+        let moveB = b.moveable;
 
         // If neither moveable (shouldn't happen if collided by push), force push apart anyway?
         if (!moveA && !moveB) return;

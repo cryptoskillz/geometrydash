@@ -1,4 +1,5 @@
 bugs
+    shops should always be lockde
     add stich to shuffle chests
     locked chests are not moveable
     remove swithc from tutorial
