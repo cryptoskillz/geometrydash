@@ -640,6 +640,41 @@ export function drawBossIntro() {
     }
 }
 
+export function drawRoomIntro() {
+    // Only if configured to show
+    if (!Globals.roomData || !Globals.roomData.showIntro) return;
+
+    const now = Date.now();
+    if (now < Globals.roomIntroEndTime) {
+        Globals.ctx.save();
+        Globals.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        Globals.ctx.fillRect(0, 0, Globals.canvas.width, Globals.canvas.height);
+
+        const name = Globals.roomData.name || "Unknown Room";
+        const desc = Globals.roomData.description || "";
+
+        Globals.ctx.textAlign = "center";
+        Globals.ctx.textBaseline = "middle";
+
+        // Title
+        Globals.ctx.font = "bold 60px 'Courier New'";
+        Globals.ctx.fillStyle = "#3498db"; // Blue for Room Intro (Boss is Red)
+        Globals.ctx.shadowColor = "#2980b9";
+        Globals.ctx.shadowBlur = 20;
+        Globals.ctx.fillText(name.toUpperCase(), Globals.canvas.width / 2, Globals.canvas.height / 2 - 40);
+
+        // Subtitle
+        if (desc) {
+            Globals.ctx.font = "italic 24px 'Courier New'";
+            Globals.ctx.fillStyle = "#ecf0f1";
+            Globals.ctx.shadowBlur = 0;
+            Globals.ctx.fillText(desc, Globals.canvas.width / 2, Globals.canvas.height / 2 + 30);
+        }
+
+        Globals.ctx.restore();
+    }
+}
+
 export function showCredits() {
     Globals.gameState = STATES.CREDITS;
 

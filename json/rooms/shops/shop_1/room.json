@@ -1,7 +1,8 @@
 {
     "name": "Shop 1",
-    "description": "Shop",
+    "description": "This is the shop",
     "type": "shop",
+    "showIntro": true,
     "hardness": 8,
     "keyBonus": 1.0,
     "speedGoal": 10000,

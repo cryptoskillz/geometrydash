@@ -145,6 +145,7 @@ export const Globals = {
 
     roomFreezeUntil: 0,
     bossIntroEndTime: 0,
+    roomIntroEndTime: 0,
     // Run Timer
     runStartTime: 0,
     runElapsedTime: 0,

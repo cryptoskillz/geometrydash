@@ -3,7 +3,7 @@ import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_
 import { log, deepMerge, triggerSpeech, generateLore, spawnFloatingText } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
-import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats, saveGameStats } from './UI.js';
+import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawRoomIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats, saveGameStats } from './UI.js';
 import { renderDebugForm, updateDebugEditor } from './Debug.js';
 import { generateLevel } from './Level.js';
 import {
@@ -924,6 +924,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         const startEntry = Globals.levelMap["0,0"];
         Globals.roomData = startEntry.roomData;
+        Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
         Globals.visitedRooms["0,0"] = startEntry;
 
         // If we loaded a specific room/level (via nextLevel or debug), we need to ensure enemies are spawned
@@ -1038,6 +1039,7 @@ export function startGame(keepState = false) {
         // Also must respawn enemies for the start room (0,0) as generateLevel resets map
         if (Globals.levelMap["0,0"]) {
             Globals.roomData = Globals.levelMap["0,0"].roomData;
+            Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
             // spawnEnemies(Globals.roomData); // spawnEnemies uses Globals.roomData by default
             // Actually, initGame does NOT spawn enemies for 0,0 by default? 
             // updateEnemies loop handles it if they exist?
@@ -1550,6 +1552,7 @@ export function changeRoom(dx, dy) {
         }
 
         Globals.roomData = nextEntry.roomData;
+        Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
         Globals.visitedRooms[nextCoord] = nextEntry; // Add to visited for minimap
 
         Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
@@ -2008,6 +2011,7 @@ export async function draw() {
     drawMinimap();
     if (!DEBUG_FLAGS.TEST_ROOM) drawTutorial();
     drawBossIntro();
+    drawRoomIntro();
     // drawPortal() moved to before drawPlayer
     drawFloatingTexts(); // Draw notification texts on top
     drawDebugLogs();

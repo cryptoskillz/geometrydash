@@ -407,6 +407,21 @@ export function renderDebugForm() {
             select.appendChild(opt);
         });
 
+        // Append Shop Rooms (Dynamic)
+        fetch('json/rooms/shops/manfiest.json')
+            .then(res => res.json())
+            .then(data => {
+                if (data.rooms) {
+                    data.rooms.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = "shops/" + s;
+                        opt.innerText = "SHOP: " + s.toUpperCase();
+                        select.appendChild(opt);
+                    });
+                }
+            })
+            .catch(e => console.warn("No shop manifest found", e));
+
         const loadBtn = document.createElement('button');
         loadBtn.innerText = "GO TO ROOM";
         createInputStyle(loadBtn);
