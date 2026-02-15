@@ -185,42 +185,44 @@ export function spawnEnemies() {
     if (rData.type === 'trophy' || rData._type === 'trophy') {
         const stats = (Globals.killStatsTotal && Globals.killStatsTotal.types) ? Globals.killStatsTotal.types : {};
         const types = Object.keys(stats);
-        const cols = 5;
-        const startX = 150;
-        const startY = 150;
-        const gap = 150;
+        console.log("TROPHY LOG: Stats", stats, "Types", types);
+
+        const startX = 100;
+        const startY = 100;
+        const gap = 120;
+        const cols = 7;
+        const templates = Globals.enemyTemplates || {};
 
         types.forEach((t, i) => {
-            let tmpl = Globals.enemyTemplates[t];
-            // Fallback
-            if (!tmpl) tmpl = { type: t, variant: t, size: 25, color: '#95a5a6' };
+            let tmpl = templates[t];
+            if (!tmpl) tmpl = { type: t, size: 25, color: '#95a5a6', speed: 1, hp: 1 };
+
+            const count = stats[t] || 0;
 
             const en = JSON.parse(JSON.stringify(tmpl));
             en.id = `trophy_${i}`;
-            const col = i % cols;
-            const row = Math.floor(i / cols);
 
-            en.x = startX + col * gap;
-            en.y = startY + row * gap;
+            // Apply Base Config
+            applyEnemyConfig(en, { variant: 'medium' });
 
-            // Override behavior
-            en.moveType = 'static';
+            en.killCount = count;
+
+            // Random Position
+            const w = (Globals.canvas && Globals.canvas.width) || 800;
+            const h = (Globals.canvas && Globals.canvas.height) || 600;
+            en.x = 100 + Math.random() * (w - 200);
+            en.y = 100 + Math.random() * (h - 200);
+
+            en.moveType = 'wander';
             en.hostile = false;
-            en.gun = null; // No shooting
+            en.gun = null;
             en.gunConfig = null;
             en.indestructible = true;
             en.hp = 9999;
             en.isStatDisplay = true;
-            en.killCount = stats[t] || 0;
-
-            en.hp = 9999;
-            en.isStatDisplay = true;
-            en.killCount = stats[t] || 0;
             en.solid = false;
 
-            // Ensure size valid for drawing
             if (!en.size) en.size = 25;
-
             Globals.enemies.push(en);
         });
         return; // Skip normal spawn
@@ -1551,9 +1553,8 @@ export function updateEnemies() {
             if (!isStatic) {
                 // --- STEERING BEHAVIORS ---
                 // Determine Move Strategy
-                let isRunAway = false;
-                if (en.moveType === 'runAway') isRunAway = true;
-                if (typeof en.moveType === 'object' && en.moveType.type === 'runAway') isRunAway = true;
+                const isRunAway = en.moveType === 'runAway' || (typeof en.moveType === 'object' && en.moveType.type === 'runAway');
+                const isWander = en.moveType === 'wander';
 
                 // 1. Seek (or Flee) Player
                 let dx = Globals.player.x - en.x;
@@ -1561,7 +1562,12 @@ export function updateEnemies() {
                 const distToPlayer = Math.hypot(dx, dy);
                 let dirX = 0, dirY = 0;
 
-                if (distToPlayer > 0.1) {
+                if (isWander) {
+                    if (en.wanderAngle === undefined) en.wanderAngle = Math.random() * Math.PI * 2;
+                    en.wanderAngle += (Math.random() - 0.5) * 0.5; // Turn slightly
+                    dirX = Math.cos(en.wanderAngle);
+                    dirY = Math.sin(en.wanderAngle);
+                } else if (distToPlayer > 0.1) {
                     // If runAway, we invert the direction to push AWAY from player
                     const factor = isRunAway ? -1.0 : 1.0;
                     dirX = (dx / distToPlayer) * factor;
@@ -2440,7 +2446,7 @@ export function drawEnemies() {
     // Helper for 3D/Shape Drawing
     const drawEnemyShape = (ctx, en, x, y, size) => {
         const shape = en.shape || "circle";
-        const isGhost = en.type === 'ghost' || en.isStatDisplay;
+        const isGhost = en.type === 'ghost' || (en.isStatDisplay && !en.needsKill);
 
         ctx.beginPath();
         if (shape === "square") {
@@ -2552,7 +2558,16 @@ export function drawEnemies() {
         let bounceY = 0;
         let sizeMod = 0;
 
-        if (en.type === 'ghost' || en.isStatDisplay) {
+        // PICTURE FRAME (Unkilled in Trophy Room)
+        if (en.needsKill) {
+            Globals.ctx.save();
+            Globals.ctx.strokeStyle = "#f1c40f"; // Gold Frame
+            Globals.ctx.lineWidth = 5;
+            Globals.ctx.strokeRect(en.x - en.size - 10, en.y - en.size - 10, (en.size * 2) + 20, (en.size * 2) + 20);
+            Globals.ctx.restore();
+        }
+
+        if (en.type === 'ghost' || (en.isStatDisplay && !en.needsKill)) {
             // Ectoplasmic Wobble
             const time = Date.now() / 200;
             bounceY = Math.sin(time) * 5; // Float up and down

@@ -1,12 +1,14 @@
 DONT DO ANY OF THESE TASKS AI
 
 bug
-    incremebt reroll
+    ghots move if caught and screaming
+ 
+
+    dont do size variants
+    add a ghostly background 
     shop can spawm a locked door as the only way to the boss there should always be a keysless way to the boss if we not we should spawn them a key in the start room as a hint its a hard level, save that key
     live portals should be purple used ones should be green (when you spawn them from debug)
-    shops should be an unlock
     secret rooms should be an unlock
-    show the shop on the mini map as another colour
     secret rooms dont show on the mini map
     add level 6 maze level (World 7-4) 
     gun turret requrie its x y back (if it spawns off screen move it until it is on screen)

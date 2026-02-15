@@ -870,16 +870,22 @@ function trackEnemyKill(en) {
     };
 
     // Session
-    if (!Globals.killStatsSession) Globals.killStatsSession = { types: {}, variants: {}, sizes: {} };
+    if (!Globals.killStatsSession) Globals.killStatsSession = { types: {}, variants: {}, sizes: {}, combos: {} };
     inc(Globals.killStatsSession.types, type);
     inc(Globals.killStatsSession.variants, variant);
     inc(Globals.killStatsSession.sizes, size);
+    if (!Globals.killStatsSession.combos) Globals.killStatsSession.combos = {};
+    inc(Globals.killStatsSession.combos, `${type}_${variant}`);
+    inc(Globals.killStatsSession.combos, `${type}_${en.shape || 'circle'}`);
 
     // Total
-    if (!Globals.killStatsTotal) Globals.killStatsTotal = { types: {}, variants: {}, sizes: {} };
+    if (!Globals.killStatsTotal) Globals.killStatsTotal = { types: {}, variants: {}, sizes: {}, combos: {} };
     inc(Globals.killStatsTotal.types, type);
     inc(Globals.killStatsTotal.variants, variant);
     inc(Globals.killStatsTotal.sizes, size);
+    if (!Globals.killStatsTotal.combos) Globals.killStatsTotal.combos = {};
+    inc(Globals.killStatsTotal.combos, `${type}_${variant}`);
+    inc(Globals.killStatsTotal.combos, `${type}_${en.shape || 'circle'}`);
 }
 
 export function getGameStats(won) {
