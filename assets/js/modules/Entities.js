@@ -182,6 +182,8 @@ export function spawnEnemies() {
 
     // TROPHY ROOM LOGIC
     const rData = Globals.roomData || {};
+    console.log(rData)
+    console.log(Globals.killStatsTotal)
     if (rData.type === 'trophy' || rData._type === 'trophy') {
         const stats = (Globals.killStatsTotal && Globals.killStatsTotal.types) ? Globals.killStatsTotal.types : {};
         const types = Object.keys(stats);
@@ -192,6 +194,11 @@ export function spawnEnemies() {
         const gap = 120;
         const cols = 7;
         const templates = Globals.enemyTemplates || {};
+
+        // Calculate Collection Stats
+        const killedCount = stats ? Object.keys(stats).length : 0;
+        const totalCount = Object.keys(templates).length;
+        Globals.trophyCounts = { killed: killedCount, total: totalCount };
 
         types.forEach((t, i) => {
             let tmpl = templates[t];
@@ -2780,6 +2787,21 @@ export function drawEnemies() {
 
         Globals.ctx.restore();
     });
+
+    // TROPHY ROOM UI Overlay
+    if (Globals.roomData && (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy') && Globals.trophyCounts) {
+        const ctx = Globals.ctx;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px monospace';
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 4;
+        ctx.fillText(`COLLECTION: ${Globals.trophyCounts.killed} / ${Globals.trophyCounts.total}`, Globals.canvas.width / 2, 80);
+        ctx.font = '12px monospace';
+        ctx.fillText("UNIQUE SPECIES DEFEATED", Globals.canvas.width / 2, 100);
+        ctx.restore();
+    }
 }
 // export function playerHit(en, invuln = false, knockback = false, shakescreen = false) {
 // Refactored for Solidity vs Invulnerability Separation
