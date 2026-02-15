@@ -140,7 +140,8 @@ export function renderDebugForm() {
             console.log("Current Inventory (Before):", JSON.stringify(Globals.player.inventory));
             Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + 5;
             Globals.player.inventory.bombs = (Globals.player.inventory.bombs || 0) + 5;
-
+            Globals.player.inventory.redShards = 1000;
+            Globals.player.inventory.greenShards = 1000;
             console.log("Updated Inventory (After):", Globals.player.inventory.keys, Globals.player.inventory.bombs);
             log("Added 5 Keys & 5 Bombs");
 
