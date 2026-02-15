@@ -51,7 +51,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     // Music Reset handled in startGame or updateRoomLock if state persists?
     // Force music reset if coming from Ghost Trap
     if (introMusic && introMusic.src.includes('ghost')) {
-        introMusic.src = 'assets/music/tron.mp3';
+        introMusic.src = Globals.gameData.introMusic;
         if (!introMusic.paused) introMusic.play().catch(() => { });
     }
 
@@ -93,6 +93,18 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     // Debug panel setup moved after config load
 
     // MOVED: Music start logic is now handled AFTER game.json is loaded to respect "music": false setting.
+
+    // Initialize Music Source
+    if (introMusic && Globals.gameData.introMusic) {
+        // Only valid if src works (check valid path)
+        const target = Globals.gameData.introMusic;
+        // Avoid resetting if already playing same track (via relative check)
+        // new Audio() src is empty initially.
+        if (!introMusic.src || !introMusic.src.includes(target.split('/').pop())) {
+            introMusic.src = target;
+            log("Initialized Music Source:", target);
+        }
+    }
 
     Globals.gameState = STATES.START; // Always reset to START first, let startGame() transition to PLAY
     if (Globals.elements.overlay) Globals.elements.overlay.style.display = 'none';
@@ -350,6 +362,41 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             DEBUG_FLAGS.GODMODE = Globals.gameData.debug.godMode ?? false;
             DEBUG_FLAGS.WINDOW = Globals.gameData.debug.windowEnabled ?? false;
             DEBUG_FLAGS.LOG = Globals.gameData.debug.log ?? false;
+
+            // Initialize Music Source (Now that gameData is loaded & merged)
+            // Priority: level.json "music" (if string) > game.json "introMusic" > default
+            let musicSrc = Globals.gameData.introMusic;
+
+            // Check for level override (merged into gameData.music as string?)
+            // If active level has "music": "path/to/track.mp3"
+            if (typeof Globals.gameData.music === 'string') {
+                musicSrc = Globals.gameData.music;
+                // Set flag to true so it plays
+                Globals.gameData.music = true;
+            }
+
+            if (introMusic && musicSrc) {
+                // Check if we need to change track
+                const currentFile = introMusic.src ? introMusic.src.split('/').pop() : "";
+                const targetFile = musicSrc.split('/').pop();
+
+                if (currentFile !== targetFile) {
+                    introMusic.src = musicSrc;
+                    introMusic.load(); // Force load
+                    log("Music Track Changed to:", musicSrc);
+                }
+
+                // Auto-Play (if enabled)
+                if (Globals.gameData.music && introMusic.paused) {
+                    // Check AudioContext state
+                    if (Globals.audioCtx.state === 'running') {
+                        fadeIn(introMusic, 2000, 0.4);
+                    } else {
+                        // Will play on user interaction
+                        log("Music waiting for interaction (AudioCtx suspended)");
+                    }
+                }
+            }
 
             if (Globals.gameData.debug.spawn) {
                 DEBUG_FLAGS.SPAWN_ALL_ITEMS = Globals.gameData.debug.spawn.allItems ?? false;
@@ -2237,7 +2284,7 @@ export function updateRoomLock() {
     } else if (!isGhostTrap && Globals.ghostTrapActive) {
         // Trap Ended - Revert to Tron and Previous State
         if (introMusic) {
-            introMusic.src = 'assets/music/tron.mp3';
+            introMusic.src = Globals.gameData.introMusic;
             if (Globals.wasMusicPlayingBeforeGhost) {
                 introMusic.play().catch(() => { });
             } else {

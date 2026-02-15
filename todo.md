@@ -1,9 +1,15 @@
 DONT DO ANY OF THESE TASKS AI
 
 bug
-    when debug log is active send to green debug and console log, if its disabed dont send to console log
-    never spaw a shop next to the start room as you start with a locked door
+    update the hard code music  introMusic.src = 'assets/music/intro.mp3'; to use introMusic in game.json and music for the level
+    shops should be an unlock
+    secret rooms should be an unlock
+    add red reroll switch to the shop 1
+    make the swutch floor switches you stand on like pressure pads
     show the shop on the mini map as another colour
+    secret rooms dont show on the mini map
+    add music to level json 
+    add level 6 maze level (World 7-4) 
     gun turret requrie its x y back (if it spawns off screen move it until it is on screen)
     remove the matrix att in room and use id instead
     add speech attr to enemy, used for bosses, enter, die
@@ -135,6 +141,7 @@ achivements
 
 Balance
 
+    rtophy room has matrix room and house requiring house and matrix key
 
     this is why he never goes in the portal room or the start room (which will have a portal)
     show an increasingf number of enemies type you killed to the welcome screen with the big ghost occasionally showing

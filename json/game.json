@@ -82,6 +82,8 @@
             "gun": "json/rewards/items/guns/enemy/peashooter.json"
         }
     },
+    "introMusic": "assets/music/intro.mp3",
+    "ghostMusic": "asseta/music/ghost.mp3",
     "levelCount": 6,
     "showTimer": false,
     "showSpeedyTimer": false,
