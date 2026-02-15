@@ -179,6 +179,52 @@ export function applyEnemyConfig(inst, group) {
 }
 export function spawnEnemies() {
     Globals.enemies = [];
+
+    // TROPHY ROOM LOGIC
+    const rData = Globals.roomData || {};
+    if (rData.type === 'trophy' || rData._type === 'trophy') {
+        const stats = (Globals.killStatsTotal && Globals.killStatsTotal.types) ? Globals.killStatsTotal.types : {};
+        const types = Object.keys(stats);
+        const cols = 5;
+        const startX = 150;
+        const startY = 150;
+        const gap = 150;
+
+        types.forEach((t, i) => {
+            let tmpl = Globals.enemyTemplates[t];
+            // Fallback
+            if (!tmpl) tmpl = { type: t, variant: t, size: 25, color: '#95a5a6' };
+
+            const en = JSON.parse(JSON.stringify(tmpl));
+            en.id = `trophy_${i}`;
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+
+            en.x = startX + col * gap;
+            en.y = startY + row * gap;
+
+            // Override behavior
+            en.moveType = 'static';
+            en.hostile = false;
+            en.gun = null; // No shooting
+            en.gunConfig = null;
+            en.indestructible = true;
+            en.hp = 9999;
+            en.isStatDisplay = true;
+            en.killCount = stats[t] || 0;
+
+            en.hp = 9999;
+            en.isStatDisplay = true;
+            en.killCount = stats[t] || 0;
+            en.solid = false;
+
+            // Ensure size valid for drawing
+            if (!en.size) en.size = 25;
+
+            Globals.enemies.push(en);
+        });
+        return; // Skip normal spawn
+    }
     //add the invul timer to the freeze until so they invulnerable for the time in player json
     const freezeUntil = Date.now() + (Globals.gameData.enterRoomFreezeTime || Globals.player.invulTimer || 1000);
 
@@ -1688,18 +1734,21 @@ export function updateEnemies() {
         } // End !en.frozen
 
         // 3. Player Collision (Thorns)
-        const distToPlayer = Math.hypot(Globals.player.x - en.x, Globals.player.y - en.y);
-        if (distToPlayer < en.size + Globals.player.size) {
-            const baseDmg = Globals.gun.Bullet?.damage || 1;
-            const thornsDmg = baseDmg / 2;
-            if (thornsDmg > 0 && !en.frozen && !en.invulnerable && !en.indestructible) {
-                en.hp -= thornsDmg;
-                en.hitTimer = 5;
-                if (en.hp <= 0 && !en.isDead) { // Kill check handled by shared block below? No, separate logs usually.
-                    // But shared block is safer. Let's rely on falling through.
+        // Skip for trophy display
+        if (!en.isStatDisplay) {
+            const distToPlayer = Math.hypot(Globals.player.x - en.x, Globals.player.y - en.y);
+            if (distToPlayer < en.size + Globals.player.size) {
+                const baseDmg = Globals.gun.Bullet?.damage || 1;
+                const thornsDmg = baseDmg / 2;
+                if (thornsDmg > 0 && !en.frozen && !en.invulnerable && !en.indestructible) {
+                    en.hp -= thornsDmg;
+                    en.hitTimer = 5;
+                    if (en.hp <= 0 && !en.isDead) { // Kill check handled by shared block below? No, separate logs usually.
+                        // But shared block is safer. Let's rely on falling through.
+                    }
                 }
+                playerHit(en, true, true, true);
             }
-            playerHit(en, true, true, true);
         }
 
         // 4. BULLET COLLISION
@@ -1863,7 +1912,7 @@ export function updateEnemies() {
             if (en.type !== 'boss') { // Bosses drop Red Shards separately
                 const amount = calculateShardDrop('green', 'killEnemy', en);
                 //update kill enemy global counter
-                updateGameStats('kill');
+                updateGameStats('kill', en);
 
                 if (amount > 0) {
                     spawnCurrencyShard(en.x, en.y, 'green', amount);
@@ -1892,7 +1941,7 @@ export function updateEnemies() {
                 // RED SHARD REWARD
                 const amount = calculateShardDrop('red', 'killBoss', en);
                 //update kill enemy global counter
-                updateGameStats('bossKill');
+                updateGameStats('bossKill', en);
                 spawnCurrencyShard(en.x, en.y, 'red', amount);
 
                 Globals.bossKilled = true;
@@ -2391,14 +2440,53 @@ export function drawEnemies() {
     // Helper for 3D/Shape Drawing
     const drawEnemyShape = (ctx, en, x, y, size) => {
         const shape = en.shape || "circle";
+        const isGhost = en.type === 'ghost' || en.isStatDisplay;
+
         ctx.beginPath();
         if (shape === "square") {
-            ctx.rect(x - size, y - size, size * 2, size * 2);
+            if (isGhost) {
+                // Square with wavy feet
+                ctx.moveTo(x - size, y + size); // Bottom Left
+                ctx.lineTo(x - size, y - size); // Top Left
+                ctx.lineTo(x + size, y - size); // Top Right
+                ctx.lineTo(x + size, y + size); // Bottom Right
+                // Waves (R -> L)
+                const width = size * 2;
+                const waves = 3;
+                const waveWidth = width / waves;
+                for (let i = 1; i <= waves; i++) {
+                    const waveX = (x + size) - (waveWidth * i);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (i - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+                ctx.closePath();
+            } else {
+                ctx.rect(x - size, y - size, size * 2, size * 2);
+            }
         } else if (shape === "triangle") {
-            ctx.moveTo(x, y - size);
-            ctx.lineTo(x + size, y + size);
-            ctx.lineTo(x - size, y + size);
-            ctx.closePath();
+            if (isGhost) {
+                ctx.moveTo(x, y - size); // Top
+                ctx.lineTo(x + size, y + size); // Bottom Right
+                // Waves
+                const width = size * 2;
+                const waves = 3;
+                const waveWidth = width / waves;
+                for (let i = 1; i <= waves; i++) {
+                    const waveX = (x + size) - (waveWidth * i);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (i - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+                ctx.closePath();
+            } else {
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.lineTo(x - size, y + size);
+                ctx.closePath();
+            }
         } else if (shape === "star") {
             const spikes = 5;
             const outerRadius = size;
@@ -2434,7 +2522,7 @@ export function drawEnemies() {
             ctx.lineTo(x, y + size);
             ctx.lineTo(x - size, y);
             ctx.closePath();
-        } else if (en.type === 'ghost') {
+        } else if (en.type === 'ghost' || (isGhost && (shape === 'circle' || !shape))) {
             const r = size;
             const h = r * 0.8;
             ctx.arc(x, y - (r * 0.2), r, Math.PI, 0);
@@ -2464,7 +2552,7 @@ export function drawEnemies() {
         let bounceY = 0;
         let sizeMod = 0;
 
-        if (en.type === 'ghost') {
+        if (en.type === 'ghost' || en.isStatDisplay) {
             // Ectoplasmic Wobble
             const time = Date.now() / 200;
             bounceY = Math.sin(time) * 5; // Float up and down
@@ -2531,7 +2619,19 @@ export function drawEnemies() {
 
         // DRAW HEALTH BAR, use ShowGhost health to draw the ghost
         // DRAW HEALTH BAR
-        if (Globals.gameData.showEnemyHealth !== false && !en.isDead && en.maxHp > 0 && en.hp <= en.maxHp) {
+
+        // STAT DISPLAY (Trophy Room)
+        if (en.isStatDisplay) {
+            Globals.ctx.save();
+            Globals.ctx.fillStyle = "#f1c40f";
+            Globals.ctx.textAlign = "center";
+            Globals.ctx.font = "bold 14px monospace";
+            Globals.ctx.shadowColor = "black";
+            Globals.ctx.shadowBlur = 2;
+            Globals.ctx.fillText(`Kills: ${en.killCount}`, en.x, en.y + en.size + 20);
+            Globals.ctx.restore();
+            // Skip Health Bar
+        } else if (Globals.gameData.showEnemyHealth !== false && !en.isDead && en.maxHp > 0 && en.hp <= en.maxHp) {
             let skipDraw = false;
 
             // Ghost specific logic

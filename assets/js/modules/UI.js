@@ -833,20 +833,53 @@ export function showCredits() {
     document.addEventListener('keydown', closeCredits);
 }
 
-export function updateGameStats(statType) {
+export function updateGameStats(statType, data) {
     if (statType === 'kill') {
         Globals.killEnemyCount++;
         Globals.killEnemySessionCount++;
+        trackEnemyKill(data);
     }
     if (statType === 'bossKill') {
         Globals.killBossCount++;
         Globals.killBossSessionCount++;
+        trackEnemyKill(data);
     }
     if (statType === 'death') {
         Globals.playerDeathCount++;
         Globals.playerDeathSessionCount++;
     }
     saveGameStats();
+}
+
+function trackEnemyKill(en) {
+    if (!en) return;
+    const type = en.type || 'unknown';
+    const variant = en.variant || 'normal';
+    // Size bucket
+    let size = 'normal';
+    if (en.size) {
+        if (en.size < 30) size = 'small';
+        if (en.size > 60) size = 'large';
+        if (en.size > 100) size = 'huge';
+    }
+
+    // Helper to increment
+    const inc = (obj, key) => {
+        if (!obj[key]) obj[key] = 0;
+        obj[key]++;
+    };
+
+    // Session
+    if (!Globals.killStatsSession) Globals.killStatsSession = { types: {}, variants: {}, sizes: {} };
+    inc(Globals.killStatsSession.types, type);
+    inc(Globals.killStatsSession.variants, variant);
+    inc(Globals.killStatsSession.sizes, size);
+
+    // Total
+    if (!Globals.killStatsTotal) Globals.killStatsTotal = { types: {}, variants: {}, sizes: {} };
+    inc(Globals.killStatsTotal.types, type);
+    inc(Globals.killStatsTotal.variants, variant);
+    inc(Globals.killStatsTotal.sizes, size);
 }
 
 export function getGameStats(won) {
@@ -867,7 +900,8 @@ export function saveGameStats() {
         perfectRooms: Globals.perfectRoomCount,
         speedyBonuses: Globals.speedyBonusCount,
         gameBeats: Globals.gameBeatCount,
-        ghostTime: Globals.ghostTimeSurvived
+        ghostTime: Globals.ghostTimeSurvived,
+        killStats: Globals.killStatsTotal
     };
     localStorage.setItem('rogue_stats', JSON.stringify(stats));
 }
@@ -884,6 +918,7 @@ export function loadGameStats() {
         Globals.speedyBonusCount = stats.speedyBonuses || 0;
         Globals.gameBeatCount = stats.gameBeats || 0;
         Globals.ghostTimeSurvived = stats.ghostTime || 0;
+        Globals.killStatsTotal = stats.killStats || { types: {}, variants: {}, sizes: {} };
 
         // Load Level Splits (Separate Key for array)
         const splits = localStorage.getItem('rogue_level_splits');
@@ -903,6 +938,7 @@ export function resetSessionStats() {
     Globals.speedyBonusSessionCount = 0;
     Globals.gameBeatSessionCount = 0;
     Globals.ghostTimeSessionSurvived = 0;
+    Globals.killStatsSession = { types: {}, variants: {}, sizes: {} };
     Globals.levelSplits = [];
 
     // Reset Bonus Streaks

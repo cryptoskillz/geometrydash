@@ -120,7 +120,7 @@ export function renderDebugForm() {
         });
 
         createBtn("LOAD MATRIX ROOM", "#c0392b", () => {
-            const path = "json/rooms/special/matrix/room.json";
+            const path = "json/rooms/secret/matrix/room.json";
             log("Debug Loading Matrix Room:", path);
             if (Globals.gameData) Globals.gameData.startRoom = null;
             if (window.DEBUG_FLAGS) window.DEBUG_FLAGS.TEST_ROOM = true;
@@ -474,6 +474,22 @@ export function renderDebugForm() {
                 }
             })
             .catch(e => console.warn("No shop manifest found", e));
+
+        // Append Secret Rooms (Dynamic)
+        fetch('json/rooms/secret/manifest.json')
+            .then(res => res.json())
+            .then(data => {
+                const list = data.items || data.rooms || [];
+                if (list.length > 0) {
+                    list.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = "secret/" + s;
+                        opt.innerText = "SECRET: " + s.toUpperCase();
+                        select.appendChild(opt);
+                    });
+                }
+            })
+            .catch(e => console.warn("No secret manifest found", e));
 
         const loadBtn = document.createElement('button');
         loadBtn.innerText = "GO TO ROOM";
