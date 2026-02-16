@@ -86,6 +86,7 @@ export function applyEnemyConfig(inst, group) {
     }
 
     // 2. Apply Variant Stats
+    inst.variant = group.variant;
     const stats = config.variantStats[group.variant];
     if (stats) {
         if (stats.size) inst.size = (inst.size || 25) * stats.size;
@@ -230,28 +231,28 @@ export function spawnEnemies() {
             const variants = config.variants || [];
             const colors = config.colors || [];
 
-            if (variants.includes(suffix)) {
-                // Apply Stats (Size, Speed, etc) from variantStats
-                applyEnemyConfig(en, { variant: suffix });
+            const shapes = config.shapes || [];
+            let labelParts = [];
+            let variantApplied = false;
 
-                // Apply Color (Map variant index to color index from game.json)
-                const index = variants.indexOf(suffix);
-                if (index !== -1 && colors[index]) {
-                    en.color = colors[index];
+            for (let j = 1; j < parts.length; j++) {
+                const p = parts[j];
+                if (variants.includes(p)) {
+                    applyEnemyConfig(en, { variant: p });
+                    variantApplied = true;
+                    labelParts.push(p);
+                    const idx = variants.indexOf(p);
+                    if (colors[idx]) en.color = colors[idx];
+                } else if (shapes.includes(p)) {
+                    en.shape = p;
+                    labelParts.push(p);
+                } else if (p !== 'normal' && p !== 'circle') {
+                    labelParts.push(p);
                 }
-
-                en.displayInfo = suffix;
-
-            } else if (config.shapes && config.shapes.includes(suffix)) {
-                en.shape = suffix;
-                // Ensure base stats
-                applyEnemyConfig(en, { variant: 'medium' });
-                en.displayInfo = suffix;
-            } else {
-                // Fallback
-                applyEnemyConfig(en, { variant: 'medium' });
-                en.displayInfo = "Normal";
             }
+            if (!variantApplied) applyEnemyConfig(en, { variant: 'medium' });
+            en.displayInfo = labelParts.length > 0 ? labelParts.join(' ') : "Normal";
+
 
             en.killCount = combos[key] || 0;
 
