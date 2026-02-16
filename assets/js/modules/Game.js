@@ -1686,6 +1686,28 @@ export function changeRoom(dx, dy) {
         }
 
         Globals.roomData = nextEntry.roomData;
+
+        // MUSIC SWITCH LOGIC (Trophy Room)
+        if (Globals.introMusic) {
+            let desiredTrack = Globals.levelMusic || Globals.gameData.introMusic;
+
+            if (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy') {
+                desiredTrack = Globals.gameData.trophyMusic || 'assets/music/trophy.mp3';
+            }
+
+            // Check if we need to switch
+            // Use loose check for filename match to avoid full URL issues
+            const currentFilename = Globals.introMusic.src ? Globals.introMusic.src.split('/').pop() : "";
+            const targetFilename = desiredTrack ? desiredTrack.split('/').pop() : "";
+
+            if (targetFilename && currentFilename !== targetFilename) {
+                log("Switching Room Music:", currentFilename, "->", targetFilename);
+                Globals.introMusic.src = desiredTrack;
+                if (!Globals.musicMuted && Globals.gameData.music) {
+                    Globals.introMusic.play().catch(e => console.warn("Music Switch Play Blocked", e));
+                }
+            }
+        }
         Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
         Globals.visitedRooms[nextCoord] = nextEntry; // Add to visited for minimap
 

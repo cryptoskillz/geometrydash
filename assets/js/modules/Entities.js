@@ -99,7 +99,16 @@ export function applyEnemyConfig(inst, group) {
         if (group.variant === 'turret' && stats.moveType === 'static') {
             if (!group.moveType) group.moveType = {};
             if (!group.moveType.type) group.moveType.type = 'static';
+
+            // Fix: Apply to instance immediately
+            inst.moveType = 'static';
         }
+    }
+
+    // Apply moveType if present in group (explicit logic)
+    if (group.moveType) {
+        inst.moveType = group.moveType;
+        if (group.moveType.type) inst.moveType = group.moveType.type;
     }
 
     // 2b. Special Case for Turret Object Schema (New)
