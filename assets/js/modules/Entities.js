@@ -1845,6 +1845,7 @@ export function updateEnemies() {
 
         // 4. BULLET COLLISION
         Globals.bullets.forEach((b, bi) => {
+            if (en.isStatDisplay) return;
             // Skip checks only if invulnerable AND NOT explicitly solid
             // (Standard enemies are valid targets, but if invulnerable we usually skip unless solid)
             // Default "solid" to false if undefined? No, standard behavior for invuln is pass-through.
