@@ -889,6 +889,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     return res.json();
                 })
                 .then(data => {
+                    console.log(data)
+
                     // ID Generation: Handle "room.json" collision
                     const parts = path.split('/');
                     let id = parts[parts.length - 1].replace('.json', '');

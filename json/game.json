@@ -95,6 +95,7 @@
     "perfectGoal": 5,
     "noDamageGoal": 20,
     "shooterGoal": 15,
+    "maxKillCount": 1000,
     "secretRooms": true,
     "shops": false,
     "music": false,

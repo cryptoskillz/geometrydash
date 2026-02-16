@@ -182,12 +182,13 @@ export function spawnEnemies() {
 
     // TROPHY ROOM LOGIC
     const rData = Globals.roomData || {};
-    console.log(rData)
-    console.log(Globals.killStatsTotal)
+    console.log(Globals.killStatsTotal.sizes)
+
     if (rData.type === 'trophy' || rData._type === 'trophy') {
         const stats = (Globals.killStatsTotal && Globals.killStatsTotal.types) ? Globals.killStatsTotal.types : {};
+        const sizes = Globals.killStatsTotal.sizes;
         const types = Object.keys(stats);
-        console.log("TROPHY LOG: Stats", stats, "Types", types);
+        console.log("TROPHY LOG: Stats", stats, "Types", types, "sizes", sizes);
 
         const startX = 100;
         const startY = 100;
@@ -195,24 +196,82 @@ export function spawnEnemies() {
         const cols = 7;
         const templates = Globals.enemyTemplates || {};
 
-        // Calculate Collection Stats
-        const killedCount = stats ? Object.keys(stats).length : 0;
-        const totalCount = Object.keys(templates).length;
+        // Calculate Collection Stats (Combinations)
+        const config = Globals.gameData.enemyConfig || {};
+        const variantsList = config.variants || [];
+        const shapesList = config.shapes || [];
+
+        const totalTypes = Object.keys(templates).length;
+        const totalCount = totalTypes * (variantsList.length + shapesList.length);
+
+        const combos = (Globals.killStatsTotal && Globals.killStatsTotal.combos) ? Globals.killStatsTotal.combos : {};
+        const killedCount = Object.keys(combos).length;
+
         Globals.trophyCounts = { killed: killedCount, total: totalCount };
 
-        types.forEach((t, i) => {
-            let tmpl = templates[t];
-            if (!tmpl) tmpl = { type: t, size: 25, color: '#95a5a6', speed: 1, hp: 1 };
+        // Spawn Ghosts for each Unique Combo
+        // console.log(combos)
+        Object.keys(combos).forEach((key, i) => {
 
-            const count = stats[t] || 0;
+            //console.log(combos)
+            const parts = key.split('_');
+            const type = parts[0];
+            const suffix = parts.slice(1).join('_');
 
+            /*
+            //load the music if it has a music var
+                    if (data.music) {
+                        //load if
+                        introMusic.src = data.music;
+                        introMusic.volume = 0.4; // Force Volume Up (Override mute)
+                        // Force Play
+                        introMusic.play().then(() => console.log("`room` Music Started")).catch((e) => { console.error("Ghost Music Force Play Failed:", e); });
+            
+                    }
+                        
+            console.log("parts")
+            console.log(parts)
+            console.log("type")
+            console.log(type)
+            console.log("suffix")
+            console.log(suffix)
+             */
+
+            let tmpl = templates[type];
+            if (!tmpl) tmpl = { type: type, size: 25, color: '#95a5a6', speed: 1, hp: 1 };
+            //console.log(tmpl)
             const en = JSON.parse(JSON.stringify(tmpl));
             en.id = `trophy_${i}`;
 
-            // Apply Base Config
-            applyEnemyConfig(en, { variant: 'medium' });
+            // Apply Config based on suffix
+            //console.log("suffix" + suffix)
+            if (variantsList.includes(suffix)) {
+                applyEnemyConfig(en, { variant: suffix });
+                // Custom Variant Colors
+                const variantColors = {
+                    'speedy': '#3498db', 'small': '#2ecc71', 'large': '#e67e22',
+                    'massive': '#8e44ad', 'mega': '#2c3e50', 'turret': '#7f8c8d',
+                    'gunner': '#c0392b'
+                };
+                if (variantColors[suffix]) en.color = variantColors[suffix];
+                en.displayInfo = suffix;
+            } else if (shapesList.includes(suffix)) {
+                en.shape = suffix;
+                en.displayInfo = suffix;
+                // Ensure base stats
+                applyEnemyConfig(en, { variant: 'medium' });
+            } else {
+                // Fallback
+                applyEnemyConfig(en, { variant: 'medium' });
+                en.displayInfo = "Normal";
+            }
+            const variantColors = {
+                'speedy': '#3498db', 'small': '#2ecc71', 'large': '#e67e22',
+                'massive': '#8e44ad', 'mega': '#2c3e50', 'turret': '#7f8c8d',
+                'gunner': '#c0392b'
+            };
 
-            en.killCount = count;
+            en.killCount = combos[key] || 0;
 
             // Random Position
             const w = (Globals.canvas && Globals.canvas.width) || 800;
@@ -228,6 +287,8 @@ export function spawnEnemies() {
             en.hp = 9999;
             en.isStatDisplay = true;
             en.solid = false;
+
+            console.log(en)
 
             if (!en.size) en.size = 25;
             Globals.enemies.push(en);
@@ -2643,6 +2704,7 @@ export function drawEnemies() {
         // DRAW HEALTH BAR
 
         // STAT DISPLAY (Trophy Room)
+        // STAT DISPLAY (Trophy Room)
         if (en.isStatDisplay) {
             Globals.ctx.save();
             Globals.ctx.fillStyle = "#f1c40f";
@@ -2650,6 +2712,13 @@ export function drawEnemies() {
             Globals.ctx.font = "bold 14px monospace";
             Globals.ctx.shadowColor = "black";
             Globals.ctx.shadowBlur = 2;
+
+            if (en.displayInfo) {
+                Globals.ctx.font = "bold 10px monospace";
+                Globals.ctx.fillText(en.displayInfo.toUpperCase(), en.x, en.y - en.size - 10);
+                Globals.ctx.font = "bold 14px monospace";
+            }
+
             Globals.ctx.fillText(`Kills: ${en.killCount}`, en.x, en.y + en.size + 20);
             Globals.ctx.restore();
             // Skip Health Bar
@@ -2789,6 +2858,7 @@ export function drawEnemies() {
     });
 
     // TROPHY ROOM UI Overlay
+
     if (Globals.roomData && (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy') && Globals.trophyCounts) {
         const ctx = Globals.ctx;
         ctx.save();
@@ -2799,7 +2869,7 @@ export function drawEnemies() {
         ctx.shadowBlur = 4;
         ctx.fillText(`COLLECTION: ${Globals.trophyCounts.killed} / ${Globals.trophyCounts.total}`, Globals.canvas.width / 2, 80);
         ctx.font = '12px monospace';
-        ctx.fillText("UNIQUE SPECIES DEFEATED", Globals.canvas.width / 2, 100);
+        ctx.fillText("UNIQUE SPECIES ADDED TO MY COLLECTION", Globals.canvas.width / 2, 100);
         ctx.restore();
     }
 }

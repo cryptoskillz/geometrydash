@@ -1,15 +1,21 @@
 DONT DO ANY OF THESE TASKS AI
 
 bug
-    ghots move if caught and screaming
- 
-
-    dont do size variants
-    add a ghostly background 
-    shop can spawm a locked door as the only way to the boss there should always be a keysless way to the boss if we not we should spawn them a key in the start room as a hint its a hard level, save that key
+    trophy room
+        trophy room ghosts look around not follow the player 
+        show all vairants of caught ghosts variant,size,shape,colour
+        ghost lore has talking a lot and screaming
+        bullets should go through the ghosts in the trophy room
+        add a ghostly background 
+    shop room
+        shop can spawm a locked door as the only way to the boss there should always be a keysless way to the boss if we not we should spawn them a key in the start room as a hint its a hard level, save that key
+    can we store google font locally to make it work offline
+    load music from room json is it exists when you leave that room go back to the old
+    music
     live portals should be purple used ones should be green (when you spawn them from debug)
-    secret rooms should be an unlock
-    secret rooms dont show on the mini map
+    seret room
+        secret rooms should be an unlock
+        secret rooms dont show on the mini map
     add level 6 maze level (World 7-4) 
     gun turret requrie its x y back (if it spawns off screen move it until it is on screen)
     remove the matrix att in room and use id instead
@@ -83,7 +89,7 @@ SFX  ui updates and new items
             unlocked guns
             unlocked bombs
     
-    ghostr
+    ghost
     rooms
     items
     balance
@@ -100,13 +106,7 @@ sound
 
 Welcome screen
     Settings screen
-    Unlock screen
-    Character collect
-    Trohpy room
 
-Shop room
-
-    
     
 Levels
     Level 5 harder boss (with gun)
@@ -117,8 +117,6 @@ Levels
     level 10 unlocks permanance (if enable permeane mode you can do the sweet modifiers but the whole game becomes harder as a result)
 
 
-   
-    
 
 narartor
     add narrator speech 
@@ -141,11 +139,11 @@ achivements
 
 
 Balance
+    look into a local db maybe sqllite with sql.js or absurd-sql so we can replace local storage and have it sync to a server. 
     add mobile inputes / touch screen
     add pyshics matter.js
     add joypad support 
     rtophy room has matrix room and house requiring house and matrix key
-
     this is why he never goes in the portal room or the start room (which will have a portal)
     show an increasingf number of enemies type you killed to the welcome screen with the big ghost occasionally showing
     add what killed you to the game over screen
@@ -218,6 +216,8 @@ enemies
 
 
 ghost
+    when you kill the ghost and equip the ghost gun you go to the trophy room and the
+    poeral will appear taking you to the ghost realm this is the real last level of the game.
     if the ghost respawns his health is reset think so he should be really hard to kill you shuold clear the level go back coax him and have him chase you 
     if you get to far away he stops following you and goes back to the void and comes back later fully healed. 
     add ghost to the welcome screen
