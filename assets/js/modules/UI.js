@@ -855,6 +855,8 @@ function trackEnemyKill(en) {
     if (!en) return;
     const type = en.type || 'unknown';
     const variant = en.variant || 'normal';
+    const shape = en.shape || 'circle';
+
     // Size bucket
     let size = 'normal';
     if (en.size) {
@@ -875,8 +877,9 @@ function trackEnemyKill(en) {
     inc(Globals.killStatsSession.variants, variant);
     inc(Globals.killStatsSession.sizes, size);
     if (!Globals.killStatsSession.combos) Globals.killStatsSession.combos = {};
-    inc(Globals.killStatsSession.combos, `${type}_${variant}`);
-    inc(Globals.killStatsSession.combos, `${type}_${en.shape || 'circle'}`);
+
+    // Track Unique Visual Combo
+    inc(Globals.killStatsSession.combos, `${type}_${variant}_${shape}`);
 
     // Total
     if (!Globals.killStatsTotal) Globals.killStatsTotal = { types: {}, variants: {}, sizes: {}, combos: {} };
@@ -884,8 +887,9 @@ function trackEnemyKill(en) {
     inc(Globals.killStatsTotal.variants, variant);
     inc(Globals.killStatsTotal.sizes, size);
     if (!Globals.killStatsTotal.combos) Globals.killStatsTotal.combos = {};
-    inc(Globals.killStatsTotal.combos, `${type}_${variant}`);
-    inc(Globals.killStatsTotal.combos, `${type}_${en.shape || 'circle'}`);
+
+    // Track Unique Visual Combo
+    inc(Globals.killStatsTotal.combos, `${type}_${variant}_${shape}`);
 }
 
 export function getGameStats(won) {
