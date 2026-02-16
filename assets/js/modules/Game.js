@@ -2057,6 +2057,38 @@ export async function draw() {
     await updateUI();
     Globals.ctx.clearRect(0, 0, Globals.canvas.width, Globals.canvas.height);
 
+    // Trophy Room Background (Ghostly Effect)
+    if (Globals.roomData && (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy')) {
+        const w = Globals.canvas.width;
+        const h = Globals.canvas.height;
+
+        // Dark Base
+        Globals.ctx.fillStyle = "#020205";
+        Globals.ctx.fillRect(0, 0, w, h);
+
+        // Procedural Fog/Orbs
+        const time = Date.now() * 0.0002;
+        for (let i = 0; i < 15; i++) {
+            // Random-ish movement based on time and index
+            const x = ((Math.sin(time + i * 132.1) + 1) / 2) * w;
+            const y = ((Math.cos(time * 0.7 + i * 35.2) + 1) / 2) * h;
+            const s = 100 + Math.sin(time * 2 + i) * 50;
+            const alpha = 0.03 + (Math.sin(time + i) * 0.02);
+
+            Globals.ctx.fillStyle = `rgba(100, 220, 255, ${alpha})`;
+            Globals.ctx.beginPath();
+            Globals.ctx.arc(x, y, s, 0, Math.PI * 2);
+            Globals.ctx.fill();
+        }
+
+        // Vignette Overlay
+        const grad = Globals.ctx.createRadialGradient(w / 2, h / 2, w / 3, w / 2, h / 2, w * 0.8);
+        grad.addColorStop(0, "rgba(0,0,0,0)");
+        grad.addColorStop(1, "rgba(0,10,20,0.8)");
+        Globals.ctx.fillStyle = grad;
+        Globals.ctx.fillRect(0, 0, w, h);
+    }
+
     // Global Matrix Effect (Background)
     if (Globals.roomData && Globals.roomData.name === "Guns Lots of Guns") {
         Globals.portal.active = true;

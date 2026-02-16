@@ -3,11 +3,10 @@ DONT DO ANY OF THESE TASKS AI
 bug
 
     trophy room
+        gun turrets should not move
         trophy room ghosts look around not follow the player 
-        show all vairants of caught ghosts variant,size,shape,colour
         ghost lore has talking a lot and screaming
         bullets should go through the ghosts in the trophy room
-        add a ghostly background 
     shop room
         shop can spawm a locked door as the only way to the boss there should always be a keysless way to the boss if we not we should spawn them a key in the start room as a hint its a hard level, save that key
     can we store google font locally to make it work offline
