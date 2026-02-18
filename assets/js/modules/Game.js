@@ -2501,7 +2501,6 @@ export function updateRoomTransitions(doors, roomLocked) {
 
         // 4. Lock & Access Logic
         // Force conversion to number, default to 0
-        console.log(door)
         let lockVal = parseInt(door.locked, 10);
         if (isNaN(lockVal)) lockVal = 0;
 
@@ -2515,8 +2514,9 @@ export function updateRoomTransitions(doors, roomLocked) {
         if (lockVal === 2) { // Home Key
             if (Globals.player.inventory.houseKey) {
                 // Interaction Required
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE", "#fff", 2);
+                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Home Room", "#fff", 2);
                 if (Globals.keys['Space']) {
+                    console.log("Home Key Used");
                     Globals.keys['Space'] = false; // Consume input
                     allowed = true;
                 }
@@ -2525,8 +2525,10 @@ export function updateRoomTransitions(doors, roomLocked) {
             }
         } else if (lockVal === 3) { // Matrix Key
             if (Globals.player.inventory.matrixKey) {
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE", "#fff", 2);
+                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Matrix Room", "#fff", 2);
+                console.log("Matrix Key Usedww");
                 if (Globals.keys['Space']) {
+                    console.log("Matrix Key Used");
                     Globals.keys['Space'] = false; // Consume input
                     allowed = true;
                 }
@@ -2552,12 +2554,13 @@ export function updateRoomTransitions(doors, roomLocked) {
             // Implicitly allow IF lockVal is 0. 
             // If it's some other weird number, Block it? 
             // console.log("Door Unlocked:", lockVal);
-            if (lockVal === 0) {
-                allowed = true;
-            } else {
+            //if (lockVal === 0) {
+            allowed = true;
+
+            /* } else {
                 console.warn("Unknown Lock Value Blocked:", lockVal);
                 allowed = false;
-            }
+            } */
         }
 
         // 5. Execution
