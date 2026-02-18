@@ -1449,8 +1449,37 @@ export function updateUse() {
         return;
     }
 
+    // unlock if locked and player has keys
+    if (d.locked && d.locked == 2) {
+        if (Globals.player.inventory?.matrixKey === true) {
+            d.locked = 0;
+            d.unlockedByKey = true;
+            log(`${target.dir} house door unlocked via USE (Space)`);
+            SFX.doorUnlocked();
+        } else {
+            log("Door is locked - no keys");
+            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Locked (Need Key)", "red");
+            SFX.doorLocked();
+        }
+        return;
+    }
+
+    if (d.locked && d.locked == 3) {
+        if (Globals.player.inventory?.houseKey === true) {
+            d.locked = 0;
+            d.unlockedByKey = true;
+            log(`${target.dir} matrix door unlocked via USE (Space)`);
+            SFX.doorUnlocked();
+        } else {
+            log("Door is locked - no keys");
+            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Locked (Need Key)", "red");
+            SFX.doorLocked();
+        }
+        return;
+    }
+
     // (optional) if you ever add "open but interact" doors, handle here
-    log(`${target.dir} door used (already unlocked)`);
+    // log(`${target.dir} door used (already unlocked)`);
 }
 
 export function checkRemoteExplosions() {
@@ -5003,6 +5032,7 @@ export function updateItems() {
             // WEAPONS REQUIRE SPACE ONLY (No Heat/Bump)
             // Use Globals.keys safely
             if ((Globals.keys && Globals.keys['Space'])) {
+                console.log("Entities.js Consumed SPACE for item:", item);
                 if (Globals.keys) Globals.keys['Space'] = false; // Consume input
                 pickupItem(item, i);
             }
