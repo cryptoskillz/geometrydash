@@ -2432,33 +2432,26 @@ export function updateMusicToggle() {
 }
 
 export function updateRoomTransitions(doors, roomLocked) {
-
     // --- 8. ROOM TRANSITIONS ---
     // --- 8. ROOM TRANSITIONS ---
     // Increased threshold to account for larger player sizes (Triangle=20)
     const t = 50;
-
-    // PREVENT INSTANT BACK-TRANSITION
-    // Wait for 500ms after room start before allowing another transition
-    if (Date.now() - Globals.roomStartTime < 500) return;
-
-    // Debug Door Triggers
-    if (Globals.player.x < t + 10 && doors.left?.active) {
-        // log(`Left Door Check: X=${Math.round(player.x)} < ${t}? Locked=${doors.left.locked}, RoomLocked=${roomLocked}`);
-    }
-
-    // Constraint for center alignment
-    // Only allow transition if player is roughly in front of the door
-    // Constraint for center alignment
-    // Only allow transition if player is roughly in front of the door
-    const doorW = 50; // Half-width tolerance (Total 100px)
-    const shrink = Globals.roomShrinkSize || 0;
 
     // Check if we are in a Trophy Room or Secret Room (Force Unlock logic)
     const isSecretExit = (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy' || Globals.roomData.isSecret);
 
     // Increase trigger distance for Trophy Rooms to bypass potential enemy blocking
     const triggerDist = isSecretExit ? t + 100 : t; // Huge 150px threshold for Trophy Room!
+
+    // PREVENT INSTANT BACK-TRANSITION
+    // Wait for 500ms after room start before allowing another transition
+    // EXCEPTION: Trophy Rooms / Secret Exits can be exited immediately (since they might have intro sequences or be small)
+    if (!isSecretExit && Date.now() - Globals.roomStartTime < 500) return;
+
+    // Constraint for center alignment
+    // Only allow transition if player is roughly in front of the door
+    const doorW = 50; // Half-width tolerance (Total 100px)
+    const shrink = Globals.roomShrinkSize || 0;
 
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown) OR if it's a secret exit
     // Left Door - Require Push Left (A/ArrowLeft)
