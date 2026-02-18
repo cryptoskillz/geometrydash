@@ -13,8 +13,6 @@ Entities.js:385 Uncaught ReferenceError: ghostSpawned is not defined
     should have to press the space key to enter these rooms (maybe)
     matrix key is very quick message "needs matrix key"
     design home room
-    add matrix room with matrix key
-    add home room with home key
     ghost should not go into martix or home room
     matrix and home room should have a door exit the way you came in
     ghost wont go into boss room

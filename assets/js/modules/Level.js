@@ -503,7 +503,7 @@ export function generateLevel(length) {
                     // 3. Standard Room connecting TO a Special Room
                 } else if (neighborCoord === Globals.trophyCoord) {
                     // I am the Host (or random neighbor). Secret Door to Trophy.
-                    data.doors[d.name].locked = 1; // 1? No, usually 0 but hidden.
+                    data.doors[d.name].locked = 0; // Standard Secret Door (Unlocked but Hidden)
                     data.doors[d.name].active = 1;
                     data.doors[d.name].hidden = true;
                 } else if (neighborCoord === Globals.homeCoord || neighborCoord === Globals.matrixCoord) {

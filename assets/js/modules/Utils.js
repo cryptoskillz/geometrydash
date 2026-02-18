@@ -65,16 +65,35 @@ export function deepMerge(target, source) {
 }
 
 export function spawnFloatingText(x, y, text, color = "white", type = "normal", target = null) {
+    let life = 1.0;
+    let actualType = type;
+
+    // Support numeric duration passed as type
+    if (typeof type === 'number') {
+        life = type;
+        actualType = 'normal';
+    } else {
+        actualType = type;
+    }
+
     // Speech bubbles: Static, longer life
-    const isSpeech = type === 'speech';
+    const isSpeech = actualType === 'speech';
+
+    // throttle: if text exists, don't spawn another immediately 
+    // (unless we want stacking? For now, keep existing logic to prevent spam)
+    if (Globals.floatingTexts.length > 0) {
+        // Optional: if different text, maybe replace?
+        // For now, strict throttling.
+        return;
+    }
 
     Globals.floatingTexts.push({
         x: x,
         y: y,
         text: text,
         color: color,
-        type: type,
-        life: 1.0,
+        type: actualType,
+        life: life,
         vy: isSpeech ? -0.5 : -1, // Speech floats slower
         target: target // Store target for following
     });

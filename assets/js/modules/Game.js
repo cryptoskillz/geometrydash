@@ -2473,30 +2473,54 @@ export function updateRoomTransitions(doors, roomLocked) {
     const doorW = 50; // Half-width tolerance (Total 100px)
     const shrink = Globals.roomShrinkSize || 0;
 
-    // Check Keys Helper
+    // Check Keys Helper with Interaction Prompt
     const checkKey = (door) => {
         if (!door.locked) return true;
 
+        let keyName = "";
+        let hasItem = false;
+
         // Locked 2 = Home Key
         if (door.locked === 2) {
-            if (Globals.player.inventory.houseKey) return true;
-            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Need House Key!", "#ff0000");
-            return false;
+            keyName = "House Key";
+            hasItem = Globals.player.inventory.houseKey;
         }
         // Locked 3 = Matrix Key
-        if (door.locked === 3) {
-            if (Globals.player.inventory.matrixKey) return true;
-            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Need Matrix Key!", "#ff0000");
+        else if (door.locked === 3) {
+            keyName = "Matrix Key";
+            hasItem = Globals.player.inventory.matrixKey;
+        } else {
+            return false; // Standard locks handled elsewhere
+        }
+
+        if (hasItem) {
+            // Require Interaction (Space)
+            // Show prompt every frame while standing there
+            const promptY = Globals.player.y - 60;
+            spawnFloatingText(Globals.player.x, promptY, "Press SPACE to Enter", "#fff", 2);
+
+            if (Globals.keys['Space']) {
+                // Do NOT consume key here, let the door logic do it if it needs to.
+                // Actually, consume it here to prevent double triggering?
+                // The prompt says "Press Space", so consuming it is good UX.
+                // But the door logic checks checkKey() and then calls changeRoom().
+                // If I consume it here, subsequent checks (other doors) won't see it?
+                // checkKey is called PER DOOR.
+                Globals.keys['Space'] = false;
+                return true;
+            }
+            return false;
+        } else {
+            // Missing Key
+            console.log("door", door)
+            spawnFloatingText(Globals.player.x, Globals.player.y - 40, `Need ${keyName}!!`, "#ff0000", 60); // Longer duration
             return false;
         }
-        // Standard Key (1) - Only open if NOT secret exit behaving oddly, but usually secret exits are 0.
-        // If it's a standard locked door:
-        return false;
     };
 
     // Allow transition if room is unlocked OR if the specific door is forced open (red door blown) OR if it's a secret exit
     // Left Door - Require Push Left (A/ArrowLeft)
-    if (Globals.player.x < triggerDist + shrink && doors.left?.active) {
+    if (Globals.player.x < triggerDist + shrink && doors.left?.active && !doors.left.hidden) {
         const doorY = doors.left.y !== undefined ? doors.left.y : Globals.canvas.height / 2;
         if (Math.abs(Globals.player.y - doorY) < doorW) {
             // Check keys first
@@ -2531,7 +2555,7 @@ export function updateRoomTransitions(doors, roomLocked) {
         }
     }
     // Right Door - Require Push Right (D/ArrowRight)
-    else if (Globals.player.x > Globals.canvas.width - triggerDist - shrink && doors.right?.active) {
+    else if (Globals.player.x > Globals.canvas.width - triggerDist - shrink && doors.right?.active && !doors.right.hidden) {
         const doorY = doors.right.y !== undefined ? doors.right.y : Globals.canvas.height / 2;
         if (Math.abs(Globals.player.y - doorY) < doorW) {
             const hasKeyInput = (Globals.keys['KeyD'] || Globals.keys['ArrowRight']);

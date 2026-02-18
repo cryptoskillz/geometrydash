@@ -2357,6 +2357,17 @@ function proceedLevelComplete() {
 export function updateGhost() {
     if (Globals.gameState !== STATES.PLAY) return;
 
+    // GHOST EXCLUSION: Boss, Shop, Home, Matrix
+    // If we are in these rooms, ensure ghost is gone.
+    if (Globals.roomData.isBoss || Globals.roomData.type === 'shop' || Globals.roomData._type === 'home' || Globals.roomData._type === 'matrix') {
+        if (Globals.ghostSpawned) {
+            Globals.enemies = Globals.enemies.filter(e => e.type !== 'ghost' && e.type !== 'ghost_trophy');
+            Globals.ghostSpawned = false;
+            Globals.ghostEntry = null; // Clear entry point
+        }
+        return;
+    }
+
     // Check if Ghost should spawn
     const now = Date.now();
     // Use config from gameData, default if missing
