@@ -231,11 +231,15 @@ export function generateLevel(length) {
         } else {
             // Random Normal Room
             const templates = Globals.roomTemplates;
-            const keys = Object.keys(templates).sort().filter(k =>
-                templates[k] !== startTmpl && templates[k] !== bossTmpl &&
-                templates[k] !== shopTmpl &&
-                (!templates[k]._type || (templates[k]._type !== 'boss' && templates[k]._type !== 'shop'))
-            );
+            const keys = Object.keys(templates).sort().filter(k => {
+                const tmpl = templates[k];
+                // Exclude explicit Start/Boss/Shop/Secret templates
+                if (tmpl === startTmpl) return false;
+                if (tmpl === bossTmpl) return false;
+                if (tmpl === shopTmpl) return false;
+                if (tmpl._type && tmpl._type !== 'normal') return false; // Strict: Only undefined or 'normal'
+                return true;
+            });
 
             if (keys.length > 0) {
                 const randomKey = keys[Math.floor(Globals.random() * keys.length)];
@@ -247,7 +251,8 @@ export function generateLevel(length) {
 
         // Check if template exists
         if (!template) {
-            console.error(`Missing template for coord: ${coord}.`);
+            console.error(`Missing template for coord: ${coord}. Looking for:`, Globals.secretRooms[coord]);
+            console.warn("Available Templates:", Object.keys(Globals.roomTemplates));
             template = startTmpl || { width: 800, height: 600, name: "Empty Error Room", doors: {} };
         }
 
@@ -311,8 +316,14 @@ export function generateLevel(length) {
                 }
 
                 // SECRET ROOM LOGIC
-                if ((Globals.secretRooms && Globals.secretRooms[coord]) || (Globals.secretRooms && Globals.secretRooms[neighborCoord])) {
-                    // One of them is secret -> Hidden Door
+                if ((Globals.secretRooms && Globals.secretRooms[coord])) {
+                    // Current room IS secret -> Exit door should be visible/unlocked
+                    data.doors[d.name].locked = 0;
+                    data.doors[d.name].active = 1;
+                    data.doors[d.name].hidden = false;
+                    data.doors[d.name].forcedOpen = true; // Ensure users can ALWAYS leave
+                } else if ((Globals.secretRooms && Globals.secretRooms[neighborCoord])) {
+                    // Neighbor is secret -> Entry door should be hidden/locked
                     data.doors[d.name].locked = 1; // Locked (or just hidden?)
                     data.doors[d.name].active = 1;
                     data.doors[d.name].hidden = true; // Make it look like a wall

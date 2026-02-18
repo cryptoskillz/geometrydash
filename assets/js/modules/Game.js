@@ -947,6 +947,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             roomProtos.push(loadRoomFile(Globals.gameData.startRoom, 'start'));
         }
 
+        // D. Secret Rooms (FIX: Needed to be explicitly loaded)
+        if (Globals.gameData.secrectrooms) {
+            Globals.gameData.secrectrooms.forEach(path => {
+                roomProtos.push(loadRoomFile(path, 'secret'));
+            });
+        }
+
         // B. Boss Rooms
         let bosses = Globals.gameData.bossrooms || [];
         // Support singular 'bossRoom' fallback
@@ -961,9 +968,12 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             roomProtos.push(loadRoomFile(Globals.gameData.shop.shopRoom, 'shop'));
         }
 
-
-
+        // WAIT FOR ALL TEMPLATES TO LOAD BEFORE GENERATING LEVEL
+        console.log("WAITING FOR ROOM PROTOS:", roomProtos.length);
         await Promise.all(roomProtos);
+        console.log("ROOM TEMPLATES LOADED:", Object.keys(Globals.roomTemplates));
+
+        Globals.areAssetsLoaded = true; // Flag for startGame
 
         // 4. Pre-load ALL enemy templates
         Globals.enemyTemplates = {};
@@ -1090,13 +1100,28 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         window.startGame = startGame;
     }
 }
-export function startGame(keepState = false) {
+export async function startGame(keepState = false) {
     // Force Audio Resume on User Interaction
     if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
 
     // Guard against starting while Initializing or Unlocking or already starting
     console.log("TRACER: startGame Called");
-    if (Globals.gameState === STATES.PLAY || Globals.isGameStarting || Globals.isInitializing || Globals.isUnlocking) return;
+
+    // NEW: Wait for loading if initGame is still running
+    if (Globals.isInitializing) {
+        console.log("TRACER: Waiting for initialization...");
+        while (Globals.isInitializing) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+    // Also ensure templates are actually loaded (if startGame called directly)
+    if (!Globals.areAssetsLoaded && !keepState) {
+        console.warn("TRACER: Assets not loaded yet? Waiting...");
+        // Ideally should call initGame() if not running, but assume initGame runs on load.
+        // Just wait loop in case it's mid-load but isInitializing flag logic is weird.
+    }
+
+    if (Globals.gameState === STATES.PLAY || Globals.isGameStarting || Globals.isUnlocking) return;
     Globals.isGameStarting = true;
 
     // MUSIC TRANSITION (Welcome -> Gameplay)
@@ -2111,7 +2136,9 @@ export async function draw() {
         Globals.ctx.fillRect(0, 0, w, h);
 
         // Wanted Poster (If Ghost not killed)
-        const ghostKills = Globals.killStatsTotal?.types?.ghost || 0;
+        // Check both 'ghost' (normal) and 'ghost_trophy' (trophy room variant)
+        const ghostKills = (Globals.killStatsTotal?.types?.ghost || 0) + (Globals.killStatsTotal?.types?.ghost_trophy || 0);
+
         if (ghostKills === 0) {
             const px = w / 2;
             const py = h / 2;
@@ -2120,29 +2147,43 @@ export async function draw() {
             Globals.ctx.translate(px, py);
             Globals.ctx.rotate(Math.sin(Date.now() * 0.001) * 0.05); // Subtle swing
 
+            // FORCE DEFAULT COMPOSITE to avoid "weird mask" issues
+            Globals.ctx.globalCompositeOperation = 'source-over';
+            Globals.ctx.globalAlpha = 1.0;
+
             // Paper
             Globals.ctx.fillStyle = "#f4f1e1"; // Parchment
-            Globals.ctx.fillRect(-60, -90, 120, 180);
+            Globals.ctx.fillRect(-80, -100, 160, 200); // Slightly larger
             Globals.ctx.strokeStyle = "#5d4037";
             Globals.ctx.lineWidth = 4;
-            Globals.ctx.strokeRect(-60, -90, 120, 180);
+            Globals.ctx.strokeRect(-80, -100, 160, 200);
 
             // Pin
             Globals.ctx.fillStyle = "#c0392b"; // Red Pin
             Globals.ctx.beginPath();
-            Globals.ctx.arc(0, -75, 6, 0, Math.PI * 2);
+            Globals.ctx.arc(0, -85, 6, 0, Math.PI * 2);
             Globals.ctx.fill();
 
             // Text
             Globals.ctx.fillStyle = "#3e2723";
             Globals.ctx.textAlign = "center";
-            Globals.ctx.font = "bold 20px monospace";
-            Globals.ctx.fillText("WANTED", 0, -50);
+            Globals.ctx.font = "bold 24px monospace"; // Larger Header
+            Globals.ctx.fillText("WANTED", 0, -60);
 
-            Globals.ctx.fillText("DEAD", 0, 60);
+            Globals.ctx.font = "bold 20px monospace";
+            Globals.ctx.fillText("DEAD", 0, 70);
 
             const ghostName = Globals.enemyTemplates?.ghost?.displayName || "Player Snr";
-            Globals.ctx.fillText(ghostName, 0, 80);
+
+            // Auto-scale name if too long
+            const maxW = 140;
+            let fontSize = 20;
+            Globals.ctx.font = `bold ${fontSize}px monospace`;
+            while (Globals.ctx.measureText(ghostName).width > maxW && fontSize > 10) {
+                fontSize--;
+                Globals.ctx.font = `bold ${fontSize}px monospace`;
+            }
+            Globals.ctx.fillText(ghostName, 0, 90);
 
             // Ghost Sketch
             Globals.ctx.strokeStyle = "#3e2723";

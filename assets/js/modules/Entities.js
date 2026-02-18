@@ -196,6 +196,8 @@ export function spawnEnemies() {
 
     if (rData.type === 'trophy' || rData._type === 'trophy') {
         const stats = (Globals.killStatsTotal && Globals.killStatsTotal.types) ? Globals.killStatsTotal.types : {};
+        if (!stats) console.warn("TROPHY ROOM: No killStatsTotal types found!");
+
         const sizes = Globals.killStatsTotal.sizes;
         const types = Object.keys(stats);
         console.log("TROPHY LOG: Stats", stats, "Types", types, "sizes", sizes);
