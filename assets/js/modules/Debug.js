@@ -119,18 +119,23 @@ export function renderDebugForm() {
             }
         });
 
-        const consoleState = Globals.gameData.debug?.showConsole ? 'ON' : 'OFF';
-        createBtn(`TOGGLE CONSOLE (${consoleState})`, "#7f8c8d", () => {
+        const logState = Globals.gameData.debug?.log ? 'ON' : 'OFF';
+        createBtn(`TOGGLE ON-SCREEN LOG (${logState})`, "#7f8c8d", () => {
             if (!Globals.gameData.debug) Globals.gameData.debug = {};
-            Globals.gameData.debug.showConsole = !Globals.gameData.debug.showConsole;
+            Globals.gameData.debug.log = !Globals.gameData.debug.log;
 
-            // Persist (simplified, usually we save gameData, but for debug flags this works)
+            // Persist (simplified)
             let saved = JSON.parse(localStorage.getItem('game_data') || '{}');
             if (!saved.debug) saved.debug = {};
-            saved.debug.showConsole = Globals.gameData.debug.showConsole;
+            saved.debug.log = Globals.gameData.debug.log;
             localStorage.setItem('game_data', JSON.stringify(saved));
 
-            log(`Console Output: ${Globals.gameData.debug.showConsole ? 'ENABLED' : 'DISABLED'}`);
+            // Immediate DOM update
+            if (Globals.elements.debugLog) {
+                Globals.elements.debugLog.style.display = Globals.gameData.debug.log ? 'block' : 'none';
+            }
+
+            log(`On-Screen Log: ${Globals.gameData.debug.log ? 'ENABLED' : 'DISABLED'}`);
             renderDebugForm();
         });
 

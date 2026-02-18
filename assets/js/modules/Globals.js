@@ -229,7 +229,6 @@ export const Globals = {
             if (id === 'nodamage-count') prop = 'nodamage';
             if (id === 'shooter-count') prop = 'shooter';
 
-            // Dictionary mapping check
             const key = prop === 'debugSelect' ? 'debugSelect' :
                 prop === 'debugForm' ? 'debugForm' :
                     prop === 'debugPanel' ? 'debugPanel' :
@@ -237,5 +236,15 @@ export const Globals = {
 
             this.elements[key] = document.getElementById(id);
         });
+
+        // Initialize Debug Log Visibility from Storage
+        if (this.elements.debugLog) {
+            try {
+                const saved = JSON.parse(localStorage.getItem('game_data') || '{}');
+                // Default to true if not set (or match game.json default which is true)
+                const showLog = (saved.debug && saved.debug.log !== undefined) ? saved.debug.log : true;
+                this.elements.debugLog.style.display = showLog ? 'block' : 'none';
+            } catch (e) { console.warn("Failed to load debug log state", e); }
+        }
     }
 };

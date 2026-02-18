@@ -1,7 +1,8 @@
 DONT DO ANY OF THESE TASKS AI
 133262
 bug
-speech bubbles are blank
+
+new room.json format
 trophy room shows as a door on mini map
         if you bomb before the enemies are dead you cant go throuhf into the trophy room\
     droping a bomb make the redraw of the trophy room werid i think its the ghost effect
