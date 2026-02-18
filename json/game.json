@@ -326,6 +326,7 @@
         "godMode": false,
         "windowEnabled": true,
         "log": true,
+        "showConsole": false,
         "spawn": {
             "allItems": false,
             "guns": false,

@@ -3,10 +3,19 @@ import { CONFIG, DEBUG_FLAGS } from './Constants.js';
 import { SFX } from './Audio.js';
 
 export function log(...args) {
-    if (!DEBUG_FLAGS.LOG) return;
+
 
     // Console Log
-    console.log(...args);
+    if (Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.showConsole) {
+        console.log(...args);
+    }
+
+    // Visual Log Gate: Check gameData first, fallback to FLags
+    const showVisual = (Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.log !== undefined)
+        ? Globals.gameData.debug.log
+        : DEBUG_FLAGS.LOG;
+
+    if (!showVisual) return;
 
     // In-Game Log
     const msg = args.map(a => (typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ');

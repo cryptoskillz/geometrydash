@@ -119,6 +119,21 @@ export function renderDebugForm() {
             }
         });
 
+        const consoleState = Globals.gameData.debug?.showConsole ? 'ON' : 'OFF';
+        createBtn(`TOGGLE CONSOLE (${consoleState})`, "#7f8c8d", () => {
+            if (!Globals.gameData.debug) Globals.gameData.debug = {};
+            Globals.gameData.debug.showConsole = !Globals.gameData.debug.showConsole;
+
+            // Persist (simplified, usually we save gameData, but for debug flags this works)
+            let saved = JSON.parse(localStorage.getItem('game_data') || '{}');
+            if (!saved.debug) saved.debug = {};
+            saved.debug.showConsole = Globals.gameData.debug.showConsole;
+            localStorage.setItem('game_data', JSON.stringify(saved));
+
+            log(`Console Output: ${Globals.gameData.debug.showConsole ? 'ENABLED' : 'DISABLED'}`);
+            renderDebugForm();
+        });
+
         createBtn("LOAD MATRIX ROOM", "#c0392b", () => {
             const path = "json/rooms/secret/matrix/room.json";
             log("Debug Loading Matrix Room:", path);
@@ -127,7 +142,7 @@ export function renderDebugForm() {
             if (Globals.loadRoom) Globals.loadRoom(true, path, true);
         });
 
-        createBtn("SPAWN LOADOUT (Shotgun/Keys/Bombs)", "#e67e22", async () => {
+        createBtn("SPAWN LOADOUT (Shotgun/Keys/Bombs/Gold)", "#e67e22", async () => {
             log("Debug Spawn Button Clicked");
             if (!Globals.player) {
                 console.error("Globals.player is undefined!");
@@ -162,6 +177,23 @@ export function renderDebugForm() {
                     console.error("Failed to load shotgun json. Status:", res.status);
                 }
             } catch (e) { console.error("Shotgun fetch error:", e); }
+
+            // 3. Golden Bomb
+            try {
+                Globals.player.bombType = 'golden';
+                if (Globals.gameData) Globals.gameData.bombType = 'golden';
+
+                log("Fetching Golden Bomb...");
+                const res = await fetch('json/rewards/items/bombs/golden.json?t=' + Date.now());
+                if (res.ok) {
+                    const bombData = await res.json();
+                    Globals.bomb = bombData;
+                    log("Golden Bomb Loaded:", bombData);
+                    log("Equipped Golden Bomb!");
+                } else {
+                    console.error("Failed to load golden bomb json. Status:", res.status);
+                }
+            } catch (e) { console.error("Golden Bomb fetch error:", e); }
 
             updateUI();
             log("UI Updated called");
