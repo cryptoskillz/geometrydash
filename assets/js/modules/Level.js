@@ -21,11 +21,12 @@ export function generateLevel(length) {
         path.push(`${cx},${cy}`);
     }
 
-    // Update Globals
-    Globals.goldenPath = path;
     Globals.goldenPathIndex = 0;
     Globals.goldenPathFailed = false;
     Globals.bossCoord = path[path.length - 1];
+    Globals.trophyCoord = null;
+    Globals.homeCoord = null;
+    Globals.matrixCoord = null;
 
     // 2. Add Branches (Dead Ends)
     let fullMapCoords = [...path];
@@ -158,10 +159,121 @@ export function generateLevel(length) {
         }
     }
 
-    // Secret Room Placement Logic
+    // 3. New Special Room Logic (Trophy Hub)
+    let trophyCoord = null;
+
+    // A. Spawn Trophy Room (Secret)
+    if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active) {
+        const tmplPath = Globals.gameData.trophyRoom.room;
+        log("Trying to spawn Trophy Room:", tmplPath);
+
+        // Find best candidate for trophy room (limit distance to not be too close to start)
+        const candidates = fullMapCoords.filter(c => {
+            if (c === "0,0" || c === Globals.bossCoord || c === shopCoord) return false;
+            const [hx, hy] = c.split(',').map(Number);
+
+            // 1. Can we place Trophy Room HERE? (Host needs >= 1 free neighbor)
+            const hostFreeSpots = dirs.filter(d => !fullMapCoords.includes(`${hx + d.dx},${hy + d.dy}`));
+            if (hostFreeSpots.length === 0) return false;
+
+            // 2. Can the Trophy Room support sub-rooms (Home + Matrix)?
+            // We need to check EACH potential Trophy Room spot
+            // If ANY spot works, this candidate is valid
+            let needed = 0;
+            if (Globals.gameData.homeRoom?.active) needed++;
+            if (Globals.gameData.matrixRoom?.active) needed++;
+
+            // Check if ANY of the free spots around Host can accommodate the sub-rooms
+            const validSpot = hostFreeSpots.some(move => {
+                const tx = hx + move.dx;
+                const ty = hy + move.dy;
+                // Check free neighbors around Trophy Room (excluding the one back to Host)
+                let tFree = 0;
+                dirs.forEach(td => {
+                    const nx = tx + td.dx;
+                    const ny = ty + td.dy;
+                    // It's free if not in map AND not the host we came from (already covered by map check since host is in map)
+                    if (!fullMapCoords.includes(`${nx},${ny}`)) tFree++;
+                });
+                return tFree >= needed;
+            });
+
+            return validSpot;
+        });
+
+        if (candidates.length > 0) {
+            const hostCoord = candidates[Math.floor(Globals.random() * candidates.length)];
+            const [hx, hy] = hostCoord.split(',').map(Number);
+
+            // Find spot for Trophy Room (re-run logic to pick valid one)
+            let needed = 0;
+            if (Globals.gameData.homeRoom?.active) needed++;
+            if (Globals.gameData.matrixRoom?.active) needed++;
+
+            const hostFreeSpots = dirs.filter(d => !fullMapCoords.includes(`${hx + d.dx},${hy + d.dy}`));
+            // Filter spots that can support sub-rooms
+            const validSpots = hostFreeSpots.filter(move => {
+                const tx = hx + move.dx;
+                const ty = hy + move.dy;
+                let tFree = 0;
+                dirs.forEach(td => {
+                    const nx = tx + td.dx;
+                    const ny = ty + td.dy;
+                    if (!fullMapCoords.includes(`${nx},${ny}`)) tFree++;
+                });
+                return tFree >= needed;
+            });
+
+            if (validSpots.length > 0) {
+                const move = validSpots[Math.floor(Globals.random() * validSpots.length)];
+                trophyCoord = `${hx + move.dx},${hy + move.dy}`;
+
+                fullMapCoords.push(trophyCoord);
+                log("Trophy Room placed at:", trophyCoord, "connected to", hostCoord);
+
+                Globals.trophyCoord = trophyCoord;
+                Globals.secretRooms = Globals.secretRooms || {};
+                Globals.secretRooms[trophyCoord] = tmplPath;
+
+                // B. Attach Home Room to Trophy Room
+                if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active) {
+                    const homePath = Globals.gameData.homeRoom.room;
+                    // Find free spot around Trophy Room
+                    const tSpots = dirs.filter(d => !fullMapCoords.includes(`${(hx + move.dx) + d.dx},${(hy + move.dy) + d.dy}`));
+                    if (tSpots.length > 0) {
+                        const hMove = tSpots[0]; // Just take first
+                        const homeCoord = `${(hx + move.dx) + hMove.dx},${(hy + move.dy) + hMove.dy}`;
+                        fullMapCoords.push(homeCoord);
+                        Globals.homeCoord = homeCoord;
+                        Globals.secretRooms[homeCoord] = homePath;
+                        // Mark connection type? For now just secret room logic handles it
+                        log("Home Room attached to Trophy Room at:", homeCoord);
+                    }
+                }
+
+                // C. Attach Matrix Room to Trophy Room
+                if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active) {
+                    const matrixPath = Globals.gameData.matrixRoom.room;
+                    // Recalculate free spots (Home might have taken one)
+                    const tSpots = dirs.filter(d => !fullMapCoords.includes(`${(hx + move.dx) + d.dx},${(hy + move.dy) + d.dy}`));
+                    if (tSpots.length > 0) {
+                        const mMove = tSpots[0];
+                        const matrixCoord = `${(hx + move.dx) + mMove.dx},${(hy + move.dy) + mMove.dy}`;
+                        fullMapCoords.push(matrixCoord);
+                        Globals.matrixCoord = matrixCoord;
+                        Globals.secretRooms[matrixCoord] = matrixPath;
+                        log("Matrix Room attached to Trophy Room at:", matrixCoord);
+                    }
+                }
+            }
+        }
+    }
+
+    // Legacy Secret Room Logic (keep for other levels or generic secrets)
     const secretRoomTemplates = Globals.gameData.secrectrooms || [];
     if (secretRoomTemplates.length > 0) {
         secretRoomTemplates.forEach(templatePath => {
+            // ... (rest of legacy logic)
             // Find candidates: Any room that is NOT Start, NOT Boss, NOT Shop
             let candidates = fullMapCoords.filter(c => {
                 if (c === "0,0" || c === Globals.bossCoord || c === shopCoord) return false;
@@ -279,7 +391,16 @@ export function generateLevel(length) {
         }
         if (Globals.secretRooms && Globals.secretRooms[coord]) {
             roomInstance.isSecret = true;
-            roomInstance._type = 'secret';
+            // Specific Type Assignment
+            if (coord === Globals.trophyCoord) {
+                roomInstance._type = 'trophy';
+            } else if (coord === Globals.homeCoord) {
+                roomInstance._type = 'home';
+            } else if (coord === Globals.matrixCoord) {
+                roomInstance._type = 'matrix';
+            } else {
+                roomInstance._type = 'secret';
+            }
         }
 
         Globals.levelMap[coord] = {
@@ -337,10 +458,17 @@ export function generateLevel(length) {
                     data.doors[d.name].hidden = false;
                     data.doors[d.name].forcedOpen = true; // Ensure users can ALWAYS leave
                 } else if ((Globals.secretRooms && Globals.secretRooms[neighborCoord])) {
-                    // Neighbor is secret -> Entry door should be hidden/locked
-                    data.doors[d.name].locked = 1; // Locked (or just hidden?)
+                    // Neighbor is secret
+                    // DEFAULT: Hidden/Locked
+                    let hidden = true;
+                    // EXCEPTION: Visible if it's a Hub connection (Trophy -> Home/Matrix)
+                    if (coord === Globals.trophyCoord && (neighborCoord === Globals.homeCoord || neighborCoord === Globals.matrixCoord)) {
+                        hidden = false;
+                    }
+
+                    data.doors[d.name].locked = 1;
                     data.doors[d.name].active = 1;
-                    data.doors[d.name].hidden = true; // Make it look like a wall
+                    data.doors[d.name].hidden = hidden;
                 }
 
                 // Sync door coordinates if missing

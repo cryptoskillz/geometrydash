@@ -698,15 +698,22 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         // Restore Stats if kept
         if (savedPlayerStats) {
             log("Restoring Full Player State");
-            // Merge saved state OVER the default template
-            // This ensures we keep new defaults if valid, but restore all our progress
-            // Merge saved state OVER the default template (Deep Merge to preserve structure like inventory.maxKeys)
+            // Use Deep Merge to ensure version compatibility (New keys in defaults are kept)
             deepMerge(Globals.player, savedPlayerStats);
 
-            // Explicitly ensure criticals if missing (shouldn't happen with full clone)
             if (savedPlayerStats.perfectStreak !== undefined) {
                 Globals.perfectStreak = savedPlayerStats.perfectStreak;
             }
+        } else {
+            // Apply Defaults / Unlocks to New Player
+            if (!Globals.player.gunType && Globals.gameData.gunType) Globals.player.gunType = Globals.gameData.gunType;
+            if (!Globals.player.bombType && Globals.gameData.bombType) Globals.player.bombType = Globals.gameData.bombType;
+
+            // Fallback Defaults if still empty
+            if (!Globals.player.bombType) Globals.player.bombType = 'normal';
+            if (!Globals.player.gunType) Globals.player.gunType = 'peashooter';
+
+            log("Player Initialized. Bomb:", Globals.player.bombType, "Gun:", Globals.player.gunType);
         }
 
         // Apply Game Config Overrides
@@ -952,6 +959,16 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             Globals.gameData.secrectrooms.forEach(path => {
                 roomProtos.push(loadRoomFile(path, 'secret'));
             });
+        }
+        // NEW: Load Special Secret Rooms (Trophy, Home, Matrix)
+        if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.trophyRoom.room, 'secret'));
+        }
+        if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.homeRoom.room, 'secret'));
+        }
+        if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.matrixRoom.room, 'secret'));
         }
 
         // B. Boss Rooms

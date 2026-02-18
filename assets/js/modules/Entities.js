@@ -3120,13 +3120,19 @@ export function drawBombs(doors) {
                     if (dir === 'left') dX = 0; if (dir === 'right') dX = Globals.canvas.width;
 
                     // If bomb blast hits the door
-                    if (Math.hypot(b.x - dX, b.y - dY) < b.maxR + 30) {
+                    const distCheck = Math.hypot(b.x - dX, b.y - dY);
+                    if (distCheck < b.maxR + 30) {
+                        // log("Bomb hit door:", dir, "locked:", door.locked, "hidden:", door.hidden, "openSecretRooms:", b.openSecretRooms); // Debug
                         if (b.openLockedDoors && door.locked) door.locked = 0; // Unlock standard locks
                         if (b.openRedDoors) {
                             // Force open even if enemies are present
                             door.forcedOpen = true;
                         }
-                        if (b.openSecretRooms && door.hidden) { door.hidden = false; door.active = true; }
+                        if (b.openSecretRooms && door.hidden) {
+                            door.hidden = false;
+                            door.active = true;
+                            log("Secret Room Revealed:", dir);
+                        }
                     }
                 });
             }

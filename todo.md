@@ -2,7 +2,13 @@ DONT DO ANY OF THESE TASKS AI
 133262
 bug
 
-new room.json format
+Entities.js:385 Uncaught ReferenceError: ghostSpawned is not defined
+    at spawnEnemies (Entities.js:385:22)
+    at changeRoom (Game.js:1862:13)
+    at updateRoomTransitions (Game.js:2496:17)
+    at update (Game.js:2023:5)
+    at Game.js:2333:35
+    
         add matrix room with matrix key
         add home room with home key
 
