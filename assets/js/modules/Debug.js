@@ -128,7 +128,7 @@ export function renderDebugForm() {
         });
 
         createBtn("SPAWN LOADOUT (Shotgun/Keys/Bombs)", "#e67e22", async () => {
-            console.log("Debug Spawn Button Clicked");
+            log("Debug Spawn Button Clicked");
             if (!Globals.player) {
                 console.error("Globals.player is undefined!");
                 return;
@@ -137,12 +137,12 @@ export function renderDebugForm() {
             // 1. Inventory
             if (!Globals.player.inventory) Globals.player.inventory = { keys: 0, bombs: 0, redShards: 0, greenShards: 0 };
 
-            console.log("Current Inventory (Before):", JSON.stringify(Globals.player.inventory));
+            log("Current Inventory (Before):", JSON.stringify(Globals.player.inventory));
             Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + 5;
             Globals.player.inventory.bombs = (Globals.player.inventory.bombs || 0) + 5;
             Globals.player.inventory.redShards = 1000;
             Globals.player.inventory.greenShards = 1000;
-            console.log("Updated Inventory (After):", Globals.player.inventory.keys, Globals.player.inventory.bombs);
+            log("Updated Inventory (After):", Globals.player.inventory.keys, Globals.player.inventory.bombs);
             log("Added 5 Keys & 5 Bombs");
 
             // 2. Shotgun
@@ -151,12 +151,12 @@ export function renderDebugForm() {
                 Globals.player.gunType = 'shotgun';
                 if (Globals.gameData) Globals.gameData.gunType = 'shotgun';
 
-                console.log("Fetching Shotgun...");
+                log("Fetching Shotgun...");
                 const res = await fetch('json/rewards/items/guns/player/shotgun.json?t=' + Date.now());
                 if (res.ok) {
                     const gunData = await res.json();
                     Globals.gun = gunData;
-                    console.log("Shotgun Loaded:", gunData);
+                    log("Shotgun Loaded:", gunData);
                     log("Equipped Shotgun!");
                 } else {
                     console.error("Failed to load shotgun json. Status:", res.status);
@@ -164,7 +164,7 @@ export function renderDebugForm() {
             } catch (e) { console.error("Shotgun fetch error:", e); }
 
             updateUI();
-            console.log("UI Updated called");
+            log("UI Updated called");
         });
 
         return;

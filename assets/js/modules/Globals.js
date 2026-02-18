@@ -186,7 +186,7 @@ export const Globals = {
         }
         this.rngState = h >>> 0;
         this.seed = s;
-        console.log("RNG Seed set to:", s, "Hash:", this.rngState);
+        log("RNG Seed set to:", s, "Hash:", this.rngState);
     },
 
     random: function () {

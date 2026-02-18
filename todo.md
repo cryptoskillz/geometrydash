@@ -1,18 +1,18 @@
 DONT DO ANY OF THESE TASKS AI
 133262
 bug
+speech bubbles are blank
 trophy room shows as a door on mini map
-        "shopRoom": "rooms/shops/shop_1/room.json" <-- who not json ?
         if you bomb before the enemies are dead you cant go throuhf into the trophy room\
     droping a bomb make the redraw of the trophy room werid i think its the ghost effect
-    ghost cannot enter trophy room
-    ghost wont go into boss room
-    pause keys is not blocked by the ghost.
     trophy room
-        add secret room logic
         add matrix room with matrix key
         add home room with home key
-        
+
+        ghost wont go into boss room
+            
+"shopRoom": "rooms/shops/shop_1/room.json" <-- who not json ?
+
     shop room
         shop can spawm a locked door as the only way to the boss there should always be a keysless way to the boss if we not we should spawn them a key in the start room as a hint its a hard level, save that key
     can we store google font locally to make it work offline

@@ -235,11 +235,11 @@ export function generateLevel(length) {
             const keys = Object.keys(templates).sort().filter(k => {
                 const tmpl = templates[k];
                 // Exclude explicit Start/Boss/Shop/Secret templates
-                if (tmpl === startTmpl) { console.log("Filter Skip:", k, "Matches Start"); return false; }
-                if (tmpl === bossTmpl) { console.log("Filter Skip:", k, "Matches Boss"); return false; }
-                if (tmpl === shopTmpl) { console.log("Filter Skip:", k, "Matches Shop"); return false; }
-                if (tmpl._type && tmpl._type !== 'normal') { console.log("Filter Skip:", k, "Non-Normal Type:", tmpl._type); return false; } // Strict: Only undefined or 'normal'
-                console.log("Filter Keep:", k);
+                if (tmpl === startTmpl) { log("Filter Skip:", k, "Matches Start"); return false; }
+                if (tmpl === bossTmpl) { log("Filter Skip:", k, "Matches Boss"); return false; }
+                if (tmpl === shopTmpl) { log("Filter Skip:", k, "Matches Shop"); return false; }
+                if (tmpl._type && tmpl._type !== 'normal') { log("Filter Skip:", k, "Non-Normal Type:", tmpl._type); return false; } // Strict: Only undefined or 'normal'
+                log("Filter Keep:", k);
                 return true;
             });
 
@@ -251,7 +251,7 @@ export function generateLevel(length) {
 
                 if (!template) {
                     console.error(`CRITICAL: Template Selection Failed! Rnd: ${rnd}, Idx: ${idx}/${keys.length}, Key: ${randomKey}, Template: ${template}`);
-                    console.log("Keys Available:", keys);
+                    log("Keys Available:", keys);
                 }
             } else {
                 console.warn(`No Normal Room Keys allowed for filter! Fallback to Start Room.`);

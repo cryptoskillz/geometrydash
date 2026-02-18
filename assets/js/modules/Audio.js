@@ -12,7 +12,7 @@ Globals.introMusic = introMusic;
 export function fadeIn(audio, duration = 2000, targetVol = 0.4) {
     if (!audio) return;
     audio.volume = 0;
-    audio.play().catch(e => console.warn("Audio auto-play blocked", e));
+    audio.play().catch(e => log("Audio auto-play blocked", e));
 
     const step = 50; // ms
     const increment = targetVol / (duration / step);

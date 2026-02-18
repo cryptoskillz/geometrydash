@@ -192,7 +192,6 @@ export function spawnEnemies() {
 
     // TROPHY ROOM LOGIC
     const rData = Globals.roomData || {};
-    //console.log(Globals.killStatsTotal.sizes)
 
     if (rData.type === 'trophy' || rData._type === 'trophy') {
         const stats = (Globals.killStatsTotal && Globals.killStatsTotal.types) ? Globals.killStatsTotal.types : {};
@@ -200,7 +199,7 @@ export function spawnEnemies() {
 
         const sizes = Globals.killStatsTotal.sizes;
         const types = Object.keys(stats);
-        console.log("TROPHY LOG: Stats", stats, "Types", types, "sizes", sizes);
+        log("TROPHY LOG: Stats", stats, "Types", types, "sizes", sizes);
 
         const startX = 100;
         const startY = 100;
@@ -223,7 +222,7 @@ export function spawnEnemies() {
 
         // Spawn Ghosts for each Unique Combo
         const keys = Object.keys(combos);
-        console.log("TROPHY DEBUG: Keys:", keys, "Templates:", Object.keys(Globals.enemyTemplates || {}).length);
+        log("TROPHY DEBUG: Keys:", keys, "Templates:", Object.keys(Globals.enemyTemplates || {}).length);
 
         keys.forEach((key, i) => {
 
@@ -306,7 +305,7 @@ export function spawnEnemies() {
             en.type = 'ghost_trophy';
 
             Globals.enemies.push(en);
-            console.log("Spawned Trophy:", en.type, en.x, en.y, en.color, en.shape, "Stat:", en.isStatDisplay);
+            log("Spawned Trophy:", en.type, en.x, en.y, en.color, en.shape, "Stat:", en.isStatDisplay);
         });
         return; // Skip normal spawn
     }
@@ -432,7 +431,7 @@ export function spawnEnemies() {
         const template = Globals.enemyTemplates[bossKey];
 
         if (template) {
-            console.log("Spawning Boss from Property:", bossKey);
+            log("Spawning Boss from Property:", bossKey);
             const inst = JSON.parse(JSON.stringify(template));
             inst.templateId = bossKey;
 
@@ -649,9 +648,9 @@ export async function dropBomb() {
     }
 
     // DEBUG LOG
-    console.log("Dropping Bomb Config:", bombConf);
-    console.log("Calculated Timer Duration:", timerDuration);
-    console.log("Timer Show:", timerShow);
+    log("Dropping Bomb Config:", bombConf);
+    log("Calculated Timer Duration:", timerDuration);
+    log("Timer Show:", timerShow);
 
     const baseR = Globals.bomb.size || 20;
     const maxR = Globals.bomb.explosion?.radius || Globals.bomb.radius || 120;
@@ -907,7 +906,7 @@ export function fireBullet(direction, speed, vx, vy, angle) {
 
     // --- REFACTORED FIRING LOGIC (Legacy Port) ---
     const bulletConf = Globals.gun.Bullet || {};
-    console.log("FireBullet", { name: Globals.gun.name, reverse: bulletConf.reverseFire, number: bulletConf.number, spread: bulletConf.spreadRate });
+    log("FireBullet", { name: Globals.gun.name, reverse: bulletConf.reverseFire, number: bulletConf.number, spread: bulletConf.spreadRate });
 
     const count = bulletConf.number || 1;
     const spreadRate = bulletConf.spreadRate || 0.2;
@@ -944,14 +943,14 @@ export function fireBullet(direction, speed, vx, vy, angle) {
 
         // 3. Reverse Fire (Per Bullet)
         if (bulletConf.reverseFire) {
-            console.log("Attempting Reverse Fire...");
+            log("Attempting Reverse Fire...");
             const revAngle = fanAngle + Math.PI;
             const rvx = Math.cos(revAngle) * bSpeed;
             const rvy = Math.sin(revAngle) * bSpeed;
             const rStartX = Globals.player.x + rvx * (barrelLength / bSpeed);
             const rStartY = Globals.player.y + rvy * (barrelLength / bSpeed);
             spawnBullet(rStartX, rStartY, rvx, rvy, Globals.gun, "player");
-            console.log("Spawned Reverse Bullet");
+            log("Spawned Reverse Bullet");
         }
     }
 
@@ -1070,7 +1069,7 @@ export function updateBulletsAndShards(aliveEnemies) {
             // Only check collision if it has safely left the player once
             if (distToPlayer < collisionThreshold) {
                 // Debug Log
-                if (b.canDamagePlayer) console.log("Bullet hitting player! Damage:", b.damage, "canDamagePlayer:", b.canDamagePlayer);
+                if (b.canDamagePlayer) log("Bullet hitting player! Damage:", b.damage, "canDamagePlayer:", b.canDamagePlayer);
 
                 // Hit Player
                 if (b.canDamagePlayer) {
@@ -1828,7 +1827,7 @@ export function updateEnemies() {
                         .then(d => {
                             en.gunConfig = d;
                             en.gunLoading = false;
-                            console.log(`Loaded Enemy Gun: ${en.gun}`, d.Bullet?.canDamagePlayer ? "Has Damage" : "NO DAMAGE", d);
+                            log(`Loaded Enemy Gun: ${en.gun}`, d.Bullet?.canDamagePlayer ? "Has Damage" : "NO DAMAGE", d);
                         })
                         .catch(e => { en.gunConfig = { error: true }; });
                 }
@@ -2305,9 +2304,9 @@ function proceedLevelComplete() {
     }
 
     // 1. Next Level?
-    console.log("Checking Next Level Transition. Room:", Globals.roomData.name, "Next:", Globals.roomData.nextLevel);
+    log("Checking Next Level Transition. Room:", Globals.roomData.name, "Next:", Globals.roomData.nextLevel);
     if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
-        console.log("Proceeding to Next Level:", Globals.roomData.nextLevel);
+        log("Proceeding to Next Level:", Globals.roomData.nextLevel);
         if (Globals.introMusic) {
             Globals.introMusic.pause();
             Globals.introMusic.currentTime = 0;
@@ -2708,7 +2707,7 @@ export function drawEnemies() {
 
         // --- GLANCE LOGIC (Enhanced for Obviousness) ---
         // Frequent glances: every 0.5s - 2.5s
-        if (!en.glanceTimer) en.glanceTimer = Date.now() + 500 + Math.random() * 2000;
+        if (!en.glanceTimer) en.glanceTimer = Date.now() + 2000 + Math.random() * 5000;
 
         if (Date.now() > en.glanceTimer) {
             const doors = Globals.roomData.doors || {};
@@ -2947,52 +2946,51 @@ export function drawEnemies() {
         Globals.ctx.font = `bold ${Math.max(10, en.size * 0.8)}px sans-serif`;
 
         // SKIP TEXT EYES ON GHOST (It has its own eyes)
-        if (en.type === 'ghost' || en.type === 'ghost_trophy') {
-            return;
-        }
+        if (en.type !== 'ghost' && en.type !== 'ghost_trophy') {
 
-        // Ensure eye color contrasts with body
-        // Simple check: if body is white/very light, use black eyes? 
-        // For now, default white, but if body is white (invuln), use black?
-        if (en.hitTimer > 0 || en.frozen || en.invulnerable) {
-            Globals.ctx.fillStyle = "black";
-        }
-
-        let eyes = "- -";
-
-        if (en.frozen || (en.invulnerable && en.freezeEnd && Date.now() < en.freezeEnd)) {
-            eyes = "* *";
-        } else if (en.hitTimer > 0) {
-            if (en.lastHitCritical) {
-                eyes = "* !"; // Manga Style
-            } else {
-                eyes = "x x";
+            // Ensure eye color contrasts with body
+            // Simple check: if body is white/very light, use black eyes? 
+            // For now, default white, but if body is white (invuln), use black?
+            if (en.hitTimer > 0 || en.frozen || en.invulnerable) {
+                Globals.ctx.fillStyle = "black";
             }
-        } else if (en.mode === 'angry') {
-            eyes = "> <";
+
+            let eyes = "- -";
+
+            if (en.frozen || (en.invulnerable && en.freezeEnd && Date.now() < en.freezeEnd)) {
+                eyes = "* *";
+            } else if (en.hitTimer > 0) {
+                if (en.lastHitCritical) {
+                    eyes = "* !"; // Manga Style
+                } else {
+                    eyes = "x x";
+                }
+            } else if (en.mode === 'angry') {
+                eyes = "> <";
+            }
+
+            // Calculate Eye Offset to look at player OR Glance Target
+            let aimDx = Globals.player.x - en.x;
+            let aimDy = Globals.player.y - en.y;
+
+            // GLANCE OVERRIDE
+            if (en.glanceTarget && Date.now() < en.glanceEndTime) {
+                aimDx = en.glanceTarget.x - en.x;
+                aimDy = en.glanceTarget.y - en.y;
+            }
+
+            const aimDist = Math.hypot(aimDx, aimDy);
+            const lookOffset = en.size * 0.3; // How far eyes move
+            let eyeX = en.x;
+            let eyeY = en.y + bounceY;
+
+            if (aimDist > 0) {
+                eyeX += (aimDx / aimDist) * lookOffset;
+                eyeY += (aimDy / aimDist) * lookOffset;
+            }
+
+            Globals.ctx.fillText(eyes, eyeX, eyeY);
         }
-
-        // Calculate Eye Offset to look at player OR Glance Target
-        let aimDx = Globals.player.x - en.x;
-        let aimDy = Globals.player.y - en.y;
-
-        // GLANCE OVERRIDE
-        if (en.glanceTarget && Date.now() < en.glanceEndTime) {
-            aimDx = en.glanceTarget.x - en.x;
-            aimDy = en.glanceTarget.y - en.y;
-        }
-
-        const aimDist = Math.hypot(aimDx, aimDy);
-        const lookOffset = en.size * 0.3; // How far eyes move
-        let eyeX = en.x;
-        let eyeY = en.y + bounceY;
-
-        if (aimDist > 0) {
-            eyeX += (aimDx / aimDist) * lookOffset;
-            eyeY += (aimDy / aimDist) * lookOffset;
-        }
-
-        Globals.ctx.fillText(eyes, eyeX, eyeY);
 
         Globals.ctx.restore();
     });
@@ -3586,7 +3584,7 @@ export async function pickupItem(item, index) {
     };
 
     // DEBUG TRACE
-    console.log("PickupItem:", { type, data });
+    log("PickupItem:", { type, data });
 
     // --- SIMPLE ITEMS (Sync) ---
     // Shards are handled in updateItems, but safety check here
@@ -3691,7 +3689,7 @@ export async function pickupItem(item, index) {
 
             // SPECIAL: Instant sound effect
             if (detailID === 'soundEffects') {
-                console.log("Sound Effect Unlocked via Pickup! key=" + detailID);
+                log("Sound Effect Unlocked via Pickup! key=" + detailID);
                 Globals.gameData.soundEffects = true;
                 Globals.sfxMuted = false;
                 if (SFX && SFX.upgrade) SFX.upgrade();
@@ -3700,14 +3698,14 @@ export async function pickupItem(item, index) {
 
             // SPECIAL: Instant Music Play
             if (detailID === 'music') {
-                console.log("Music Unlocked via Pickup! key=" + detailID);
+                log("Music Unlocked via Pickup! key=" + detailID);
 
                 Globals.musicMuted = false;
                 localStorage.setItem('music_muted', 'false');
                 Globals.gameData.music = true;
 
                 if (Globals.introMusic) {
-                    console.log("Starting Music Playback...");
+                    log("Starting Music Playback...");
                     if (Globals.introMusic.paused) {
                         fadeIn(Globals.introMusic, 2000, 0.4);
                     } else {

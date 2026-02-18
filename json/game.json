@@ -325,7 +325,7 @@
         "player": true,
         "godMode": false,
         "windowEnabled": true,
-        "log": false,
+        "log": true,
         "spawn": {
             "allItems": false,
             "guns": false,

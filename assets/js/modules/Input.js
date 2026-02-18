@@ -143,11 +143,11 @@ export function handleGlobalInputs(callbacks) {
     // New Run (Y) - Restart on Level 4 (Debug Only?)
     // User requested "T & Y do nothing if debug not active"
     if (isDebug && Globals.keys['KeyY']) {
-        console.log("New Run key pressed (Y). Target: Level 4.");
+        log("New Run key pressed (Y). Target: Level 4.");
         if (Globals.ghostSpawned) return;
         Globals.gameState = STATES.START;
         if (callbacks.newRun) {
-            console.log("Calling newRun('levels/4.json')...");
+            log("Calling newRun('levels/4.json')...");
             callbacks.newRun('levels/4.json').catch(err => console.error("newRun failed:", err));
             return true;
         }
@@ -156,11 +156,11 @@ export function handleGlobalInputs(callbacks) {
     // New Run (T) - Restart Current Level, New Seed (Debug Only?)
     // User requested "T & Y do nothing if debug not active"
     if (isDebug && Globals.keys['KeyT']) {
-        console.log("New Run key pressed (T). Target: Current Level.");
+        log("New Run key pressed (T). Target: Current Level.");
         if (Globals.ghostSpawned) return;
         if (Globals.gameState === STATES.PLAY || Globals.gameState === STATES.GAMEOVER || Globals.gameState === STATES.WIN || Globals.gameState === STATES.GAMEMENU || Globals.gameState === STATES.START || Globals.ghostKilled) {
             if (callbacks.newRun) {
-                console.log("Calling newRun...");
+                log("Calling newRun...");
                 callbacks.newRun().catch(err => console.error("newRun failed:", err));
                 return true;
             }

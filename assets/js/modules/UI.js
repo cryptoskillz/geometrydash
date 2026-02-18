@@ -688,7 +688,7 @@ export function showCredits() {
         if (!introMusic.src || !introMusic.src.includes(endMusic.split('/').pop())) {
             introMusic.src = endMusic;
             introMusic.play().catch(e => console.warn("Credits Music Error", e));
-            console.log("Playing Credits Music:", endMusic);
+            log("Playing Credits Music:", endMusic);
         }
     } else {
         introMusic.pause();

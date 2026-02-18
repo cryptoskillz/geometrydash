@@ -55,7 +55,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (!introMusic.paused) introMusic.play().catch(() => { });
     }
 
-    console.log("TRACER: initGame Start. isRestart=", isRestart);
+    log("TRACER: initGame Start. isRestart=", isRestart);
 
     // SEED INITIALIZATION
     if (!nextLevel) { // Only change seed state on new run or restart
@@ -889,7 +889,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     return res.json();
                 })
                 .then(data => {
-                    console.log(data)
+                    log(data)
 
                     // ID Generation: Handle "room.json" collision
                     const parts = path.split('/');
@@ -962,16 +962,16 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
         bosses = bosses.filter(p => p && p.trim() !== "");
         bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
-        console.log(bosses)
+        log(bosses)
         // C. Shop Room
-        if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.shopRoom) {
-            roomProtos.push(loadRoomFile(Globals.gameData.shop.shopRoom, 'shop'));
+        if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.room) {
+            roomProtos.push(loadRoomFile(Globals.gameData.shop.room, 'shop'));
         }
 
         // WAIT FOR ALL TEMPLATES TO LOAD BEFORE GENERATING LEVEL
-        console.log("WAITING FOR ROOM PROTOS:", roomProtos.length);
+        log("WAITING FOR ROOM PROTOS:", roomProtos.length);
         await Promise.all(roomProtos);
-        console.log("ROOM TEMPLATES LOADED:", Object.keys(Globals.roomTemplates));
+        log("ROOM TEMPLATES LOADED:", Object.keys(Globals.roomTemplates));
 
         Globals.areAssetsLoaded = true; // Flag for startGame
 
@@ -984,7 +984,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 .then(data => {
                     // Use the last part of the path as the key (e.g. "special/firstboss" -> "firstboss")
                     const key = id.split('/').pop();
-                    console.log(key, data)
+                    log(key, data)
                     Globals.enemyTemplates[key] = data;
                 })
         );
@@ -1024,7 +1024,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         }
         else if (nextLevel && (Globals.gameData.tiles || Globals.gameData.enemies)) {
-            console.log("Single Room Mode Detected via nextLevel");
+            log("Single Room Mode Detected via nextLevel");
             Globals.bossCoord = "0,0";
             Globals.goldenPath = ["0,0"];
             // Use gData as the room source since nextLevel was merged into it
@@ -1044,7 +1044,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         // We need to re-trigger spawnEnemies for the current room if it wasn't done.
         // CHECK: generateLevel populates the map. If we injected "0,0" manually (debug), we need to spawn.
         if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
-            console.log("Debug/Direct Load: Spawning Enemies for 0,0");
+            log("Debug/Direct Load: Spawning Enemies for 0,0");
             spawnEnemies(Globals.roomData);
             spawnChests(Globals.roomData);
             spawnSwitches(Globals.roomData);
@@ -1085,7 +1085,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         const params = new URLSearchParams(window.location.search);
         const shouldAutoStart = Globals.gameData.showWelcome === false || isRestart || params.get('autostart') === 'true';
 
-        console.log("TRACER: initGame End. shouldAutoStart=", shouldAutoStart);
+        log("TRACER: initGame End. shouldAutoStart=", shouldAutoStart);
 
         if (shouldAutoStart) {
             // Pass savedPlayerStats existence as keepState flag
@@ -1105,11 +1105,11 @@ export async function startGame(keepState = false) {
     if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
 
     // Guard against starting while Initializing or Unlocking or already starting
-    console.log("TRACER: startGame Called");
+    log("TRACER: startGame Called");
 
     // NEW: Wait for loading if initGame is still running
     if (Globals.isInitializing) {
-        console.log("TRACER: Waiting for initialization...");
+        log("TRACER: Waiting for initialization...");
         while (Globals.isInitializing) {
             await new Promise(r => setTimeout(r, 100));
         }
@@ -1187,7 +1187,7 @@ export async function startGame(keepState = false) {
         // Wait, restartGame calls initGame(true), which hides welcome. 
         // So this input logic only applies to MANUAL start from Welcome Screen.
 
-        console.log("Regenerating level with selected seed:", Globals.seed);
+        log("Regenerating level with selected seed:", Globals.seed);
         generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
 
         // Also must respawn enemies for the start room (0,0) as generateLevel resets map
@@ -1320,7 +1320,7 @@ export async function startGame(keepState = false) {
             }
 
             // Start Game
-            console.log("TRACER: startGame Async End -> PLAY");
+            log("TRACER: startGame Async End -> PLAY");
             Globals.gameState = STATES.PLAY;
             Globals.elements.welcome.style.display = 'none';
 
@@ -1879,7 +1879,7 @@ export function update() {
 
     // DEBUG INPUT
     if (Math.random() < 0.01) {
-        console.log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
+        log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
     }
 
     // 0. Global Inputs (Restart/Menu from non-play states)
@@ -2114,19 +2114,22 @@ export async function draw() {
         Globals.ctx.fillRect(0, 0, w, h);
 
         // Procedural Fog/Orbs
+        Globals.ctx.save();
+        Globals.ctx.globalCompositeOperation = "screen"; // Make it glowy!
         const time = Date.now() * 0.0002;
         for (let i = 0; i < 15; i++) {
             // Random-ish movement based on time and index
             const x = ((Math.sin(time + i * 132.1) + 1) / 2) * w;
             const y = ((Math.cos(time * 0.7 + i * 35.2) + 1) / 2) * h;
             const s = 100 + Math.sin(time * 2 + i) * 50;
-            const alpha = 0.03 + (Math.sin(time + i) * 0.02);
+            const alpha = 0.05 + (Math.sin(time + i) * 0.03); // Slightly boosted alpha
 
             Globals.ctx.fillStyle = `rgba(100, 220, 255, ${alpha})`;
             Globals.ctx.beginPath();
             Globals.ctx.arc(x, y, s, 0, Math.PI * 2);
             Globals.ctx.fill();
         }
+        Globals.ctx.restore();
 
         // Vignette Overlay
         const grad = Globals.ctx.createRadialGradient(w / 2, h / 2, w / 3, w / 2, h / 2, w * 0.8);
@@ -2332,7 +2335,7 @@ export async function draw() {
 
 export function drawPortal(overrideColor = null) {
     // Only draw if active
-    // console.log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
+    // log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
     if (!Globals.portal.active) return;
     const time = Date.now() / 500;
 
@@ -2513,7 +2516,7 @@ export function isRoomLocked() {
     // Trophy Rooms are NEVER locked, regardless of enemies (trophies) inside
     // Add logging to verify this is called
     if (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy' || Globals.roomData.isSecret) {
-        // console.log("isRoomLocked: False (Trophy/Secret Override)"); // Too spammy? Maybe occasional?
+        // log("isRoomLocked: False (Trophy/Secret Override)"); // Too spammy? Maybe occasional?
         return false;
     }
 
@@ -2547,11 +2550,11 @@ export function updateRoomLock() {
             // Store previous state (was it playing Tron?)
             if (Globals.wasMusicPlayingBeforeGhost === undefined) Globals.wasMusicPlayingBeforeGhost = !introMusic.paused;
 
-            console.log("GHOST TRAP: Switching to Ghost Music and FORCING Play. Previous:", Globals.wasMusicPlayingBeforeGhost);
+            log("GHOST TRAP: Switching to Ghost Music and FORCING Play. Previous:", Globals.wasMusicPlayingBeforeGhost);
             introMusic.src = Globals.gameData.ghostMusic || 'assets/music/ghost.mp3';
             introMusic.volume = 0.4; // Force Volume Up (Override mute)
             // Force Play
-            introMusic.play().then(() => console.log("Ghost Music Started")).catch((e) => { console.error("Ghost Music Force Play Failed:", e); });
+            introMusic.play().then(() => log("Ghost Music Started")).catch((e) => { console.error("Ghost Music Force Play Failed:", e); });
             Globals.ghostTrapActive = true;
         }
     } else if (!isGhostTrap && Globals.ghostTrapActive) {
@@ -2639,11 +2642,11 @@ export function updateRoomLock() {
         // Require minimum time to disqualify glitches (e.g. 100ms)
         const isGlitch = timeTakenMs < 100;
         const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 5000;
-        console.log(`Room Cleared! TimeTaken: ${timeTakenMs}ms, Limit: ${speedyLimitMs}ms (Start: ${freezeEnd}, Now: ${Date.now()})`);
+        log(`Room Cleared! TimeTaken: ${timeTakenMs}ms, Limit: ${speedyLimitMs}ms (Start: ${freezeEnd}, Now: ${Date.now()})`);
 
         // Fix: check timeTakenMs > 100 to avoid glitch "instant clears"
         if (speedyLimitMs > 0 && timeTakenMs > 100 && timeTakenMs <= speedyLimitMs) {
-            console.log("SPEEDY BONUS AWARDED!");
+            log("SPEEDY BONUS AWARDED!");
             Globals.speedyBonusCount++;
             Globals.speedyBonusSessionCount++;
             if (Globals.gameData.rewards && Globals.gameData.rewards.speedy) {
@@ -2654,7 +2657,7 @@ export function updateRoomLock() {
                 }
             }
         } else {
-            console.log("Speedy Bonus Missed (or disabled).");
+            log("Speedy Bonus Missed (or disabled).");
         }
 
         // --- PERFECT BONUS (STREAK) ---
@@ -3034,7 +3037,7 @@ export function goToWelcome() {
 Globals.goToWelcome = goToWelcome;
 
 export function beginPlay() {
-    console.log("TRACER: beginPlay Called. GameState=", Globals.gameState);
+    log("TRACER: beginPlay Called. GameState=", Globals.gameState);
     // Check if we are in START state, then call startGame
     if (Globals.gameState === STATES.START) {
         startGame(false); // Fresh start from welcome screen
