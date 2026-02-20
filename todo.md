@@ -2,12 +2,8 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- make piggy bank solid
-- change words in the atm to be more relasitic
-- only allow the max withdraw to be max green shards
-- bed will let you sleep and you restore your health but you lose a random amount of keys and bombs
 - show intro only once the first time you enter a room
-- stars and pentagons do not have the ghost skirt
+- stars and pentagons do not have the ghost skirt in trophy room
 - Store Google font locally to make it work offline.
 - Golden path bonus shows on the perfect bonus counter.
 - Second boss, if you dont pick up they gun or bomb, you should be pushed out of the portal and it says "Are you sure you want to do a pacifist run?" and you have to go back in to do it.

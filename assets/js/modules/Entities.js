@@ -1389,6 +1389,29 @@ export function updateUse() {
             }
             return; // Interaction complete
         }
+
+        // Bed Interaction
+        const bedDist = Math.hypot(Globals.player.x - 90, Globals.player.y - 120);
+        if (bedDist < 60) {
+            if (Globals.player.hp < Globals.player.maxHp) {
+                Globals.player.hp = Globals.player.maxHp;
+
+                const keysLost = Math.min(Globals.player.inventory.keys, Math.floor(Math.random() * 3) + 1);
+                Globals.player.inventory.keys -= keysLost;
+
+                const bombsLost = Math.min(Globals.player.inventory.bombs, Math.floor(Math.random() * 3) + 1);
+                Globals.player.inventory.bombs -= bombsLost;
+
+                if (window.SFX && SFX.powerup) SFX.powerup();
+                spawnFloatingText(Globals.player.x, Globals.player.y - 50, `Rested! Lost ${keysLost} Keys & ${bombsLost} Bombs`, "lightgreen", 5);
+                Globals.sleepTimer = Date.now();
+                Globals.roomFreezeUntil = Date.now() + 2000;
+                Globals.player.invulnUntil = Date.now() + 2000;
+            } else {
+                spawnFloatingText(Globals.player.x, Globals.player.y - 50, "Already well rested!", "white", 2);
+            }
+            return;
+        }
     }
 
     const roomLocked = Globals.isRoomLocked();
