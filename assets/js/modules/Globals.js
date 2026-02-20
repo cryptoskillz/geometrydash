@@ -29,12 +29,13 @@ export const Globals = {
         debugPanel: null,
         debugLog: null,
         timer: null,
-        tMin: null, tSec: null, tMs: null
+        tMin: null, tSec: null, tMs: null,
+        bankModal: null,
+        bankInvVal: null,
+        bankVaultVal: null
     },
 
-
-
-    //gane counters
+    //game counters
     playerDeathCount: parseInt(localStorage.getItem('playerDeathCount') || '0'),
     playerDeathSessionCount: 0,
 
@@ -218,7 +219,7 @@ export const Globals = {
             'stats', 'perfect-count', 'nodamage-count', 'shooter-count',
             'roomName', 'bombs', 'ammo', 'gun',
             'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer',
-            't-min', 't-sec', 't-ms'];
+            't-min', 't-sec', 't-ms', 'bankModal', 'bankInvVal', 'bankVaultVal'];
 
         ids.forEach(id => {
             // camelCase conversion for property name

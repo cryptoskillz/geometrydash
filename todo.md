@@ -2,9 +2,8 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- add a piggy bank to the home room, it lets you store green shards
 - bed will let you sleep and you restore your health but you lose a random amount of keys and bombs
-- show intro only show it once 
+- show intro only once the first time you enter a room
 - stars and pentagons do not have the ghost skirt
 - Store Google font locally to make it work offline.
 - Golden path bonus shows on the perfect bonus counter.
@@ -21,7 +20,6 @@ DONT DO ANY OF THESE TASKS AI
 - Shield shows when you go into the portal.
 - Bomb goes blue when you leave a room and re-enter.
 - Don't use the same enemy name twice in a room.
-- Fix debug logs.
 - Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
 - Tried to run out of a room with a ghost and enemies; it wouldn't let me even though I blew it with a red bomb.
 - Speedy timer should be set for standard peashooter time, but adjust down for more powerful guns.
@@ -43,7 +41,6 @@ DONT DO ANY OF THESE TASKS AI
 # Rooms & Levels
 - All rooms should have a number of switches that have to be stood on for x seconds to open the door, so we can do a pacafist run.
 - **Level Sequences**:
-  - **Level 5**: Harder boss (with gun).
   - **Level 6**: Golden path maze level (World 7-4). Room name followed by "deja vu".
   - **Level 7**: Ghost chase.
   - **Level 8**: Crazy rooms.

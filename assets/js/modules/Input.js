@@ -67,6 +67,19 @@ export function setupInput(callbacks) {
                 if (callbacks.goPause) callbacks.goPause();
             }
         }
+        else if (Globals.gameState === STATES.BANK) {
+            if (e.code === 'KeyD') {
+                const amt = document.getElementById('bankAmount') ? document.getElementById('bankAmount').value : 0;
+                if (window.bankDeposit) window.bankDeposit(amt);
+            }
+            if (e.code === 'KeyW') {
+                const amt = document.getElementById('bankAmount') ? document.getElementById('bankAmount').value : 0;
+                if (window.bankWithdraw) window.bankWithdraw(amt);
+            }
+            if (e.code === 'Escape' || e.code === 'Enter') {
+                if (window.bankClose) window.bankClose();
+            }
+        }
         else if (Globals.gameState === STATES.START) {
             // Allow Arrow Keys for char select (handled in handleGlobalInputs, but prevent start on them?)
             // Also prevent Music/SFX toggles (0/9) from starting game

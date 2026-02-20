@@ -2469,6 +2469,45 @@ export function drawHomeRoomObjects() {
         }
     }
 
+    // Draw Piggy Bank (Bottom Left)
+    const px = 100, py = 320;
+
+    // Body (Pink ellipse)
+    Globals.ctx.fillStyle = "#ffb6c1"; // light pink
+    Globals.ctx.beginPath();
+    Globals.ctx.ellipse(px, py, 25, 20, 0, 0, Math.PI * 2);
+    Globals.ctx.fill();
+    Globals.ctx.lineWidth = 2;
+    Globals.ctx.strokeStyle = "#ff69b4"; // hot pink border
+    Globals.ctx.stroke();
+
+    // Snout
+    Globals.ctx.fillStyle = "#ffc0cb"; // slightly different pink
+    Globals.ctx.beginPath();
+    Globals.ctx.ellipse(px + 23, py, 8, 12, 0, 0, Math.PI * 2);
+    Globals.ctx.fill();
+    Globals.ctx.stroke();
+
+    // Eye
+    Globals.ctx.fillStyle = "#2c3e50";
+    Globals.ctx.beginPath();
+    Globals.ctx.arc(px + 12, py - 5, 2, 0, Math.PI * 2);
+    Globals.ctx.fill();
+
+    // Coin Slot
+    Globals.ctx.fillStyle = "#34495e";
+    Globals.ctx.fillRect(px - 5, py - 15, 10, 3);
+
+    // Legs
+    Globals.ctx.fillStyle = "#ff69b4";
+    Globals.ctx.fillRect(px - 15, py + 15, 6, 8);
+    Globals.ctx.fillRect(px + 5, py + 15, 6, 8);
+
+    // Tail (Curly)
+    Globals.ctx.beginPath();
+    Globals.ctx.arc(px - 25, py - 5, 4, 0, Math.PI);
+    Globals.ctx.stroke();
+
     Globals.ctx.restore();
 }
 
@@ -3411,3 +3450,69 @@ export function drawGhostBorder() {
         }
     }
 }
+// --- BANK / ATM UI ---
+export function bankDeposit(amountStr) {
+    if (Globals.gameState !== STATES.BANK) return;
+
+    let amount = parseInt(amountStr);
+    if (isNaN(amount) || amount <= 0) return;
+
+    let bankedShards = parseInt(localStorage.getItem('piggy_bank_balance') || '0');
+    let inventoryShards = Globals.player.inventory.greenShards || 0;
+
+    if (inventoryShards > 0) {
+        // Cap deposit amount to what player actually has
+        const depositAmt = Math.min(amount, inventoryShards);
+
+        bankedShards += depositAmt;
+        Globals.player.inventory.greenShards -= depositAmt;
+        localStorage.setItem('piggy_bank_balance', bankedShards);
+
+        // Update UI
+        if (Globals.elements.bankInvVal) Globals.elements.bankInvVal.innerText = Globals.player.inventory.greenShards;
+        if (Globals.elements.bankVaultVal) Globals.elements.bankVaultVal.innerText = bankedShards;
+
+        if (window.SFX && SFX.coin) window.SFX.coin();
+        console.log(`Deposited ${depositAmt} green shards. Total: ${bankedShards}`);
+    } else {
+        if (window.SFX && SFX.cantPickup) window.SFX.cantPickup();
+    }
+}
+
+export function bankWithdraw(amountStr) {
+    if (Globals.gameState !== STATES.BANK) return;
+
+    let amount = parseInt(amountStr);
+    if (isNaN(amount) || amount <= 0) return;
+
+    let bankedShards = parseInt(localStorage.getItem('piggy_bank_balance') || '0');
+
+    if (bankedShards > 0) {
+        // Cap withdraw amount to what is actually in the bank
+        const withdrawAmt = Math.min(amount, bankedShards);
+
+        Globals.player.inventory.greenShards += withdrawAmt;
+        bankedShards -= withdrawAmt;
+        localStorage.setItem('piggy_bank_balance', bankedShards);
+
+        // Update UI
+        if (Globals.elements.bankInvVal) Globals.elements.bankInvVal.innerText = Globals.player.inventory.greenShards;
+        if (Globals.elements.bankVaultVal) Globals.elements.bankVaultVal.innerText = bankedShards;
+
+        // Save inventory so player actually has them
+        localStorage.setItem('currency_green', Globals.player.inventory.greenShards);
+
+        if (window.SFX && SFX.coin) window.SFX.coin();
+        console.log(`Withdrew ${withdrawAmt} green shards from Piggy Bank.`);
+    } else {
+        if (window.SFX && SFX.cantPickup) window.SFX.cantPickup();
+    }
+}
+
+export function bankClose() {
+    if (Globals.elements.bankModal) {
+        Globals.elements.bankModal.style.display = 'none';
+    }
+    Globals.gameState = STATES.PLAY; // Resume play
+}
+

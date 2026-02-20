@@ -1373,6 +1373,25 @@ export function updateUse() {
     // Start the Tron music if it hasn't started yet
     // (Handled by startAudio listener now)
 
+    // Piggy Bank Interaction (Home Room)
+    if (Globals.roomData.type === 'home' || Globals.roomData._type === 'home') {
+        const pbDist = Math.hypot(Globals.player.x - 100, Globals.player.y - 320);
+        if (pbDist < 60) {
+            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Press Space to open bank", "white");
+            // Open Bank UI
+            if (Globals.elements.bankModal) {
+                let bankedShards = parseInt(localStorage.getItem('piggy_bank_balance') || '0');
+                if (Globals.elements.bankInvVal) Globals.elements.bankInvVal.innerText = Globals.player.inventory.greenShards || 0;
+                if (Globals.elements.bankVaultVal) Globals.elements.bankVaultVal.innerText = bankedShards;
+
+                Globals.elements.bankModal.style.display = 'flex';
+                Globals.gameState = STATES.BANK; // Prevent other inputs
+                if (window.SFX && SFX.pickup) SFX.pickup(); // generic UI open sound
+            }
+            return; // Interaction complete
+        }
+    }
+
     const roomLocked = Globals.isRoomLocked();
     const doors = Globals.roomData.doors || {};
 
@@ -3548,11 +3567,12 @@ export function updateMovementAndDoors(doors, roomLocked) {
 
                 // Home Room Statics Collision
                 if (Globals.roomData.type === 'home' || Globals.roomData._type === 'home') {
-                    const bedCheck = nextX > 50 && nextX < 130 && Globals.player.y > 50 && Globals.player.y < 190;
+                    const size = Globals.player.size;
+                    const bedCheck = nextX + size > 50 && nextX - size < 130 && Globals.player.y + size > 50 && Globals.player.y - size < 190;
                     // Circle collision for table at 200, 200, radius 45
                     const distTable = Math.hypot(nextX - 200, Globals.player.y - 200);
-                    const tableCheck = distTable < 45 + Globals.player.size;
-                    const tvCheck = nextX > 260 && nextX < 380 && Globals.player.y > -20 && Globals.player.y < 60;
+                    const tableCheck = distTable < 45 + size;
+                    const tvCheck = nextX + size > 260 && nextX - size < 380 && Globals.player.y + size > -20 && Globals.player.y - size < 60;
 
                     if (bedCheck || tableCheck || tvCheck) {
                         collided = true;
@@ -3602,11 +3622,12 @@ export function updateMovementAndDoors(doors, roomLocked) {
 
                 // Home Room Statics Collision (Vertical)
                 if (Globals.roomData.type === 'home' || Globals.roomData._type === 'home') {
-                    const bedCheck = Globals.player.x > 50 && Globals.player.x < 130 && nextY > 50 && nextY < 190;
+                    const size = Globals.player.size;
+                    const bedCheck = Globals.player.x + size > 50 && Globals.player.x - size < 130 && nextY + size > 50 && nextY - size < 190;
                     // Circle collision for table at 200, 200, radius 45
                     const distTable = Math.hypot(Globals.player.x - 200, nextY - 200);
-                    const tableCheck = distTable < 45 + Globals.player.size;
-                    const tvCheck = Globals.player.x > 260 && Globals.player.x < 380 && nextY > -20 && nextY < 60;
+                    const tableCheck = distTable < 45 + size;
+                    const tvCheck = Globals.player.x + size > 260 && Globals.player.x - size < 380 && nextY + size > -20 && nextY - size < 60;
 
                     if (bedCheck || tableCheck || tvCheck) {
                         collided = true;
