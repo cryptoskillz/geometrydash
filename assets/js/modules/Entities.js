@@ -3121,7 +3121,6 @@ export function drawEnemies() {
 }
 // export function playerHit(en, invuln = false, knockback = false, shakescreen = false) {
 // Refactored for Solidity vs Invulnerability Separation
-// Refactored for Solidity vs Invulnerability Separation
 export function playerHit(en, checkInvuln = true, applyKnockback = false, shakescreen = false) {
 
     // 1. DAMAGE CHECK (Invulnerability)
@@ -3143,12 +3142,6 @@ export function playerHit(en, checkInvuln = true, applyKnockback = false, shakes
     }
 
     // 2. PHYSICS CHECK (Solidity)
-    // Only apply knockback if explicitly requested (usually on collision)
-    // AND if the player is solid OR the enemy is forceful enough to push nonsolid?
-    // User requested: "invuln makes you not solid" -> "change invuln to solid"
-    // Interpretation: If player.solid is FALSE, they do not get knocked back by enemies (pass through).
-
-    // Default solid to true if undefined
     // Default solid to true if undefined
     const playerIsSolid = (Globals.player.solid !== undefined) ? Globals.player.solid : true;
     const enemyIsSolid = (en.solid !== undefined) ? en.solid : true;
@@ -3203,13 +3196,6 @@ export function drawBombs(doors) {
             b.explosionStartAt = now;
             SFX.explode(0.3);
 
-            // Local Explosion Shake (Stronger than remote)
-            // Globals.screenShake or just screenShake? 
-            // Previous code used screenShake variable. Assuming it's Global or filtered via Utils?
-            // Usually Globals.screenShake in this codebase? Or maybe Utils handles it.
-            // Let's assume Globals.screenShake if available, otherwise ignore or use function.
-            // Actually previous code: screenShake.power = 20.
-            // Let's use Globals.screenShake if defined.
             if (Globals.screenShake) {
                 Globals.screenShake.power = 20;
                 Globals.screenShake.endAt = now + 500;
@@ -3596,7 +3582,7 @@ export function updateMovementAndDoors(doors, roomLocked) {
                     const size = Globals.player.size;
                     const bedCheck = nextX + size > 50 && nextX - size < 130 && Globals.player.y + size > 50 && Globals.player.y - size < 190;
                     // Circle collision for table at 200, 200, radius 45
-                    const distTable = Math.hypot(nextX - 200, Globals.player.y - 200);
+                    const distTable = Math.hypot(nextX - 300, Globals.player.y - 200);
                     const tableCheck = distTable < 45 + size;
                     const tvCheck = nextX + size > 260 && nextX - size < 380 && Globals.player.y + size > -20 && Globals.player.y - size < 60;
                     //check piggy bank at (100, 320)
@@ -3650,7 +3636,7 @@ export function updateMovementAndDoors(doors, roomLocked) {
                 if (Globals.roomData.type === 'home' || Globals.roomData._type === 'home') {
                     const size = Globals.player.size;
                     const bedCheck = Globals.player.x + size > 50 && Globals.player.x - size < 130 && nextY + size > 50 && nextY - size < 190;
-                    const distTable = Math.hypot(Globals.player.x - 200, nextY - 200);
+                    const distTable = Math.hypot(Globals.player.x - 300, nextY - 200);
                     const tableCheck = distTable < 45 + size;
                     const tvCheck = Globals.player.x + size > 260 && Globals.player.x - size < 380 && nextY + size > -20 && nextY - size < 60;
                     // Piggy Bank collision box (100, 320)

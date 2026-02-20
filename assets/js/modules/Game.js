@@ -2348,6 +2348,38 @@ export async function draw() {
     drawRoomIntro();
     // drawPortal() moved to before drawPlayer
     drawFloatingTexts(); // Draw notification texts on top
+
+    // --- SLEEP FADE EFFECT ---
+    if (Globals.sleepTimer) {
+        const elapsed = Date.now() - Globals.sleepTimer;
+        const totalDuration = 2000; // total duration of sleep/freeze
+        const fadeTime = 500; // 500ms fade in, 500ms fade out
+
+        if (elapsed < totalDuration) {
+            let alpha = 0;
+            if (elapsed < fadeTime) {
+                alpha = elapsed / fadeTime; // Fade in
+            } else if (elapsed > totalDuration - fadeTime) {
+                alpha = 1 - ((elapsed - (totalDuration - fadeTime)) / fadeTime); // Fade out
+            } else {
+                alpha = 1; // Solid black in middle
+            }
+            Globals.ctx.save();
+            Globals.ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+            Globals.ctx.fillRect(0, 0, Globals.canvas.width, Globals.canvas.height);
+            // Draw a Zzz sleeping text
+            if (alpha > 0.3) {
+                Globals.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                Globals.ctx.font = "bold 40px monospace";
+                Globals.ctx.textAlign = "center";
+                Globals.ctx.fillText("Zzz...", Globals.canvas.width / 2, Globals.canvas.height / 2);
+            }
+            Globals.ctx.restore();
+        } else {
+            Globals.sleepTimer = 0; // End the sleep effect
+        }
+    }
+
     drawDebugLogs();
     requestAnimationFrame(() => { update(); draw(); });
 }
@@ -2435,10 +2467,10 @@ export function drawHomeRoomObjects() {
     Globals.ctx.fillStyle = "#bdc3c7"; // Pillow
     Globals.ctx.fillRect(60, 55, 60, 20);
 
-    // Draw Table (Center)
+    // Draw Table (Center right)
     Globals.ctx.fillStyle = "#8e44ad"; // Table top
     Globals.ctx.beginPath();
-    Globals.ctx.arc(200, 200, 45, 0, Math.PI * 2);
+    Globals.ctx.arc(300, 200, 45, 0, Math.PI * 2);
     Globals.ctx.fill();
     Globals.ctx.lineWidth = 4;
     Globals.ctx.strokeStyle = "#9b59b6";
@@ -2501,6 +2533,23 @@ export function drawHomeRoomObjects() {
     Globals.ctx.beginPath();
     Globals.ctx.arc(px - 25, py - 5, 4, 0, Math.PI);
     Globals.ctx.stroke();
+
+    // Draw Used Portal (Center)
+    // We temporarily override the global portal properties just to draw it
+    const originalPortalState = Globals.portal.active;
+    const originalPortalX = Globals.portal.x;
+    const originalPortalY = Globals.portal.y;
+
+    Globals.portal.active = true;
+    Globals.portal.x = Globals.canvas.width / 2;
+    Globals.portal.y = Globals.canvas.height / 2;
+
+    drawPortal('green'); // Draw the green 'used' matrix-style portal
+
+    // Restore original portal state
+    Globals.portal.active = originalPortalState;
+    Globals.portal.x = originalPortalX;
+    Globals.portal.y = originalPortalY;
 
     // Proximity Prompts
     const pbDist = Math.hypot(Globals.player.x - px, Globals.player.y - py);
