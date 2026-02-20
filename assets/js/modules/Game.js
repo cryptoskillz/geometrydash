@@ -2515,7 +2515,7 @@ export function drawHomeRoomObjects() {
         Globals.ctx.font = "14px monospace";
         Globals.ctx.textAlign = "center";
         // Globals.ctx.fillText("Press Space to open bank", px, py - 40);
-        spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Press Space to open bank", "white");
+        spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Press Space to open bank", "white", 5);
 
     }
 
