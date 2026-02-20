@@ -192,13 +192,14 @@ export function spawnEnemies() {
 
     // TROPHY ROOM LOGIC
     const rData = Globals.roomData || {};
-    //console.log(Globals.killStatsTotal.sizes)
 
     if (rData.type === 'trophy' || rData._type === 'trophy') {
         const stats = (Globals.killStatsTotal && Globals.killStatsTotal.types) ? Globals.killStatsTotal.types : {};
+        if (!stats) console.warn("TROPHY ROOM: No killStatsTotal types found!");
+
         const sizes = Globals.killStatsTotal.sizes;
         const types = Object.keys(stats);
-        console.log("TROPHY LOG: Stats", stats, "Types", types, "sizes", sizes);
+        log("TROPHY LOG: Stats", stats, "Types", types, "sizes", sizes);
 
         const startX = 100;
         const startY = 100;
@@ -221,7 +222,7 @@ export function spawnEnemies() {
 
         // Spawn Ghosts for each Unique Combo
         const keys = Object.keys(combos);
-        console.log("TROPHY DEBUG: Keys:", keys, "Templates:", Object.keys(Globals.enemyTemplates || {}).length);
+        log("TROPHY DEBUG: Keys:", keys, "Templates:", Object.keys(Globals.enemyTemplates || {}).length);
 
         keys.forEach((key, i) => {
 
@@ -304,7 +305,7 @@ export function spawnEnemies() {
             en.type = 'ghost_trophy';
 
             Globals.enemies.push(en);
-            console.log("Spawned Trophy:", en.type, en.x, en.y, en.color, en.shape, "Stat:", en.isStatDisplay);
+            log("Spawned Trophy:", en.type, en.x, en.y, en.color, en.shape, "Stat:", en.isStatDisplay);
         });
         return; // Skip normal spawn
     }
@@ -430,7 +431,7 @@ export function spawnEnemies() {
         const template = Globals.enemyTemplates[bossKey];
 
         if (template) {
-            console.log("Spawning Boss from Property:", bossKey);
+            log("Spawning Boss from Property:", bossKey);
             const inst = JSON.parse(JSON.stringify(template));
             inst.templateId = bossKey;
 
@@ -647,9 +648,9 @@ export async function dropBomb() {
     }
 
     // DEBUG LOG
-    console.log("Dropping Bomb Config:", bombConf);
-    console.log("Calculated Timer Duration:", timerDuration);
-    console.log("Timer Show:", timerShow);
+    log("Dropping Bomb Config:", bombConf);
+    log("Calculated Timer Duration:", timerDuration);
+    log("Timer Show:", timerShow);
 
     const baseR = Globals.bomb.size || 20;
     const maxR = Globals.bomb.explosion?.radius || Globals.bomb.radius || 120;
@@ -905,7 +906,7 @@ export function fireBullet(direction, speed, vx, vy, angle) {
 
     // --- REFACTORED FIRING LOGIC (Legacy Port) ---
     const bulletConf = Globals.gun.Bullet || {};
-    console.log("FireBullet", { name: Globals.gun.name, reverse: bulletConf.reverseFire, number: bulletConf.number, spread: bulletConf.spreadRate });
+    log("FireBullet", { name: Globals.gun.name, reverse: bulletConf.reverseFire, number: bulletConf.number, spread: bulletConf.spreadRate });
 
     const count = bulletConf.number || 1;
     const spreadRate = bulletConf.spreadRate || 0.2;
@@ -942,14 +943,14 @@ export function fireBullet(direction, speed, vx, vy, angle) {
 
         // 3. Reverse Fire (Per Bullet)
         if (bulletConf.reverseFire) {
-            console.log("Attempting Reverse Fire...");
+            log("Attempting Reverse Fire...");
             const revAngle = fanAngle + Math.PI;
             const rvx = Math.cos(revAngle) * bSpeed;
             const rvy = Math.sin(revAngle) * bSpeed;
             const rStartX = Globals.player.x + rvx * (barrelLength / bSpeed);
             const rStartY = Globals.player.y + rvy * (barrelLength / bSpeed);
             spawnBullet(rStartX, rStartY, rvx, rvy, Globals.gun, "player");
-            console.log("Spawned Reverse Bullet");
+            log("Spawned Reverse Bullet");
         }
     }
 
@@ -1068,7 +1069,7 @@ export function updateBulletsAndShards(aliveEnemies) {
             // Only check collision if it has safely left the player once
             if (distToPlayer < collisionThreshold) {
                 // Debug Log
-                if (b.canDamagePlayer) console.log("Bullet hitting player! Damage:", b.damage, "canDamagePlayer:", b.canDamagePlayer);
+                if (b.canDamagePlayer) log("Bullet hitting player! Damage:", b.damage, "canDamagePlayer:", b.canDamagePlayer);
 
                 // Hit Player
                 if (b.canDamagePlayer) {
@@ -1383,21 +1384,25 @@ export function updateUse() {
     }
 
     // Helper: are we close enough to a door?
+    // FIX: Increased tolerance from +5 to +25 because collision logic stops player movement
+    // slightly outside the boundary (based on speed/step size).
+    const TOLERANCE = 25;
+
     const inRangeTop = (door) => {
         const doorX = door.x !== undefined ? door.x : Globals.canvas.width / 2;
-        return Globals.player.y <= BOUNDARY + 5 && Globals.player.x > doorX - DOOR_SIZE && Globals.player.x < doorX + DOOR_SIZE;
+        return Globals.player.y <= BOUNDARY + TOLERANCE && Globals.player.x > doorX - DOOR_SIZE && Globals.player.x < doorX + DOOR_SIZE;
     };
     const inRangeBottom = (door) => {
         const doorX = door.x !== undefined ? door.x : Globals.canvas.width / 2;
-        return Globals.player.y >= Globals.canvas.height - BOUNDARY - 5 && Globals.player.x > doorX - DOOR_SIZE && Globals.player.x < doorX + DOOR_SIZE;
+        return Globals.player.y >= Globals.canvas.height - BOUNDARY - TOLERANCE && Globals.player.x > doorX - DOOR_SIZE && Globals.player.x < doorX + DOOR_SIZE;
     };
     const inRangeLeft = (door) => {
         const doorY = door.y !== undefined ? door.y : Globals.canvas.height / 2;
-        return Globals.player.x <= BOUNDARY + 5 && Globals.player.y > doorY - DOOR_SIZE && Globals.player.y < doorY + DOOR_SIZE;
+        return Globals.player.x <= BOUNDARY + TOLERANCE && Globals.player.y > doorY - DOOR_SIZE && Globals.player.y < doorY + DOOR_SIZE;
     };
     const inRangeRight = (door) => {
         const doorY = door.y !== undefined ? door.y : Globals.canvas.height / 2;
-        return Globals.player.x >= Globals.canvas.width - BOUNDARY - 5 && Globals.player.y > doorY - DOOR_SIZE && Globals.player.y < doorY + DOOR_SIZE;
+        return Globals.player.x >= Globals.canvas.width - BOUNDARY - TOLERANCE && Globals.player.y > doorY - DOOR_SIZE && Globals.player.y < doorY + DOOR_SIZE;
     };
 
     // Prefer the door the player is "facing" (lastMoveX/lastMoveY), fall back to any nearby door.
@@ -1407,6 +1412,15 @@ export function updateUse() {
     if (doors.left?.active) candidates.push({ dir: "left", door: doors.left, inRange: inRangeLeft });
     if (doors.right?.active) candidates.push({ dir: "right", door: doors.right, inRange: inRangeRight });
 
+    // DEBUG: Log candidates and player position
+    console.log(`updateUse: Space Pressed. Player: (${Globals.player.x.toFixed(1)}, ${Globals.player.y.toFixed(1)}) BOUNDARY: ${BOUNDARY} TOLERANCE: ${TOLERANCE}`);
+    candidates.forEach(c => {
+        const doorX = c.door.x !== undefined ? c.door.x : Globals.canvas.width / 2;
+        const doorY = c.door.y !== undefined ? c.door.y : Globals.canvas.height / 2;
+        const inRange = c.inRange(c.door);
+        console.log(`  Checking ${c.dir}: Active=${c.door.active}, Locked=${c.door.locked}, InRange=${inRange} (Door Post: ${doorX}, ${doorY}) (DistX: ${(Globals.player.x - doorX).toFixed(1)})`);
+    })
+
     const facingDir =
         Globals.player.lastMoveY === -1 ? "top" :
             Globals.player.lastMoveY === 1 ? "bottom" :
@@ -1414,6 +1428,9 @@ export function updateUse() {
                     Globals.player.lastMoveX === 1 ? "right" : null;
 
     let target = null;
+
+    // DEBUG: Log Facing
+    console.log(`  Facing: ${facingDir} (LastMove: ${Globals.player.lastMoveX}, ${Globals.player.lastMoveY})`);
 
     // 1) facing door if in range
     if (facingDir) {
@@ -1426,14 +1443,21 @@ export function updateUse() {
         target = candidates.find(c => c.inRange(c.door)) || null;
     }
 
-    if (!target) return; // nothing to use right now
+    if (!target) {
+        console.log("  No target found in range.");
+        return;
+    }
 
-    // --- "Use" behavior for doors (for now) ---
+    console.log(`  Target Acquired: ${target.dir} (Locked: ${target.door.locked})`);
+
     const d = target.door;
 
     // unlock if locked and player has keys
-    if (d.locked) {
-        if (Globals.player.inventory?.keys > 0) {
+    if (d.locked && d.locked == 1) {
+        const keyCount = Globals.player.inventory?.keys || 0;
+        console.log(`  Attempting Type 1 Unlock. Keys: ${keyCount}`);
+
+        if (keyCount > 0) {
             Globals.player.inventory.keys--;
             if (Globals.elements.keys) Globals.elements.keys.innerText = Globals.player.inventory.keys;
             d.locked = 0;
@@ -1448,8 +1472,37 @@ export function updateUse() {
         return;
     }
 
+    // unlock if locked and player has keys
+    if (d.locked && d.locked == 2) {
+        if (Globals.player.inventory?.matrixKey === true) {
+            d.locked = 0;
+            d.unlockedByKey = true;
+            log(`${target.dir} house door unlocked via USE (Space)`);
+            SFX.doorUnlocked();
+        } else {
+            log("Door is locked - no keys");
+            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Locked (Need Key)", "red");
+            SFX.doorLocked();
+        }
+        return;
+    }
+
+    if (d.locked && d.locked == 3) {
+        if (Globals.player.inventory?.houseKey === true) {
+            d.locked = 0;
+            d.unlockedByKey = true;
+            log(`${target.dir} matrix door unlocked via USE (Space)`);
+            SFX.doorUnlocked();
+        } else {
+            log("Door is locked - no keys");
+            spawnFloatingText(Globals.player.x, Globals.player.y - 40, "Locked (Need Key)", "red");
+            SFX.doorLocked();
+        }
+        return;
+    }
+
     // (optional) if you ever add "open but interact" doors, handle here
-    log(`${target.dir} door used (already unlocked)`);
+    // log(`${target.dir} door used (already unlocked)`);
 }
 
 export function checkRemoteExplosions() {
@@ -1572,7 +1625,8 @@ export function updateBombsPhysics() {
                             // ghostSpawned = false; // Reset Ghost Timer
 
                             // Check if visited before
-                            const coord = `${player.roomX},${player.roomY}`;
+                            // Check if visited before
+                            const coord = `${Globals.player.roomX},${Globals.player.roomY}`;
                             b.exploding = true;
                             b.explosionStartAt = Date.now();
                             b.vx = 0; b.vy = 0;
@@ -1825,7 +1879,7 @@ export function updateEnemies() {
                         .then(d => {
                             en.gunConfig = d;
                             en.gunLoading = false;
-                            console.log(`Loaded Enemy Gun: ${en.gun}`, d.Bullet?.canDamagePlayer ? "Has Damage" : "NO DAMAGE", d);
+                            log(`Loaded Enemy Gun: ${en.gun}`, d.Bullet?.canDamagePlayer ? "Has Damage" : "NO DAMAGE", d);
                         })
                         .catch(e => { en.gunConfig = { error: true }; });
                 }
@@ -2302,9 +2356,9 @@ function proceedLevelComplete() {
     }
 
     // 1. Next Level?
-    console.log("Checking Next Level Transition. Room:", Globals.roomData.name, "Next:", Globals.roomData.nextLevel);
+    log("Checking Next Level Transition. Room:", Globals.roomData.name, "Next:", Globals.roomData.nextLevel);
     if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
-        console.log("Proceeding to Next Level:", Globals.roomData.nextLevel);
+        log("Proceeding to Next Level:", Globals.roomData.nextLevel);
         if (Globals.introMusic) {
             Globals.introMusic.pause();
             Globals.introMusic.currentTime = 0;
@@ -2354,6 +2408,17 @@ function proceedLevelComplete() {
 
 export function updateGhost() {
     if (Globals.gameState !== STATES.PLAY) return;
+
+    // GHOST EXCLUSION: Boss, Shop, Home, Matrix
+    // If we are in these rooms, ensure ghost is gone.
+    if (Globals.roomData.isBoss || Globals.roomData.type === 'shop' || Globals.roomData._type === 'home' || Globals.roomData._type === 'matrix') {
+        if (Globals.ghostSpawned) {
+            Globals.enemies = Globals.enemies.filter(e => e.type !== 'ghost' && e.type !== 'ghost_trophy');
+            Globals.ghostSpawned = false;
+            Globals.ghostEntry = null; // Clear entry point
+        }
+        return;
+    }
 
     // Check if Ghost should spawn
     const now = Date.now();
@@ -2466,6 +2531,37 @@ export function updateGhost() {
             const maxShrink = (Globals.canvas.width / 2) - 60; // Leave a 120px box
             if (Globals.roomShrinkSize < maxShrink) {
                 Globals.roomShrinkSize += 0.1; // Slow creep
+            }
+        }
+
+        // 3. GLANCE AT SECRET DOORS
+        // Check if there are any hidden doors in this room
+        const doors = Globals.roomData.doors || {};
+        const hiddenDoors = Object.entries(doors).filter(([dir, d]) => d.active && d.hidden);
+
+        if (hiddenDoors.length > 0) {
+            // Chance to glance
+            if (!ghost.glanceTimer) ghost.glanceTimer = Date.now() + 2000 + Math.random() * 3000;
+
+            if (Date.now() > ghost.glanceTimer) {
+                // Pick a target door
+                const [dir, targetDoor] = hiddenDoors[Math.floor(Math.random() * hiddenDoors.length)];
+
+                // Calculate target point
+                let tx = targetDoor.x ?? Globals.canvas.width / 2;
+                let ty = targetDoor.y ?? Globals.canvas.height / 2;
+                if (dir === 'top') ty = 0;
+                if (dir === 'bottom') ty = Globals.canvas.height;
+                if (dir === 'left') tx = 0;
+                if (dir === 'right') tx = Globals.canvas.width;
+
+                // Set Glance State
+                ghost.glanceTarget = { x: tx, y: ty };
+                ghost.glanceEndTime = Date.now() + 1000; // Look for 1s
+
+                // Reset Timer
+                ghost.glanceTimer = Date.now() + 3000 + Math.random() * 5000;
+                // log("Ghost glancing at secret door:", dir);
             }
         }
     } else {
@@ -2672,6 +2768,31 @@ export function drawEnemies() {
     Globals.enemies.forEach(en => {
         Globals.ctx.save();
 
+        // --- GLANCE LOGIC (Enhanced for Obviousness) ---
+        // Frequent glances: every 0.5s - 2.5s
+        if (!en.glanceTimer) en.glanceTimer = Date.now() + 2000 + Math.random() * 5000;
+
+        if (Date.now() > en.glanceTimer) {
+            const doors = Globals.roomData.doors || {};
+            const hiddenDoors = Object.entries(doors).filter(([dir, d]) => d.active && d.hidden);
+
+            if (hiddenDoors.length > 0) {
+                const [dir, targetDoor] = hiddenDoors[Math.floor(Math.random() * hiddenDoors.length)];
+                let tx = targetDoor.x ?? Globals.canvas.width / 2;
+                let ty = targetDoor.y ?? Globals.canvas.height / 2;
+                if (dir === 'top') ty = 0;
+                if (dir === 'bottom') ty = Globals.canvas.height;
+                if (dir === 'left') tx = 0;
+                if (dir === 'right') tx = Globals.canvas.width;
+
+                en.glanceTarget = { x: tx, y: ty };
+                // Long Look: 2s
+                en.glanceEndTime = Date.now() + 2000;
+            }
+            // Short Cooldown: 1s - 3s
+            en.glanceTimer = Date.now() + 1000 + Math.random() * 2000;
+        }
+
         // GHOST EFFECTS
         let bounceY = 0;
         let sizeMod = 0;
@@ -2738,6 +2859,38 @@ export function drawEnemies() {
         drawEnemyShape(Globals.ctx, en, en.x, currentY, size);
         Globals.ctx.fill();
 
+        // RESTORED: Original Ghost Eyes (Large Black) - Now with Glance
+        if (en.type === 'ghost' || en.type === 'ghost_trophy') {
+            Globals.ctx.save(); // Save context for ghost eyes
+            Globals.ctx.globalCompositeOperation = "source-over"; // Reset blend mode
+            Globals.ctx.globalAlpha = 1.0; // Reset alpha to fully opaque
+            Globals.ctx.fillStyle = "black";
+
+            const eyeSize = en.size * 0.3;
+            const eyeXOffset = en.size * 0.4;
+            const lookDist = en.size * 0.15; // How far eyes track player
+
+            // Calculate Look Vector
+            const dx = Globals.player.x - en.x;
+            const dy = Globals.player.y - en.y;
+
+            const d = Math.hypot(dx, dy);
+            let lx = 0, ly = 0;
+            if (d > 0) { lx = (dx / d) * lookDist; ly = (dy / d) * lookDist; }
+
+            // Left Eye
+            Globals.ctx.beginPath();
+            Globals.ctx.arc(en.x - eyeXOffset + lx, en.y + bounceY + ly, eyeSize, 0, Math.PI * 2);
+            Globals.ctx.fill();
+
+            // Right Eye
+            Globals.ctx.beginPath();
+            Globals.ctx.arc(en.x + eyeXOffset + lx, en.y + bounceY + ly, eyeSize, 0, Math.PI * 2);
+            Globals.ctx.fill();
+
+            Globals.ctx.restore();
+        }
+
         // Draw Name (After Fill to avoid color bleed)
         if (Globals.gameData.showEnemyNames !== false && en.lore && en.lore.displayName && !en.isDead) {
             Globals.ctx.save(); // Isolate text styles
@@ -2791,7 +2944,7 @@ export function drawEnemies() {
                 // If globally disabled OR locally hidden (by lock)
                 if (Globals.gameData.showGhostHealth === false || en.hideHealth) {
                     skipDraw = true;
-                    // Trigger Speech if it happens during lock event? 
+                    // Trigger Speech if it happens during lock event?
                     // No, logic handles speech. Drawing just stops here.
                 }
             }
@@ -2842,81 +2995,65 @@ export function drawEnemies() {
 
             en.speech.timer--;
             Globals.ctx.restore();
-        }
-
-        // DRAW EYES
-        if (en.type === 'ghost' || en.type === 'ghost_trophy') {
-            // Large Black Ghost Eyes (Geometric)
-            const eyeSize = en.size * 0.3; // BIG
-            const eyeXOffset = en.size * 0.4;
-            const lookDist = en.size * 0.15; // How far eyes track player
-
-            // Calculate Look Vector
-            const dx = Globals.player.x - en.x;
-            const dy = Globals.player.y - en.y;
-
-            const d = Math.hypot(dx, dy);
-            let lx = 0, ly = 0;
-            if (d > 0) { lx = (dx / d) * lookDist; ly = (dy / d) * lookDist; }
-
-            // Fix: Ensure eyes are drawn over the ghost glow (screen mode makes black invisible)
-            Globals.ctx.globalCompositeOperation = "source-over";
-            Globals.ctx.fillStyle = "black";
-
-            // Left Eye
-            Globals.ctx.beginPath();
-            Globals.ctx.ellipse(en.x - eyeXOffset + lx, en.y + bounceY + ly, eyeSize, eyeSize * 1.2, 0, 0, Math.PI * 2);
-            Globals.ctx.fill();
-
-            // Right Eye
-            Globals.ctx.beginPath();
-            Globals.ctx.ellipse(en.x + eyeXOffset + lx, en.y + bounceY + ly, eyeSize, eyeSize * 1.2, 0, 0, Math.PI * 2);
-            Globals.ctx.fill();
-
             Globals.ctx.restore();
-            return; // Skip default text eyes
         }
+
+
+
+
+
 
         Globals.ctx.fillStyle = "white";
         Globals.ctx.textAlign = "center";
         Globals.ctx.textBaseline = "middle";
         Globals.ctx.font = `bold ${Math.max(10, en.size * 0.8)}px sans-serif`;
 
-        // Ensure eye color contrasts with body
-        // Simple check: if body is white/very light, use black eyes? 
-        // For now, default white, but if body is white (invuln), use black?
-        if (en.hitTimer > 0 || en.frozen || en.invulnerable) {
-            Globals.ctx.fillStyle = "black";
-        }
+        // SKIP TEXT EYES ON GHOST (It has its own eyes)
+        if (en.type !== 'ghost' && en.type !== 'ghost_trophy') {
 
-        let eyes = "- -";
-
-        if (en.frozen || (en.invulnerable && en.freezeEnd && Date.now() < en.freezeEnd)) {
-            eyes = "* *";
-        } else if (en.hitTimer > 0) {
-            if (en.lastHitCritical) {
-                eyes = "* !"; // Manga Style
-            } else {
-                eyes = "x x";
+            // Ensure eye color contrasts with body
+            // Simple check: if body is white/very light, use black eyes? 
+            // For now, default white, but if body is white (invuln), use black?
+            if (en.hitTimer > 0 || en.frozen || en.invulnerable) {
+                Globals.ctx.fillStyle = "black";
             }
-        } else if (en.mode === 'angry') {
-            eyes = "> <";
+
+            let eyes = "- -";
+
+            if (en.frozen || (en.invulnerable && en.freezeEnd && Date.now() < en.freezeEnd)) {
+                eyes = "* *";
+            } else if (en.hitTimer > 0) {
+                if (en.lastHitCritical) {
+                    eyes = "* !"; // Manga Style
+                } else {
+                    eyes = "x x";
+                }
+            } else if (en.mode === 'angry') {
+                eyes = "> <";
+            }
+
+            // Calculate Eye Offset to look at player OR Glance Target
+            let aimDx = Globals.player.x - en.x;
+            let aimDy = Globals.player.y - en.y;
+
+            // GLANCE OVERRIDE
+            if (en.glanceTarget && Date.now() < en.glanceEndTime) {
+                aimDx = en.glanceTarget.x - en.x;
+                aimDy = en.glanceTarget.y - en.y;
+            }
+
+            const aimDist = Math.hypot(aimDx, aimDy);
+            const lookOffset = en.size * 0.3; // How far eyes move
+            let eyeX = en.x;
+            let eyeY = en.y + bounceY;
+
+            if (aimDist > 0) {
+                eyeX += (aimDx / aimDist) * lookOffset;
+                eyeY += (aimDy / aimDist) * lookOffset;
+            }
+
+            Globals.ctx.fillText(eyes, eyeX, eyeY);
         }
-
-        // Calculate Eye Offset to look at player
-        const aimDx = Globals.player.x - en.x;
-        const aimDy = Globals.player.y - en.y;
-        const aimDist = Math.hypot(aimDx, aimDy);
-        const lookOffset = en.size * 0.3; // How far eyes move
-        let eyeX = en.x;
-        let eyeY = en.y + bounceY;
-
-        if (aimDist > 0) {
-            eyeX += (aimDx / aimDist) * lookOffset;
-            eyeY += (aimDy / aimDist) * lookOffset;
-        }
-
-        Globals.ctx.fillText(eyes, eyeX, eyeY);
 
         Globals.ctx.restore();
     });
@@ -3046,13 +3183,19 @@ export function drawBombs(doors) {
                     if (dir === 'left') dX = 0; if (dir === 'right') dX = Globals.canvas.width;
 
                     // If bomb blast hits the door
-                    if (Math.hypot(b.x - dX, b.y - dY) < b.maxR + 30) {
+                    const distCheck = Math.hypot(b.x - dX, b.y - dY);
+                    if (distCheck < b.maxR + 30) {
+                        // log("Bomb hit door:", dir, "locked:", door.locked, "hidden:", door.hidden, "openSecretRooms:", b.openSecretRooms); // Debug
                         if (b.openLockedDoors && door.locked) door.locked = 0; // Unlock standard locks
                         if (b.openRedDoors) {
                             // Force open even if enemies are present
                             door.forcedOpen = true;
                         }
-                        if (b.openSecretRooms && door.hidden) { door.hidden = false; door.active = true; }
+                        if (b.openSecretRooms && door.hidden) {
+                            door.hidden = false;
+                            door.active = true;
+                            log("Secret Room Revealed:", dir);
+                        }
                     }
                 });
             }
@@ -3431,6 +3574,12 @@ export function updateMovementAndDoors(doors, roomLocked) {
                 } else if (collided && !hitMoveable) {
                     Globals.player.x -= dx * 5; // Knockback only if not pushing
                     Globals.player.x = Math.max(BOUNDARY + Globals.player.size, Math.min(Globals.canvas.width - BOUNDARY - Globals.player.size, Globals.player.x));
+                } else if (crossingLimit && !canPass && inDoorRange) {
+                    if (door.hidden) {
+                        // Ensure we snap back to limit to prevent slight seepage
+                        if (dx < 0) Globals.player.x = limit; // Left Wall
+                        if (dx > 0) Globals.player.x = limit; // Right Wall
+                    }
                 }
             } else {
                 const limit = dy < 0 ? BOUNDARY : Globals.canvas.height - BOUNDARY;
@@ -3504,7 +3653,7 @@ export async function pickupItem(item, index) {
     };
 
     // DEBUG TRACE
-    console.log("PickupItem:", { type, data });
+    log("PickupItem:", { type, data });
 
     // --- SIMPLE ITEMS (Sync) ---
     // Shards are handled in updateItems, but safety check here
@@ -3609,7 +3758,7 @@ export async function pickupItem(item, index) {
 
             // SPECIAL: Instant sound effect
             if (detailID === 'soundEffects') {
-                console.log("Sound Effect Unlocked via Pickup! key=" + detailID);
+                log("Sound Effect Unlocked via Pickup! key=" + detailID);
                 Globals.gameData.soundEffects = true;
                 Globals.sfxMuted = false;
                 if (SFX && SFX.upgrade) SFX.upgrade();
@@ -3618,14 +3767,14 @@ export async function pickupItem(item, index) {
 
             // SPECIAL: Instant Music Play
             if (detailID === 'music') {
-                console.log("Music Unlocked via Pickup! key=" + detailID);
+                log("Music Unlocked via Pickup! key=" + detailID);
 
                 Globals.musicMuted = false;
                 localStorage.setItem('music_muted', 'false');
                 Globals.gameData.music = true;
 
                 if (Globals.introMusic) {
-                    console.log("Starting Music Playback...");
+                    log("Starting Music Playback...");
                     if (Globals.introMusic.paused) {
                         fadeIn(Globals.introMusic, 2000, 0.4);
                     } else {
@@ -4418,12 +4567,20 @@ export function drawPlayer() {
             // Update lastShoot if actively pressing keys (failsafe if updateShooting lags)
             Globals.player.lastShootX = shootX;
             Globals.player.lastShootY = shootY;
-        } else if (Globals.player.lastShootX || Globals.player.lastShootY) {
-            // Use Last Shot Direction
-            aimAngle = Math.atan2(Globals.player.lastShootY, Globals.player.lastShootX);
-        } else if (Globals.player.lastMoveX || Globals.player.lastMoveY) {
-            // Fallback to Movement
+        }
+        // FIX: Prioritize MOVEMENT direction if not actively shooting. 
+        // User requesting: "if you are moving and not shooting he should be facing the way he is moving"
+        else if (Globals.player.lastMoveX || Globals.player.lastMoveY) {
             aimAngle = Math.atan2(Globals.player.lastMoveY, Globals.player.lastMoveX);
+        }
+        // Fallback to last shoot direction only if no movement? Or maybe just remove this fallback entirely
+        // to strictly follow movement. But let's keep it as a last resort if stationary?
+        // Actually, if stationary (lastMoveX=0), we want to face last move direction usually.
+        // The above 'else if' covers "lastMove". 
+        // So we just need to ensure we don't accidentally use 'lastShoot' when moving.
+        else if (Globals.player.lastShootX || Globals.player.lastShootY) {
+            // Use Last Shot Direction only if no movement data (e.g. start of game? or purely stationary shooting?)
+            aimAngle = Math.atan2(Globals.player.lastShootY, Globals.player.lastShootX);
         }
         drawBarrel(aimAngle);
 
@@ -4906,8 +5063,11 @@ export function updateItems() {
             // WEAPONS REQUIRE SPACE ONLY (No Heat/Bump)
             // Use Globals.keys safely
             if ((Globals.keys && Globals.keys['Space'])) {
-                if (Globals.keys) Globals.keys['Space'] = false; // Consume input
-                pickupItem(item, i);
+                // Only consume input if pickup succeeded
+                if (pickupItem(item, i)) {
+                    // console.log("Entities.js Consumed SPACE for item:", item);
+                    if (Globals.keys) Globals.keys['Space'] = false; // Consume input
+                }
             }
         } else {
             // Decay Heat when away

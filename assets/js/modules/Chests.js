@@ -162,7 +162,7 @@ export function updateChests() {
 
                     // Allow wider range for key interaction (120px)
                     if (dist < 120) {
-                        console.log("Direct Key Interaction! Chest:", chest.id, "Locked:", chest.locked, "Dist:", dist);
+                        log("Direct Key Interaction! Chest:", chest.id, "Locked:", chest.locked, "Dist:", dist);
 
                         // Unified Lock Logic
                         if (chest.locked) {
@@ -226,7 +226,7 @@ export function updateChests() {
                             }
                         } else {
                             // Unlocked - Manual Open
-                            console.log("Chest unlocked. Opening...");
+                            log("Chest unlocked. Opening...");
                             openChest(chest);
                         }
                     }
@@ -234,7 +234,7 @@ export function updateChests() {
             }
         });
         chestListenerAdded = true;
-        console.log("Chest Interaction Listener Added.");
+        log("Chest Interaction Listener Added.");
     }
 
     // Check Room Clear to reveal hidden chests
@@ -512,7 +512,7 @@ function clamp(chest) {
 }
 
 async function openChest(chest) {
-    console.log("Opening Chest:", chest.id);
+    log("Opening Chest:", chest.id);
     if (chest.state === 'open') return;
 
     // Set Open State

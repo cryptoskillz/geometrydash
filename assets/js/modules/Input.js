@@ -3,6 +3,7 @@ import { STATES, DEBUG_FLAGS } from './Constants.js';
 import { updateWelcomeScreen } from './UI.js';
 import { updateDebugEditor, renderDebugForm } from './Debug.js';
 import { Globals as G } from './Globals.js'; // Short alias if needed
+import { log } from './Utils.js';
 
 export function setupInput(callbacks) {
     // Callbacks: { restartGame, goToWelcome, goContinue }
@@ -14,6 +15,11 @@ export function setupInput(callbacks) {
 
         // Update Key State
         Globals.keys[e.code] = true;
+
+        // Debug Log for key input
+        if (e.code === 'Space') {
+            console.log("Input.js: SPACE key DOWN");
+        }
 
         // Debug Toggle
         if (e.code === 'Backquote') {
@@ -143,11 +149,11 @@ export function handleGlobalInputs(callbacks) {
     // New Run (Y) - Restart on Level 4 (Debug Only?)
     // User requested "T & Y do nothing if debug not active"
     if (isDebug && Globals.keys['KeyY']) {
-        console.log("New Run key pressed (Y). Target: Level 4.");
+        log("New Run key pressed (Y). Target: Level 4.");
         if (Globals.ghostSpawned) return;
         Globals.gameState = STATES.START;
         if (callbacks.newRun) {
-            console.log("Calling newRun('levels/4.json')...");
+            log("Calling newRun('levels/4.json')...");
             callbacks.newRun('levels/4.json').catch(err => console.error("newRun failed:", err));
             return true;
         }
@@ -156,11 +162,11 @@ export function handleGlobalInputs(callbacks) {
     // New Run (T) - Restart Current Level, New Seed (Debug Only?)
     // User requested "T & Y do nothing if debug not active"
     if (isDebug && Globals.keys['KeyT']) {
-        console.log("New Run key pressed (T). Target: Current Level.");
+        log("New Run key pressed (T). Target: Current Level.");
         if (Globals.ghostSpawned) return;
         if (Globals.gameState === STATES.PLAY || Globals.gameState === STATES.GAMEOVER || Globals.gameState === STATES.WIN || Globals.gameState === STATES.GAMEMENU || Globals.gameState === STATES.START || Globals.ghostKilled) {
             if (callbacks.newRun) {
-                console.log("Calling newRun...");
+                log("Calling newRun...");
                 callbacks.newRun().catch(err => console.error("newRun failed:", err));
                 return true;
             }

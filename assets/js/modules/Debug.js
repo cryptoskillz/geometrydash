@@ -119,6 +119,26 @@ export function renderDebugForm() {
             }
         });
 
+        const logState = Globals.gameData.debug?.log ? 'ON' : 'OFF';
+        createBtn(`TOGGLE ON-SCREEN LOG (${logState})`, "#7f8c8d", () => {
+            if (!Globals.gameData.debug) Globals.gameData.debug = {};
+            Globals.gameData.debug.log = !Globals.gameData.debug.log;
+
+            // Persist (simplified)
+            let saved = JSON.parse(localStorage.getItem('game_data') || '{}');
+            if (!saved.debug) saved.debug = {};
+            saved.debug.log = Globals.gameData.debug.log;
+            localStorage.setItem('game_data', JSON.stringify(saved));
+
+            // Immediate DOM update
+            if (Globals.elements.debugLog) {
+                Globals.elements.debugLog.style.display = Globals.gameData.debug.log ? 'block' : 'none';
+            }
+
+            log(`On-Screen Log: ${Globals.gameData.debug.log ? 'ENABLED' : 'DISABLED'}`);
+            renderDebugForm();
+        });
+
         createBtn("LOAD MATRIX ROOM", "#c0392b", () => {
             const path = "json/rooms/secret/matrix/room.json";
             log("Debug Loading Matrix Room:", path);
@@ -127,8 +147,8 @@ export function renderDebugForm() {
             if (Globals.loadRoom) Globals.loadRoom(true, path, true);
         });
 
-        createBtn("SPAWN LOADOUT (Shotgun/Keys/Bombs)", "#e67e22", async () => {
-            console.log("Debug Spawn Button Clicked");
+        createBtn("SPAWN LOADOUT (Shotgun/Keys/Bombs/Gold)", "#e67e22", async () => {
+            log("Debug Spawn Button Clicked");
             if (!Globals.player) {
                 console.error("Globals.player is undefined!");
                 return;
@@ -137,12 +157,12 @@ export function renderDebugForm() {
             // 1. Inventory
             if (!Globals.player.inventory) Globals.player.inventory = { keys: 0, bombs: 0, redShards: 0, greenShards: 0 };
 
-            console.log("Current Inventory (Before):", JSON.stringify(Globals.player.inventory));
+            log("Current Inventory (Before):", JSON.stringify(Globals.player.inventory));
             Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + 5;
             Globals.player.inventory.bombs = (Globals.player.inventory.bombs || 0) + 5;
             Globals.player.inventory.redShards = 1000;
             Globals.player.inventory.greenShards = 1000;
-            console.log("Updated Inventory (After):", Globals.player.inventory.keys, Globals.player.inventory.bombs);
+            log("Updated Inventory (After):", Globals.player.inventory.keys, Globals.player.inventory.bombs);
             log("Added 5 Keys & 5 Bombs");
 
             // 2. Shotgun
@@ -151,20 +171,37 @@ export function renderDebugForm() {
                 Globals.player.gunType = 'shotgun';
                 if (Globals.gameData) Globals.gameData.gunType = 'shotgun';
 
-                console.log("Fetching Shotgun...");
+                log("Fetching Shotgun...");
                 const res = await fetch('json/rewards/items/guns/player/shotgun.json?t=' + Date.now());
                 if (res.ok) {
                     const gunData = await res.json();
                     Globals.gun = gunData;
-                    console.log("Shotgun Loaded:", gunData);
+                    log("Shotgun Loaded:", gunData);
                     log("Equipped Shotgun!");
                 } else {
                     console.error("Failed to load shotgun json. Status:", res.status);
                 }
             } catch (e) { console.error("Shotgun fetch error:", e); }
 
+            // 3. Golden Bomb
+            try {
+                Globals.player.bombType = 'golden';
+                if (Globals.gameData) Globals.gameData.bombType = 'golden';
+
+                log("Fetching Golden Bomb...");
+                const res = await fetch('json/rewards/items/bombs/golden.json?t=' + Date.now());
+                if (res.ok) {
+                    const bombData = await res.json();
+                    Globals.bomb = bombData;
+                    log("Golden Bomb Loaded:", bombData);
+                    log("Equipped Golden Bomb!");
+                } else {
+                    console.error("Failed to load golden bomb json. Status:", res.status);
+                }
+            } catch (e) { console.error("Golden Bomb fetch error:", e); }
+
             updateUI();
-            console.log("UI Updated called");
+            log("UI Updated called");
         });
 
         return;

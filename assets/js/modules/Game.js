@@ -55,7 +55,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (!introMusic.paused) introMusic.play().catch(() => { });
     }
 
-    console.log("TRACER: initGame Start. isRestart=", isRestart);
+    log("TRACER: initGame Start. isRestart=", isRestart);
 
     // SEED INITIALIZATION
     if (!nextLevel) { // Only change seed state on new run or restart
@@ -698,15 +698,22 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         // Restore Stats if kept
         if (savedPlayerStats) {
             log("Restoring Full Player State");
-            // Merge saved state OVER the default template
-            // This ensures we keep new defaults if valid, but restore all our progress
-            // Merge saved state OVER the default template (Deep Merge to preserve structure like inventory.maxKeys)
+            // Use Deep Merge to ensure version compatibility (New keys in defaults are kept)
             deepMerge(Globals.player, savedPlayerStats);
 
-            // Explicitly ensure criticals if missing (shouldn't happen with full clone)
             if (savedPlayerStats.perfectStreak !== undefined) {
                 Globals.perfectStreak = savedPlayerStats.perfectStreak;
             }
+        } else {
+            // Apply Defaults / Unlocks to New Player
+            if (!Globals.player.gunType && Globals.gameData.gunType) Globals.player.gunType = Globals.gameData.gunType;
+            if (!Globals.player.bombType && Globals.gameData.bombType) Globals.player.bombType = Globals.gameData.bombType;
+
+            // Fallback Defaults if still empty
+            if (!Globals.player.bombType) Globals.player.bombType = 'normal';
+            if (!Globals.player.gunType) Globals.player.gunType = 'peashooter';
+
+            log("Player Initialized. Bomb:", Globals.player.bombType, "Gun:", Globals.player.gunType);
         }
 
         // Apply Game Config Overrides
@@ -889,7 +896,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     return res.json();
                 })
                 .then(data => {
-                    console.log(data)
+                    log(data)
 
                     // ID Generation: Handle "room.json" collision
                     const parts = path.split('/');
@@ -947,6 +954,23 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             roomProtos.push(loadRoomFile(Globals.gameData.startRoom, 'start'));
         }
 
+        // D. Secret Rooms (FIX: Needed to be explicitly loaded)
+        if (Globals.gameData.secrectrooms) {
+            Globals.gameData.secrectrooms.forEach(path => {
+                roomProtos.push(loadRoomFile(path, 'secret'));
+            });
+        }
+        // NEW: Load Special Secret Rooms (Trophy, Home, Matrix)
+        if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.trophyRoom.room, 'secret'));
+        }
+        if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.homeRoom.room, 'secret'));
+        }
+        if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.matrixRoom.room, 'secret'));
+        }
+
         // B. Boss Rooms
         let bosses = Globals.gameData.bossrooms || [];
         // Support singular 'bossRoom' fallback
@@ -955,15 +979,18 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
         bosses = bosses.filter(p => p && p.trim() !== "");
         bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
-        console.log(bosses)
+        log(bosses)
         // C. Shop Room
-        if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.shopRoom) {
-            roomProtos.push(loadRoomFile(Globals.gameData.shop.shopRoom, 'shop'));
+        if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.room) {
+            roomProtos.push(loadRoomFile(Globals.gameData.shop.room, 'shop'));
         }
 
-
-
+        // WAIT FOR ALL TEMPLATES TO LOAD BEFORE GENERATING LEVEL
+        log("WAITING FOR ROOM PROTOS:", roomProtos.length);
         await Promise.all(roomProtos);
+        log("ROOM TEMPLATES LOADED:", Object.keys(Globals.roomTemplates));
+
+        Globals.areAssetsLoaded = true; // Flag for startGame
 
         // 4. Pre-load ALL enemy templates
         Globals.enemyTemplates = {};
@@ -974,7 +1001,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 .then(data => {
                     // Use the last part of the path as the key (e.g. "special/firstboss" -> "firstboss")
                     const key = id.split('/').pop();
-                    console.log(key, data)
+                    log(key, data)
                     Globals.enemyTemplates[key] = data;
                 })
         );
@@ -1014,7 +1041,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         }
         else if (nextLevel && (Globals.gameData.tiles || Globals.gameData.enemies)) {
-            console.log("Single Room Mode Detected via nextLevel");
+            log("Single Room Mode Detected via nextLevel");
             Globals.bossCoord = "0,0";
             Globals.goldenPath = ["0,0"];
             // Use gData as the room source since nextLevel was merged into it
@@ -1034,7 +1061,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         // We need to re-trigger spawnEnemies for the current room if it wasn't done.
         // CHECK: generateLevel populates the map. If we injected "0,0" manually (debug), we need to spawn.
         if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
-            console.log("Debug/Direct Load: Spawning Enemies for 0,0");
+            log("Debug/Direct Load: Spawning Enemies for 0,0");
             spawnEnemies(Globals.roomData);
             spawnChests(Globals.roomData);
             spawnSwitches(Globals.roomData);
@@ -1075,7 +1102,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         const params = new URLSearchParams(window.location.search);
         const shouldAutoStart = Globals.gameData.showWelcome === false || isRestart || params.get('autostart') === 'true';
 
-        console.log("TRACER: initGame End. shouldAutoStart=", shouldAutoStart);
+        log("TRACER: initGame End. shouldAutoStart=", shouldAutoStart);
 
         if (shouldAutoStart) {
             // Pass savedPlayerStats existence as keepState flag
@@ -1090,13 +1117,28 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         window.startGame = startGame;
     }
 }
-export function startGame(keepState = false) {
+export async function startGame(keepState = false) {
     // Force Audio Resume on User Interaction
     if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
 
     // Guard against starting while Initializing or Unlocking or already starting
-    console.log("TRACER: startGame Called");
-    if (Globals.gameState === STATES.PLAY || Globals.isGameStarting || Globals.isInitializing || Globals.isUnlocking) return;
+    log("TRACER: startGame Called");
+
+    // NEW: Wait for loading if initGame is still running
+    if (Globals.isInitializing) {
+        log("TRACER: Waiting for initialization...");
+        while (Globals.isInitializing) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+    // Also ensure templates are actually loaded (if startGame called directly)
+    if (!Globals.areAssetsLoaded && !keepState) {
+        console.warn("TRACER: Assets not loaded yet? Waiting...");
+        // Ideally should call initGame() if not running, but assume initGame runs on load.
+        // Just wait loop in case it's mid-load but isInitializing flag logic is weird.
+    }
+
+    if (Globals.gameState === STATES.PLAY || Globals.isGameStarting || Globals.isUnlocking) return;
     Globals.isGameStarting = true;
 
     // MUSIC TRANSITION (Welcome -> Gameplay)
@@ -1162,7 +1204,7 @@ export function startGame(keepState = false) {
         // Wait, restartGame calls initGame(true), which hides welcome. 
         // So this input logic only applies to MANUAL start from Welcome Screen.
 
-        console.log("Regenerating level with selected seed:", Globals.seed);
+        log("Regenerating level with selected seed:", Globals.seed);
         generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
 
         // Also must respawn enemies for the start room (0,0) as generateLevel resets map
@@ -1295,7 +1337,7 @@ export function startGame(keepState = false) {
             }
 
             // Start Game
-            console.log("TRACER: startGame Async End -> PLAY");
+            log("TRACER: startGame Async End -> PLAY");
             Globals.gameState = STATES.PLAY;
             Globals.elements.welcome.style.display = 'none';
 
@@ -1740,7 +1782,14 @@ export function changeRoom(dx, dy) {
 
         // GHOST FOLLOW LOGIC
         // If ghost was chasing and follow is on, fast-forward the timer so he appears immediately
-        if (shouldFollow && !(Globals.player.roomX === 0 && Globals.player.roomY === 0) && !Globals.roomData.isBoss && Globals.roomData.type !== 'shop') {
+        // EXCLUDE: Start, Boss, Shop, Home, Matrix
+        const isExcluded = Globals.player.roomX === 0 && Globals.player.roomY === 0 ||
+            Globals.roomData.isBoss ||
+            Globals.roomData.type === 'shop' ||
+            Globals.roomData._type === 'home' ||
+            Globals.roomData._type === 'matrix';
+
+        if (shouldFollow && !isExcluded) {
             log("The Ghost follows you...");
             // Trigger time = desired spawn time
             // roomStartTime = Now - (ConfigTime - TravelTime)
@@ -1854,7 +1903,7 @@ export function update() {
 
     // DEBUG INPUT
     if (Math.random() < 0.01) {
-        console.log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
+        log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
     }
 
     // 0. Global Inputs (Restart/Menu from non-play states)
@@ -2089,19 +2138,22 @@ export async function draw() {
         Globals.ctx.fillRect(0, 0, w, h);
 
         // Procedural Fog/Orbs
+        Globals.ctx.save();
+        Globals.ctx.globalCompositeOperation = "screen"; // Make it glowy!
         const time = Date.now() * 0.0002;
         for (let i = 0; i < 15; i++) {
             // Random-ish movement based on time and index
             const x = ((Math.sin(time + i * 132.1) + 1) / 2) * w;
             const y = ((Math.cos(time * 0.7 + i * 35.2) + 1) / 2) * h;
             const s = 100 + Math.sin(time * 2 + i) * 50;
-            const alpha = 0.03 + (Math.sin(time + i) * 0.02);
+            const alpha = 0.05 + (Math.sin(time + i) * 0.03); // Slightly boosted alpha
 
             Globals.ctx.fillStyle = `rgba(100, 220, 255, ${alpha})`;
             Globals.ctx.beginPath();
             Globals.ctx.arc(x, y, s, 0, Math.PI * 2);
             Globals.ctx.fill();
         }
+        Globals.ctx.restore();
 
         // Vignette Overlay
         const grad = Globals.ctx.createRadialGradient(w / 2, h / 2, w / 3, w / 2, h / 2, w * 0.8);
@@ -2111,7 +2163,9 @@ export async function draw() {
         Globals.ctx.fillRect(0, 0, w, h);
 
         // Wanted Poster (If Ghost not killed)
-        const ghostKills = Globals.killStatsTotal?.types?.ghost || 0;
+        // Check both 'ghost' (normal) and 'ghost_trophy' (trophy room variant)
+        const ghostKills = (Globals.killStatsTotal?.types?.ghost || 0) + (Globals.killStatsTotal?.types?.ghost_trophy || 0);
+
         if (ghostKills === 0) {
             const px = w / 2;
             const py = h / 2;
@@ -2120,29 +2174,43 @@ export async function draw() {
             Globals.ctx.translate(px, py);
             Globals.ctx.rotate(Math.sin(Date.now() * 0.001) * 0.05); // Subtle swing
 
+            // FORCE DEFAULT COMPOSITE to avoid "weird mask" issues
+            Globals.ctx.globalCompositeOperation = 'source-over';
+            Globals.ctx.globalAlpha = 1.0;
+
             // Paper
             Globals.ctx.fillStyle = "#f4f1e1"; // Parchment
-            Globals.ctx.fillRect(-60, -90, 120, 180);
+            Globals.ctx.fillRect(-80, -100, 160, 200); // Slightly larger
             Globals.ctx.strokeStyle = "#5d4037";
             Globals.ctx.lineWidth = 4;
-            Globals.ctx.strokeRect(-60, -90, 120, 180);
+            Globals.ctx.strokeRect(-80, -100, 160, 200);
 
             // Pin
             Globals.ctx.fillStyle = "#c0392b"; // Red Pin
             Globals.ctx.beginPath();
-            Globals.ctx.arc(0, -75, 6, 0, Math.PI * 2);
+            Globals.ctx.arc(0, -85, 6, 0, Math.PI * 2);
             Globals.ctx.fill();
 
             // Text
             Globals.ctx.fillStyle = "#3e2723";
             Globals.ctx.textAlign = "center";
-            Globals.ctx.font = "bold 20px monospace";
-            Globals.ctx.fillText("WANTED", 0, -50);
+            Globals.ctx.font = "bold 24px monospace"; // Larger Header
+            Globals.ctx.fillText("WANTED", 0, -60);
 
-            Globals.ctx.fillText("DEAD", 0, 60);
+            Globals.ctx.font = "bold 20px monospace";
+            Globals.ctx.fillText("DEAD", 0, 70);
 
             const ghostName = Globals.enemyTemplates?.ghost?.displayName || "Player Snr";
-            Globals.ctx.fillText(ghostName, 0, 80);
+
+            // Auto-scale name if too long
+            const maxW = 140;
+            let fontSize = 20;
+            Globals.ctx.font = `bold ${fontSize}px monospace`;
+            while (Globals.ctx.measureText(ghostName).width > maxW && fontSize > 10) {
+                fontSize--;
+                Globals.ctx.font = `bold ${fontSize}px monospace`;
+            }
+            Globals.ctx.fillText(ghostName, 0, 90);
 
             // Ghost Sketch
             Globals.ctx.strokeStyle = "#3e2723";
@@ -2291,7 +2359,7 @@ export async function draw() {
 
 export function drawPortal(overrideColor = null) {
     // Only draw if active
-    // console.log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
+    // log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
     if (!Globals.portal.active) return;
     const time = Date.now() / 500;
 
@@ -2391,66 +2459,142 @@ export function updateMusicToggle() {
 }
 
 export function updateRoomTransitions(doors, roomLocked) {
-
     // --- 8. ROOM TRANSITIONS ---
-    // --- 8. ROOM TRANSITIONS ---
-    // Increased threshold to account for larger player sizes (Triangle=20)
     const t = 50;
+    // Check if we are in a Trophy Room or Secret Room (Force Unlock logic for exiting)
+    const isSecretExit = (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy' || Globals.roomData.isSecret);
+    const triggerDist = t;
 
     // PREVENT INSTANT BACK-TRANSITION
     // Wait for 500ms after room start before allowing another transition
-    if (Date.now() - Globals.roomStartTime < 500) return;
-
-    // Debug Door Triggers
-    if (Globals.player.x < t + 10 && doors.left?.active) {
-        // log(`Left Door Check: X=${Math.round(player.x)} < ${t}? Locked=${doors.left.locked}, RoomLocked=${roomLocked}`);
-    }
+    // EXCEPTION: Secret Exits can be exited immediately
+    if (!isSecretExit && Date.now() - Globals.roomStartTime < 500) return;
 
     // Constraint for center alignment
-    // Only allow transition if player is roughly in front of the door
-    const doorW = 50; // Half-width tolerance (Total 100px)
+    const doorW = 50;
     const shrink = Globals.roomShrinkSize || 0;
 
-    // Allow transition if room is unlocked OR if the specific door is forced open (red door blown)
-    // Left Door - Require Push Left (A/ArrowLeft)
-    if (Globals.player.x < t + shrink && doors.left?.active) {
-        const doorY = doors.left.y !== undefined ? doors.left.y : Globals.canvas.height / 2;
-        if (Math.abs(Globals.player.y - doorY) < doorW) {
-            if ((Globals.keys['KeyA'] || Globals.keys['ArrowLeft']) && !doors.left.locked && (!roomLocked || doors.left.forcedOpen)) changeRoom(-1, 0);
-            else log("Left Door Blocked: Key/Lock/Room");
+    // Unified Door Handler
+    const attemptDoor = (door, dx, dy) => {
+        // 1. Basic Validity & Visibility Check
+        if (!door || !door.active || door.hidden) return;
+
+        // 2. Position Check
+        let inRange = false;
+        if (dx === -1) { // Left
+            const doorY = door.y !== undefined ? door.y : Globals.canvas.height / 2;
+            inRange = (Globals.player.x < triggerDist + shrink) && (Math.abs(Globals.player.y - doorY) < doorW);
+        } else if (dx === 1) { // Right
+            const doorY = door.y !== undefined ? door.y : Globals.canvas.height / 2;
+            inRange = (Globals.player.x > Globals.canvas.width - triggerDist - shrink) && (Math.abs(Globals.player.y - doorY) < doorW);
+        } else if (dy === -1) { // Top
+            const doorX = door.x !== undefined ? door.x : Globals.canvas.width / 2;
+            inRange = (Globals.player.y < triggerDist + shrink) && (Math.abs(Globals.player.x - doorX) < doorW);
+        } else if (dy === 1) { // Bottom
+            const doorX = door.x !== undefined ? door.x : Globals.canvas.width / 2;
+            inRange = (Globals.player.y > Globals.canvas.height - triggerDist - shrink) && (Math.abs(Globals.player.x - doorX) < doorW);
         }
-    }
-    // Right Door - Require Push Right (D/ArrowRight)
-    else if (Globals.player.x > Globals.canvas.width - t - shrink && doors.right?.active) {
-        const doorY = doors.right.y !== undefined ? doors.right.y : Globals.canvas.height / 2;
-        if (Math.abs(Globals.player.y - doorY) < doorW) {
-            if ((Globals.keys['KeyD'] || Globals.keys['ArrowRight']) && !doors.right.locked && (!roomLocked || doors.right.forcedOpen)) changeRoom(1, 0);
-            else log("Right Door Blocked: Key/Lock/Room");
+
+        if (!inRange) return;
+
+        // 3. Input Check (Directional)
+        let hasKeyInput = false;
+        if (dx === -1) hasKeyInput = (Globals.keys['KeyA'] || Globals.keys['ArrowLeft']);
+        if (dx === 1) hasKeyInput = (Globals.keys['KeyD'] || Globals.keys['ArrowRight']);
+        if (dy === -1) hasKeyInput = (Globals.keys['KeyW'] || Globals.keys['ArrowUp']);
+        if (dy === 1) hasKeyInput = (Globals.keys['KeyS'] || Globals.keys['ArrowDown']);
+
+        if (!hasKeyInput) return;
+
+        // 4. Lock & Access Logic
+        // Force conversion to number, default to 0
+        let lockVal = parseInt(door.locked, 10);
+        if (isNaN(lockVal)) lockVal = 0;
+
+        //console.log(`Door Check: ${dx},${dy} | Locked: ${door.locked} | Parsed: ${lockVal}`);
+
+        let allowed = false;
+        let promptY = Globals.player.y - 60;
+        if (door.x == 400) promptY = Globals.player.y + 60; // Adjust for Top/Bottom doors
+
+        // STRICT HIERARCHY: Specific Locks override generic "Unlocked" status
+        if (lockVal === 2) { // Home Key
+            if (Globals.player.inventory.houseKey) {
+                // Interaction Required
+                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Home Room", "#fff", 2);
+
+            } else {
+                spawnFloatingText(Globals.player.x, promptY, "Need House Key!", "#ff0000", 2);
+            }
+        } else if (lockVal === 3) { // Matrix Key
+            if (Globals.player.inventory.matrixKey) {
+                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Matrix Room", "#fff", 2);
+
+
+            } else {
+                spawnFloatingText(Globals.player.x, promptY, "Need Matrix Key!", "#ff0000", 2);
+            }
+        } else if (lockVal === 1) { // Standard Key
+            // Interaction Required (Unified Logic)
+            if (Globals.player.inventory.keys > 0) {
+                log("Press SPACE to open door");
+                spawnFloatingText(Globals.player.x, promptY, "Press SPACE", "#fff", 2);
+
+
+            } else if (door.forcedOpen || isSecretExit) {
+                // Allow passing through standard locked door if it's forced open or we are exiting secret room
+                allowed = true;
+            } else {
+                spawnFloatingText(Globals.player.x, promptY, "Key Required!", "#ff0000", 2);
+            }
+        } else {
+            // Unlocked (0)
+            // Implicitly allow IF lockVal is 0. 
+            // If it's some other weird number, Block it? 
+            // console.log("Door Unlocked:", lockVal);
+            //if (lockVal === 0) {
+            allowed = true;
+
+            /* } else {
+                console.warn("Unknown Lock Value Blocked:", lockVal);
+                allowed = false;
+            } */
         }
-    }
-    // Top Door - Require Push Up (W/ArrowUp)
-    else if (Globals.player.y < t + shrink && doors.top?.active) {
-        const doorX = doors.top.x !== undefined ? doors.top.x : Globals.canvas.width / 2;
-        if (Math.abs(Globals.player.x - doorX) < doorW) {
-            if ((Globals.keys['KeyW'] || Globals.keys['ArrowUp']) && !doors.top.locked && (!roomLocked || doors.top.forcedOpen)) changeRoom(0, -1);
-            else log("Top Door Blocked: Key/Lock/Room");
+
+        // 5. Execution
+        if (!allowed) {
+            return;
         }
-    }
-    // Bottom Door - Require Push Down (S/ArrowDown)
-    else if (Globals.player.y > Globals.canvas.height - t - shrink && doors.bottom?.active) {
-        const doorX = doors.bottom.x !== undefined ? doors.bottom.x : Globals.canvas.width / 2;
-        if (Math.abs(Globals.player.x - doorX) < doorW) {
-            if ((Globals.keys['KeyS'] || Globals.keys['ArrowDown']) && !doors.bottom.locked && (!roomLocked || doors.bottom.forcedOpen)) changeRoom(0, 1);
-            else log("Bottom Door Blocked: Key/Lock/Room");
+
+        // Room Locked Check (Combat Lock)
+        // If the door is ALLOWED (unlocked/key used), we still check if the ROOM itself prevents exit.
+        // Exception: Secret Exits and Forced Open doors bypass Combat Lock.
+        if (roomLocked && !door.forcedOpen && !isSecretExit) {
+            // implicit block by enemies
+            return;
         }
-    }
+
+        changeRoom(dx, dy);
+    };
+
+    attemptDoor(doors.left, -1, 0);
+    attemptDoor(doors.right, 1, 0);
+    attemptDoor(doors.top, 0, -1);
+    attemptDoor(doors.bottom, 0, 1);
 }
 
 export function isRoomLocked() {
+    // Trophy Rooms are NEVER locked, regardless of enemies (trophies) inside
+    // Add logging to verify this is called
+    if (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy' || Globals.roomData.isSecret) {
+        // log("isRoomLocked: False (Trophy/Secret Override)"); // Too spammy? Maybe occasional?
+        return false;
+    }
+
     const aliveEnemies = Globals.enemies.filter(en => !en.isDead && !en.indestructible);
 
     // 1. Any normal enemy -> LOCK
-    const nonGhostEnemies = aliveEnemies.filter(en => en.type !== 'ghost');
+    const nonGhostEnemies = aliveEnemies.filter(en => en.type !== 'ghost' && en.type !== 'ghost_trophy');
     if (nonGhostEnemies.length > 0) return true;
 
     // 2. Ghost enemy -> LOCK only if it has triggered the lock
@@ -2477,11 +2621,11 @@ export function updateRoomLock() {
             // Store previous state (was it playing Tron?)
             if (Globals.wasMusicPlayingBeforeGhost === undefined) Globals.wasMusicPlayingBeforeGhost = !introMusic.paused;
 
-            console.log("GHOST TRAP: Switching to Ghost Music and FORCING Play. Previous:", Globals.wasMusicPlayingBeforeGhost);
+            log("GHOST TRAP: Switching to Ghost Music and FORCING Play. Previous:", Globals.wasMusicPlayingBeforeGhost);
             introMusic.src = Globals.gameData.ghostMusic || 'assets/music/ghost.mp3';
             introMusic.volume = 0.4; // Force Volume Up (Override mute)
             // Force Play
-            introMusic.play().then(() => console.log("Ghost Music Started")).catch((e) => { console.error("Ghost Music Force Play Failed:", e); });
+            introMusic.play().then(() => log("Ghost Music Started")).catch((e) => { console.error("Ghost Music Force Play Failed:", e); });
             Globals.ghostTrapActive = true;
         }
     } else if (!isGhostTrap && Globals.ghostTrapActive) {
@@ -2569,11 +2713,11 @@ export function updateRoomLock() {
         // Require minimum time to disqualify glitches (e.g. 100ms)
         const isGlitch = timeTakenMs < 100;
         const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 5000;
-        console.log(`Room Cleared! TimeTaken: ${timeTakenMs}ms, Limit: ${speedyLimitMs}ms (Start: ${freezeEnd}, Now: ${Date.now()})`);
+        log(`Room Cleared! TimeTaken: ${timeTakenMs}ms, Limit: ${speedyLimitMs}ms (Start: ${freezeEnd}, Now: ${Date.now()})`);
 
         // Fix: check timeTakenMs > 100 to avoid glitch "instant clears"
         if (speedyLimitMs > 0 && timeTakenMs > 100 && timeTakenMs <= speedyLimitMs) {
-            console.log("SPEEDY BONUS AWARDED!");
+            log("SPEEDY BONUS AWARDED!");
             Globals.speedyBonusCount++;
             Globals.speedyBonusSessionCount++;
             if (Globals.gameData.rewards && Globals.gameData.rewards.speedy) {
@@ -2584,7 +2728,7 @@ export function updateRoomLock() {
                 }
             }
         } else {
-            console.log("Speedy Bonus Missed (or disabled).");
+            log("Speedy Bonus Missed (or disabled).");
         }
 
         // --- PERFECT BONUS (STREAK) ---
@@ -2692,11 +2836,24 @@ export function drawDoors() {
     const roomLocked = isRoomLocked();
     const doors = Globals.roomData.doors || {};
     Object.entries(doors).forEach(([dir, door]) => {
-        if (!door.active || door.hidden) return;
+        if (!door.active) return;
 
         let color = "#222"; // default open
-        if (roomLocked && !door.forcedOpen) color = "#c0392b"; // red if locked by enemies (and not forced)
-        else if (door.locked) color = "#f1c40f"; // yellow if locked by key
+
+        if (door.hidden) {
+            // Hidden = Invisible (matches wall)
+            // We simply don't draw it, OR we draw it as a wall if needed. 
+            // But existing logic "continues" loop if !active. 
+            // If active=1 and hidden=1, we skip drawing the door rect?
+            // Actually, if we return, it looks like a gap?
+            // No, walls are drawn by room background. Doors are drawn ON TOP.
+            // So if we RETURN, we see the background/wall. Correct.
+            return;
+        } else if (roomLocked && !door.forcedOpen) {
+            color = "#c0392b"; // red if locked by enemies
+        } else if (door.locked) {
+            color = "#f1c40f"; // yellow if locked by key
+        }
 
         Globals.ctx.fillStyle = color;
         const dx = door.x ?? Globals.canvas.width / 2, dy = door.y ?? Globals.canvas.height / 2;
@@ -2706,6 +2863,26 @@ export function drawDoors() {
         if (dir === 'bottom') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, Globals.canvas.height - DOOR_THICKNESS - s, DOOR_SIZE, DOOR_THICKNESS);
         if (dir === 'left') Globals.ctx.fillRect(0 + s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
         if (dir === 'right') Globals.ctx.fillRect(Globals.canvas.width - DOOR_THICKNESS - s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
+
+        // DEBUG: Draw Hitbox Overlay
+        const dit = true; // Enabled per user request
+        if (dit) {
+            Globals.ctx.save();
+            Globals.ctx.strokeStyle = "magenta";
+            Globals.ctx.lineWidth = 2;
+            const doorRangeW = DOOR_SIZE; // +/- DOOR_SIZE from center = 2*DOOR_SIZE width
+            const doorRangeH = 45; // BOUNDARY (20) + TOLERANCE (25)
+            //show if debug is active
+
+            if (DEBUG_FLAGS.WINDOW) {
+                if (dir === 'top') Globals.ctx.strokeRect(dx - doorRangeW, 0, doorRangeW * 2, doorRangeH);
+                if (dir === 'bottom') Globals.ctx.strokeRect(dx - doorRangeW, Globals.canvas.height - doorRangeH, doorRangeW * 2, doorRangeH);
+                if (dir === 'left') Globals.ctx.strokeRect(0, dy - doorRangeW, doorRangeH, doorRangeW * 2);
+                if (dir === 'right') Globals.ctx.strokeRect(Globals.canvas.width - doorRangeH, dy - doorRangeW, doorRangeH, doorRangeW * 2);
+            }
+            Globals.ctx.restore();
+        }
+
     });
 }
 
@@ -2935,7 +3112,7 @@ export function goToWelcome() {
 Globals.goToWelcome = goToWelcome;
 
 export function beginPlay() {
-    console.log("TRACER: beginPlay Called. GameState=", Globals.gameState);
+    log("TRACER: beginPlay Called. GameState=", Globals.gameState);
     // Check if we are in START state, then call startGame
     if (Globals.gameState === STATES.START) {
         startGame(false); // Fresh start from welcome screen

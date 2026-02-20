@@ -3,10 +3,19 @@ import { CONFIG, DEBUG_FLAGS } from './Constants.js';
 import { SFX } from './Audio.js';
 
 export function log(...args) {
-    if (!DEBUG_FLAGS.LOG) return;
+
 
     // Console Log
-    console.log(...args);
+    if (Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.showConsole) {
+        console.log(...args);
+    }
+
+    // Visual Log Gate: Check gameData first, fallback to FLags
+    const showVisual = (Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.log !== undefined)
+        ? Globals.gameData.debug.log
+        : DEBUG_FLAGS.LOG;
+
+    if (!showVisual) return;
 
     // In-Game Log
     const msg = args.map(a => (typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ');
@@ -56,16 +65,35 @@ export function deepMerge(target, source) {
 }
 
 export function spawnFloatingText(x, y, text, color = "white", type = "normal", target = null) {
+    let life = 1.0;
+    let actualType = type;
+
+    // Support numeric duration passed as type
+    if (typeof type === 'number') {
+        life = type;
+        actualType = 'normal';
+    } else {
+        actualType = type;
+    }
+
     // Speech bubbles: Static, longer life
-    const isSpeech = type === 'speech';
+    const isSpeech = actualType === 'speech';
+
+    // throttle: if text exists, don't spawn another immediately 
+    // (unless we want stacking? For now, keep existing logic to prevent spam)
+    if (Globals.floatingTexts.length > 0) {
+        // Optional: if different text, maybe replace?
+        // For now, strict throttling.
+        return;
+    }
 
     Globals.floatingTexts.push({
         x: x,
         y: y,
         text: text,
         color: color,
-        type: type,
-        life: 1.0,
+        type: actualType,
+        life: life,
         vy: isSpeech ? -0.5 : -1, // Speech floats slower
         target: target // Store target for following
     });
