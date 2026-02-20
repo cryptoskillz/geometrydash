@@ -3485,6 +3485,8 @@ export function bankDeposit(amountStr) {
 
         if (window.SFX && SFX.coin) window.SFX.coin();
         log(`Deposited ${depositAmt} green shards. Total: ${bankedShards}`);
+        document.getElementById('bankMessage').innerText = "Deposited " + depositAmt + " green shards.";
+        spawnFloatingText(depositAmt, 'green', Globals.player.x, Globals.player.y);
     } else {
         if (window.SFX && SFX.cantPickup) window.SFX.cantPickup();
     }
@@ -3528,7 +3530,8 @@ export function bankWithdraw(amountStr) {
         localStorage.setItem('currency_green', Globals.player.inventory.greenShards);
 
         if (window.SFX && SFX.coin) window.SFX.coin();
-        log(`Withdrew ${withdrawAmt} green shards from Piggy Bank.`);
+        spawnFloatingText(withdrawAmt, 'green', Globals.player.x, Globals.player.y);
+        document.getElementById('bankMessage').innerText = "Withdrew " + withdrawAmt + " green shards.";
     } else {
         if (window.SFX && SFX.cantPickup) window.SFX.cantPickup();
     }
