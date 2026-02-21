@@ -435,9 +435,9 @@ export function spawnEnemies() {
             const inst = JSON.parse(JSON.stringify(template));
             inst.templateId = bossKey;
 
-            // Init Defaults
+            // Init Defaults (Avoid Center so portal doesn't trap them)
             inst.x = (Globals.canvas.width / 2);
-            inst.y = (Globals.canvas.height / 2);
+            inst.y = (Globals.canvas.height / 4);
             if (inst.size) {
                 inst.x -= inst.size / 2;
                 inst.y -= inst.size / 2;
@@ -530,6 +530,15 @@ export function spawnEnemies() {
                     } else {
                         inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
                         inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
+
+                        // Guard against bosses spawning in absolute center (portal trap)
+                        if (inst.isBoss || inst.type === 'boss') {
+                            const cx = Globals.canvas.width / 2;
+                            const cy = Globals.canvas.height / 2;
+                            if (Math.hypot(inst.x - cx, inst.y - cy) < 60) {
+                                inst.y = Globals.canvas.height / 4; // Shift up
+                            }
+                        }
                     }
                     inst.frozen = true;
                     inst.freezeEnd = freezeUntil;

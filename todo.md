@@ -2,7 +2,7 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- use portalWarning; if its true do a check that looks for items in the room and if there it brings up a modal that says "Are you sure you want to enter the portal?". If you do enter a portal with items in the room you get bonus red shards
+
 - Unlock spawns are slow after a boss kill.
 - Unblock drops that have already been locked.
 - Don't spawn the same unlock twice.
@@ -16,7 +16,6 @@ DONT DO ANY OF THESE TASKS AI
 - Speedy timer should be set for standard peashooter time, but adjust down for more powerful guns.
 - Bomb drop icon has a big 'B'.
 - Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
-- Boss spawns with a portal sometimes.
 - Minimap moves down on restart then goes back up.
 - You can move bombs into other bombs that are solid.
 - If you press 0 or 9, it should update the debug buttons to on/off.
@@ -27,7 +26,7 @@ DONT DO ANY OF THESE TASKS AI
 - You pick up `360 gun` and drop `360` (name mismatch).
 - Ensure "staysAngryWhenHit" is correctly set to false.
 - Death speech isn't always working.
-- Music toggled off shouldn't turn back on after restarting or going back to the main menu.
+
 
 # Rooms & Levels
 - All rooms should have a number of switches that have to be stood on for x seconds to open the door, so we can do a pacafist run.
