@@ -54,7 +54,7 @@
             "defaultCost": 1000,
             "amountSpent": 0,
             "maxAllowed": 99,
-            "item": "/json/rewards/items/modifiers/player/addMaxhp.json",
+            "item": "/json/rewards/items/inventory/addmaxkey.json",
             "modify": {
                 "type": "player",
                 "attr": "keys",

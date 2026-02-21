@@ -1285,26 +1285,36 @@ export async function startGame(keepState = false) {
         }
 
         // --- Apply Permanent Upgrades ---
-        const bonusMaxHp = parseFloat(localStorage.getItem('upgrade_permanent_maxHp') || '0');
-        if (bonusMaxHp > 0) {
-            Globals.player.maxHp = (Globals.player.maxHp || 3) + bonusMaxHp;
-            Globals.player.hp = Globals.player.maxHp; 
-            log("Applied permanent maxHp bonus:", bonusMaxHp);
+        let upgrades = [];
+        try {
+            upgrades = JSON.parse(localStorage.getItem('game_upgrades') || '[]');
+        } catch (e) {
+            console.error("Failed to parse game_upgrades", e);
         }
 
-        const bonusKeys = parseFloat(localStorage.getItem('upgrade_permanent_keys') || '0');
-        if (bonusKeys > 0) {
-            if (!Globals.player.inventory) Globals.player.inventory = {};
-            Globals.player.inventory.maxKeys = (Globals.player.inventory.maxKeys || 5) + bonusKeys;
-            Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + bonusKeys; 
-            log("Applied permanent keys bonus:", bonusKeys);
-        }
-        
-        const bonusSpeed = parseFloat(localStorage.getItem('upgrade_permanent_speed') || '0');
-        if (bonusSpeed > 0) {
-            Globals.player.speed += bonusSpeed;
-            log("Applied permanent speed bonus:", bonusSpeed);
-        }
+        upgrades.forEach(u => {
+            if (u.type === 'player' && u.attr) {
+                const parts = u.attr.split('.');
+                let current = Globals.player;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (current[parts[i]] === undefined) current[parts[i]] = {};
+                    current = current[parts[i]];
+                }
+                const last = parts[parts.length - 1];
+                current[last] = (parseFloat(current[last]) || 0) + (parseFloat(u.value) || 1);
+
+                // Special linking syncs
+                if (u.attr === 'maxHp') {
+                    Globals.player.hp = Globals.player.maxHp;
+                }
+                // Sync actual keys to maxKeys if maxKeys is upgraded
+                if (u.attr === 'inventory.maxKeys') {
+                    Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + (parseFloat(u.value) || 1);
+                }
+
+                log(`Applied permanent upgrade JSON: ${u.attr} +${u.value || 1}`);
+            }
+        });
     }
 
     // Async Load Assets then Start
@@ -3520,7 +3530,8 @@ export function confirmNewGame() {
     // Clear Persistence to ensure fresh start (Hard Reset)
     STORAGE_KEYS.HARD_RESET.forEach(key => localStorage.removeItem(key));
 
-    // Clear Permanent Upgrades and Payment Progress
+    // Clear Permanent Upgrades array and Payment Progress
+    localStorage.removeItem('game_upgrades');
     const keysToRemove = Object.keys(localStorage).filter(k =>
         k.startsWith('upgrade_permanent_') || k.startsWith('upgrade_amountSpent_')
     );

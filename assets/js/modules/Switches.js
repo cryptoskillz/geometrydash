@@ -295,11 +295,22 @@ function handleUpgradeSwitch(s) {
         if (s.modify && s.modify.attr) {
             localStorage.setItem(`upgrade_amountSpent_${s.modify.attr}`, 0);
 
-            // Apply permanent stat bonus
-            const attr = s.modify.attr;
-            const amt = parseFloat(s.modify.amount) || 1;
-            let currentBonus = parseFloat(localStorage.getItem(`upgrade_permanent_${attr}`) || '0');
-            localStorage.setItem(`upgrade_permanent_${attr}`, currentBonus + amt);
+            // Apply permanent stat bonus via array
+            let upgrades = [];
+            try {
+                upgrades = JSON.parse(localStorage.getItem('game_upgrades') || '[]');
+            } catch (e) {
+                upgrades = [];
+            }
+
+            upgrades.push({
+                type: s.modify.type || 'player',
+                attr: s.modify.attr,
+                value: parseFloat(s.modify.amount) || 1
+            });
+
+            localStorage.setItem('game_upgrades', JSON.stringify(upgrades));
+            log("Added permanent upgrade to array:", upgrades[upgrades.length - 1]);
         }
 
         spawnFloatingText(s.x, s.y - 30, "UPGRADE COMPLETE!", "#f1c40f");

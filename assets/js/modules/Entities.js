@@ -4107,14 +4107,16 @@ export async function pickupItem(item, index) {
                     localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
                 }
             }
-            else if (target === 'player') {
+            else if (target === 'player' || target.startsWith('player.')) {
                 // Apply to Globals.player
                 if (data.modifiers) {
                     let applied = false;
+                    const baseTarget = target === 'player' ? '' : target.substring(7) + '.'; // e.g. "inventory."
+
                     for (const key in data.modifiers) {
                         let val = data.modifiers[key];
                         // Map 'bombs' shorthand to 'inventory.bombs'
-                        let targetKey = key;
+                        let targetKey = baseTarget + key;
                         if (targetKey === 'bombs') targetKey = 'inventory.bombs';
 
                         let isRelative = false;
