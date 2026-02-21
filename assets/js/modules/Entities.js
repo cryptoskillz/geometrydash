@@ -2758,35 +2758,115 @@ export function drawEnemies() {
             const innerRadius = size / 2;
             let rot = Math.PI / 2 * 3;
             let step = Math.PI / spikes;
-            ctx.moveTo(x, y - outerRadius);
-            for (let i = 0; i < spikes; i++) {
-                let px = x + Math.cos(rot) * outerRadius;
-                let py = y + Math.sin(rot) * outerRadius;
-                ctx.lineTo(px, py);
-                rot += step;
-                px = x + Math.cos(rot) * innerRadius;
-                py = y + Math.sin(rot) * innerRadius;
-                ctx.lineTo(px, py);
-                rot += step;
+
+            if (isGhost) {
+                ctx.moveTo(x, y - outerRadius);
+                // i = 0
+                ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius); rot += step;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius); rot += step;
+                // i = 1
+                ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius); rot += step;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius); rot += step;
+
+                // SKIRT
+                ctx.lineTo(x + size, y + size);
+                const waves = 3;
+                const waveWidth = (size * 2) / waves;
+                for (let j = 1; j <= waves; j++) {
+                    const waveX = (x + size) - (waveWidth * j);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (j - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+
+                // Resume at i = 3 inner (skip bottom points)
+                rot = Math.PI / 2 * 3 + step * 7;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius); rot += step;
+                // i = 4
+                ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius); rot += step;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius);
+                ctx.closePath();
+            } else {
+                ctx.moveTo(x, y - outerRadius);
+                for (let i = 0; i < spikes; i++) {
+                    let px = x + Math.cos(rot) * outerRadius;
+                    let py = y + Math.sin(rot) * outerRadius;
+                    ctx.lineTo(px, py);
+                    rot += step;
+                    px = x + Math.cos(rot) * innerRadius;
+                    py = y + Math.sin(rot) * innerRadius;
+                    ctx.lineTo(px, py);
+                    rot += step;
+                }
+                ctx.lineTo(x, y - outerRadius);
+                ctx.closePath();
             }
-            ctx.lineTo(x, y - outerRadius);
-            ctx.closePath();
         } else if (shape === "hexagon" || shape === "pentagon") {
             const sides = shape === "hexagon" ? 6 : 5;
             const angleStep = (Math.PI * 2) / sides;
             const startAngle = -Math.PI / 2;
-            ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
-            for (let i = 1; i <= sides; i++) {
-                const angle = startAngle + i * angleStep;
-                ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+
+            if (isGhost) {
+                ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
+                if (sides === 5) {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 1 * angleStep), y + size * Math.sin(startAngle + 1 * angleStep));
+                } else {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 1 * angleStep), y + size * Math.sin(startAngle + 1 * angleStep));
+                    ctx.lineTo(x + size * Math.cos(startAngle + 2 * angleStep), y + size * Math.sin(startAngle + 2 * angleStep));
+                }
+
+                // SKIRT
+                ctx.lineTo(x + size, y + size);
+                const waves = 3;
+                const waveWidth = (size * 2) / waves;
+                for (let j = 1; j <= waves; j++) {
+                    const waveX = (x + size) - (waveWidth * j);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (j - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+
+                if (sides === 5) {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 4 * angleStep), y + size * Math.sin(startAngle + 4 * angleStep));
+                } else {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 4 * angleStep), y + size * Math.sin(startAngle + 4 * angleStep));
+                    ctx.lineTo(x + size * Math.cos(startAngle + 5 * angleStep), y + size * Math.sin(startAngle + 5 * angleStep));
+                }
+                ctx.closePath();
+            } else {
+                ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
+                for (let i = 1; i <= sides; i++) {
+                    const angle = startAngle + i * angleStep;
+                    ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+                }
+                ctx.closePath();
             }
-            ctx.closePath();
         } else if (shape === "diamond") {
-            ctx.moveTo(x, y - size);
-            ctx.lineTo(x + size, y);
-            ctx.lineTo(x, y + size);
-            ctx.lineTo(x - size, y);
-            ctx.closePath();
+            if (isGhost) {
+                ctx.moveTo(x, y - size); // Top
+                ctx.lineTo(x + size, y); // Right
+                // Skirt
+                ctx.lineTo(x + size, y + size);
+                const waves = 3;
+                const waveWidth = (size * 2) / waves;
+                for (let j = 1; j <= waves; j++) {
+                    const waveX = (x + size) - (waveWidth * j);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (j - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+                ctx.lineTo(x - size, y); // Left
+                ctx.closePath();
+            } else {
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x + size, y);
+                ctx.lineTo(x, y + size);
+                ctx.lineTo(x - size, y);
+                ctx.closePath();
+            }
         } else if (en.type === 'ghost' || en.type === 'ghost_trophy' || (isGhost && (shape === 'circle' || !shape))) {
             const r = size;
             const h = r * 0.8;
