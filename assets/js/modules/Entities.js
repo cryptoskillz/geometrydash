@@ -3981,8 +3981,11 @@ export async function pickupItem(item, index) {
                 Globals.player.ammo = 999;
             }
 
-            if (location.includes("/")) {
-                const parts = location.split('/');
+            // FIXED: If the ground item lacked a location, but the fetched config has one, use the config's location!
+            const saveLocation = config.location || location || "";
+
+            if (saveLocation.includes("/")) {
+                const parts = saveLocation.split('/');
                 const filename = parts[parts.length - 1].replace(".json", "");
                 Globals.player.gunType = filename;
                 Globals.player.gunType = filename;
@@ -3997,7 +4000,7 @@ export async function pickupItem(item, index) {
                     // 2. Always update Current
                     localStorage.setItem('current_gun', filename);
                     localStorage.setItem('current_gun_config', JSON.stringify(config));
-                } catch (e) { }
+                } catch (e) { console.error("Gun save failed:", e); }
             }
             log(`Equipped Gun: ${config.name}`);
             spawnFloatingText(Globals.player.x, Globals.player.y - 30, config.name.toUpperCase(), config.colour || "gold");
@@ -4047,8 +4050,11 @@ export async function pickupItem(item, index) {
             }
 
             Globals.bomb = config;
-            if (location.includes("/")) {
-                const parts = location.split('/');
+            // FIXED: If the ground item lacked a location, but the fetched config has one, use the config's location!
+            const saveLocation = config.location || location || "";
+
+            if (saveLocation.includes("/")) {
+                const parts = saveLocation.split('/');
                 const filename = parts[parts.length - 1].replace(".json", "");
                 Globals.player.bombType = filename;
                 Globals.player.bombType = filename;
@@ -4538,6 +4544,8 @@ export function spawnRoomRewards(dropConfig, label = null) {
                     const res = await fetch(`${url}?t=${Date.now()}`);
                     if (res.ok) {
                         const itemData = await res.json();
+                        // Inject location property for special drops so pickupItem can save it!
+                        if (!itemData.location) itemData.location = url;
                         // Spawn Logic
                         let dropX = (Globals.canvas.width / 2) + (Math.random() - 0.5) * 50;
                         let dropY = (Globals.canvas.height / 2) + (Math.random() - 0.5) * 50;

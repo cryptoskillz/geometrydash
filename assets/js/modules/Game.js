@@ -230,12 +230,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         } catch (e) { }
 
         // LOAD SAVED WEAPONS OVERRIDE (Only if preserving stats across levels)
-        if (!keepStats) {
+        if (!keepStats && isRestart) {
             // New Game / Fresh Start -> Wipe temporary weapon saves
             localStorage.removeItem('current_gun');
             localStorage.removeItem('current_bomb');
             localStorage.removeItem('current_gun_config');
-        } else {
+            localStorage.removeItem('current_bomb_config');
+        } else if (keepStats) {
             // Continuing run -> Restore
             const savedGun = localStorage.getItem('current_gun');
             const savedBomb = localStorage.getItem('current_bomb');
@@ -733,26 +734,33 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         try {
             if (Globals.player.gunType) {
-                const gunUrl = `/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now();
-                const gRes = await fetch(gunUrl);
-                if (gRes.ok) {
-                    fetchedGun = await gRes.json();
-                    if (fetchedGun.location) {
-                        let loc = fetchedGun.location;
-                        if (loc.startsWith('items/')) loc = 'rewards/' + loc;
-                        const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
-                        if (realRes.ok) fetchedGun = await realRes.json();
-                    }
-                } else console.error("Gun fetch failed:", gRes.status, gRes.statusText);
+                // FIRST: Check cache for runtime upgrades during current run
+                const cachedGunData = localStorage.getItem('current_gun_config');
+                if (cachedGunData && savedPlayerStats) {
+                    fetchedGun = JSON.parse(cachedGunData);
+                    log("Loaded Gun from LocalStorage Cache (Preserving Modifiers)");
+                } else {
+                    const gunUrl = `/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now();
+                    const gRes = await fetch(gunUrl);
+                    if (gRes.ok) {
+                        fetchedGun = await gRes.json();
+                        if (fetchedGun.location) {
+                            let loc = fetchedGun.location;
+                            if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                            const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
+                            if (realRes.ok) fetchedGun = await realRes.json();
+                        }
+                    } else console.error("Gun fetch failed:", gRes.status, gRes.statusText);
+                }
             } else {
                 log("No player.gunType defined, skipping initial fetch.");
             }
         } catch (e) { console.error("Gun fetch error:", e); }
 
-        if (!fetchedGun && !savedPlayerStats) {
-            log("Attempting fallback to 'peashooter'...");
+        if (!fetchedGun && !savedPlayerStats && Globals.player.gunType) {
+            log(`Attempting fallback to '${Globals.player.gunType}'...`);
             try {
-                const res = await fetch(`/json/rewards/items/guns/player/peashooter.json?t=` + Date.now());
+                const res = await fetch(`/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now());
                 if (res.ok) {
                     fetchedGun = await res.json();
                     if (fetchedGun.location) {
@@ -762,25 +770,35 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                         const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
                         if (realRes.ok) fetchedGun = await realRes.json();
                     }
-                    player.gunType = 'peashooter'; // Update player state
+                    Globals.player.gunType = Globals.player.gunType; // Update player state
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.error("Failed fallback load for gun:", Globals.player.gunType, e);
+            }
         }
 
         const bombUrl = Globals.player.bombType ? `/json/rewards/items/bombs/${Globals.player.bombType}.json?t=` + Date.now() : null;
         if (bombUrl) {
             try {
-                const bRes = await fetch(bombUrl);
-                if (bRes.ok) {
-                    fetchedBomb = await bRes.json();
-                    if (fetchedBomb.location) {
-                        let loc = fetchedBomb.location;
-                        if (loc.startsWith('items/')) loc = 'rewards/' + loc;
-                        const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
-                        if (realRes.ok) fetchedBomb = await realRes.json();
+                const cachedBombData = localStorage.getItem('current_bomb_config');
+                if (cachedBombData && savedPlayerStats) {
+                    fetchedBomb = JSON.parse(cachedBombData);
+                    log("Loaded Bomb from LocalStorage Cache");
+                } else {
+                    const bRes = await fetch(bombUrl);
+                    if (bRes.ok) {
+                        fetchedBomb = await bRes.json();
+                        if (fetchedBomb.location) {
+                            let loc = fetchedBomb.location;
+                            if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                            const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
+                            if (realRes.ok) fetchedBomb = await realRes.json();
+                        }
                     }
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.error("Failed fallback load for bomb:", Globals.player.bombType, e);
+            }
         }
 
         if (!fetchedGun) {
@@ -1246,9 +1264,9 @@ export async function startGame(keepState = false) {
     // Async Load Assets then Start
     (async () => {
         try {
-            // FIXED: Only fetch weapons if NOT preserving state. 
+            // FIXED: Fetch weapons if NOT preserving state OR if Globals.gun was lost from RAM
             // If keepState is true, 'gun' and 'bomb' globals retain their runtime modifications (upgrades).
-            if (!keepState) {
+            if (!keepState || !Globals.gun || Object.keys(Globals.gun).length === 0) {
                 const [gData, bData] = await Promise.all([
                     (async () => {
                         try {
@@ -1289,7 +1307,7 @@ export async function startGame(keepState = false) {
                 Globals.gun = gData;
                 Globals.bomb = bData;
             } else {
-                log("Keeping existing Weapon State (Gun/Bomb globals preserved)");
+                log("Keeping existing Weapon State (Gun/Bomb globals preserved in RAM)");
             }
 
             if (loadingEl) loadingEl.style.display = 'none'; // Hide loading when done
@@ -3225,7 +3243,6 @@ Globals.newRun = newRun;
 
 export function goToWelcome() {
     saveGameStats();
-    resetWeaponState();
     initGame(false);
 }
 Globals.goToWelcome = goToWelcome;
