@@ -2,16 +2,14 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- Don't use the same enemy name twice in a room.
+- Tried to run out of a room with a ghost and enemies; it wouldn't let me even though I blew it with a red bomb.
 - Unlock spawns are slow after a boss kill.
-- Don't spawn the same unlock twice.
+- Don't spawn the same unlock again if it has already been picked up
 - Give red shards if there are no unlocks left.
 - Enemies spawn outside the room if they are very big.
 - Shield shows when you go into the portal.
 - Bomb goes blue when you leave a room and re-enter.
 - Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
-- Tried to run out of a room with a ghost and enemies; it wouldn't let me even though I blew it with a red bomb.
-
 - Bomb drop icon has a big 'B'.
 - Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
 - You can move bombs into other bombs that are solid.
