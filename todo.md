@@ -2,21 +2,18 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-
+- Don't use the same enemy name twice in a room.
 - Unlock spawns are slow after a boss kill.
-- Unblock drops that have already been locked.
 - Don't spawn the same unlock twice.
 - Give red shards if there are no unlocks left.
 - Enemies spawn outside the room if they are very big.
 - Shield shows when you go into the portal.
 - Bomb goes blue when you leave a room and re-enter.
-- Don't use the same enemy name twice in a room.
 - Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
 - Tried to run out of a room with a ghost and enemies; it wouldn't let me even though I blew it with a red bomb.
-- Speedy timer should be set for standard peashooter time, but adjust down for more powerful guns.
+
 - Bomb drop icon has a big 'B'.
 - Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
-- Minimap moves down on restart then goes back up.
 - You can move bombs into other bombs that are solid.
 - If you press 0 or 9, it should update the debug buttons to on/off.
 - Chained explosions should blow in sequence, not all at the same time.
@@ -29,6 +26,7 @@ DONT DO ANY OF THESE TASKS AI
 
 
 # Rooms & Levels
+- if only shards are left in a room when you enter the portal dont display the modal just collect the shards
 - All rooms should have a number of switches that have to be stood on for x seconds to open the door, so we can do a pacafist run.
 - **Level Sequences**:
   - **Level 6**: Golden path maze level (World 7-4). Room name followed by "deja vu".
@@ -141,3 +139,6 @@ DONT DO ANY OF THESE TASKS AI
 # Misc Engine Needs
 - Mobile inputs, touch screen, and joypad support.
 - Implement `matter.js` for physics.
+
+# Balance
+- Speedy timer should be set for standard peashooter time, but adjust down for more powerful guns.

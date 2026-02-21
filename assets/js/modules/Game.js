@@ -111,11 +111,18 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     // Initial UI State
     if (Globals.elements.ui) {
         Globals.elements.ui.style.display = 'flex'; // Always keep flex container for layout
+        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
         const statsPanel = document.getElementById('stats-panel');
-        if (statsPanel) statsPanel.style.display = (Globals.gameData && Globals.gameData.showStatsPanel !== false) ? 'block' : 'none';
+        if (statsPanel) {
+            const hasStats = Globals.gameData.showStatsPanel || unlockedIds.includes('statsPanel');
+            statsPanel.style.display = hasStats ? 'block' : 'none';
+        }
 
         const mapCanvas = document.getElementById('minimapCanvas');
-        if (mapCanvas) mapCanvas.style.display = (Globals.gameData && Globals.gameData.showMinimap !== false) ? 'block' : 'none';
+        if (mapCanvas) {
+            const hasMap = Globals.gameData.showMinimap || unlockedIds.includes('minimap');
+            mapCanvas.style.display = hasMap ? 'block' : 'none';
+        }
     }
     Globals.bullets = [];
     Globals.bombs = [];
@@ -1392,7 +1399,7 @@ export async function startGame(keepState = false) {
                 Globals.elements.overlay.style.display = 'none'; // Ensure Game Over screen is hidden
 
                 // Show Parent UI Container
-                Globals.elements.ui.style.display = 'block';
+                Globals.elements.ui.style.display = 'flex';
 
                 const statsPanel = document.getElementById('stats-panel');
                 if (statsPanel) statsPanel.style.display = (Globals.gameData.showStatsPanel !== false) ? 'block' : 'none';
