@@ -1169,7 +1169,7 @@ export async function startGame(keepState = false) {
     // Check Lock
     const p = Globals.availablePlayers[Globals.selectedPlayerIndex];
 
-    if (p && p.locked) {
+    if (!keepState && p && p.locked) {
         log("Player Locked - Cannot Start");
         Globals.isGameStarting = false;
         return;
@@ -1205,178 +1205,178 @@ export async function startGame(keepState = false) {
 
             }
         }
-
-        // Increment Run Count (Persisted)
-        if (!keepState && !Globals.isRestart) {
-            // Only count as new run if not a level transition (keepState) 
-            // Adjust logic: keepState is true for level transition? 
-            // Wait, startGame(true) is used for next level? 
-            // Let's check call sites. 
-            // actually restartGame() sets isRestart=true. 
-            // But a new game from menu? 
-
-            // Simpler: Just check if we are resetting logic.
-            // If keepState is FALSE, it's a fresh run (or restart).
-            Globals.NumberOfRuns++;
-            localStorage.setItem('numberOfRuns', Globals.NumberOfRuns);
-
-            // RESET TIMER
-            Globals.runStartTime = Date.now();
-            Globals.runElapsedTime = 0;
-            Globals.SessionRunTime = 0; // Fix persisted welcome screen timer
-
-            resetSessionStats();
-        }
-
-        // Show Loading Screen immediately to block input/visuals
-        // BUT skip if restarting (same level) to show teleport effect.
-        // Show if transitioning levels (clean slate).
-        const loadingEl = document.getElementById('loading');
-        if (loadingEl && (!Globals.isRestart || Globals.isLevelTransition)) loadingEl.style.display = 'flex';
-        Globals.elements.welcome.style.display = 'none';
-
-        // Apply Selected Player Stats
-        // IF keepState is true, we assume player object is already correctly set (loaded or preserved)
-        if (!keepState && p) {
-            // Apply stats but keep runtime properties like x/y if needed (though start resets them)
-            // Actually initGame reset player.x/y already.
-            const defaults = { x: 300, y: 200, roomX: 0, roomY: 0 };
-            Globals.player = { ...defaults, ...JSON.parse(JSON.stringify(p)) };
-            if (!Globals.player.maxHp) Globals.player.maxHp = Globals.player.hp || 3;
-            if (!Globals.player.inventory) Globals.player.inventory = { keys: 0, bombs: 0 };
-
-            // RE-APPLY GameOverrides (Fixed: startGame was wiping initGame overrides)
-            if (Globals.gameData.gunType) Globals.player.gunType = Globals.gameData.gunType;
-            if (Globals.gameData.bombType) Globals.player.bombType = Globals.gameData.bombType;
-
-            // RESTORE RED SHARDS (Fix: startGame wiped initGame sync)
-            const storedRed = localStorage.getItem('currency_red');
-            if (storedRed && Globals.player.inventory) {
-                Globals.player.inventory.redShards = parseInt(storedRed);
-                Globals.player.redShards = parseInt(storedRed); // Sync legacy too
-            }
-        }
-
-        // Async Load Assets then Start
-        // Async Load Assets then Start
-        (async () => {
-            try {
-                // FIXED: Only fetch weapons if NOT preserving state. 
-                // If keepState is true, 'gun' and 'bomb' globals retain their runtime modifications (upgrades).
-                if (!keepState) {
-                    const [gData, bData] = await Promise.all([
-                        (async () => {
-                            try {
-                                const cachedGun = localStorage.getItem('current_gun_config');
-                                if (cachedGun) return JSON.parse(cachedGun);
-                            } catch (e) { }
-
-                            return Globals.player.gunType ? fetch(`/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now())
-                                .then(res => res.json())
-                                .then(async (data) => {
-                                    if (data.location) {
-                                        const realRes = await fetch(`json/${data.location}?t=` + Date.now());
-                                        if (realRes.ok) return await realRes.json();
-                                    }
-                                    return data;
-                                })
-                                : Promise.resolve({ Bullet: { NoBullets: true } });
-                        })(),
-                        (async () => {
-                            try {
-                                const cachedBomb = localStorage.getItem('current_bomb_config');
-                                if (cachedBomb) return JSON.parse(cachedBomb);
-                            } catch (e) { }
-
-                            return Globals.player.bombType ? fetch(`/json/rewards/items/bombs/${Globals.player.bombType}.json?t=` + Date.now())
-                                .then(res => res.json())
-                                .then(async (data) => {
-                                    if (data.location) {
-                                        const realRes = await fetch(`json/${data.location}?t=` + Date.now());
-                                        if (realRes.ok) return await realRes.json();
-                                    }
-                                    return data;
-                                })
-                                : Promise.resolve({});
-                        })()
-
-                    ]);
-                    Globals.gun = gData;
-                    Globals.bomb = bData;
-                } else {
-                    log("Keeping existing Weapon State (Gun/Bomb globals preserved)");
-                }
-
-                if (loadingEl) loadingEl.style.display = 'none'; // Hide loading when done
-
-
-                // Initialize Ammo for new gun (Only if NOT keeping state or if we swapped guns?)
-                // If keeping state, ammo should be preserved.
-                if (!keepState && Globals.gun.Bullet?.ammo?.active) {
-                    Globals.player.ammoMode = Globals.gun.Bullet?.ammo?.type || 'finite';
-                    Globals.player.maxMag = Globals.gun.Bullet?.ammo?.amount || 100;
-                    Globals.player.reloadTime = Globals.gun.Bullet?.ammo?.resetTimer !== undefined ? Globals.gun.Bullet?.ammo?.resetTimer : (Globals.gun.Bullet?.ammo?.reload || 1000);
-                    Globals.player.ammo = Globals.player.maxMag;
-                    Globals.player.reloading = false;
-                    Globals.player.reserveAmmo = (Globals.player.ammoMode === 'reload') ? ((Globals.gun.Bullet?.ammo?.maxAmount || 0) - Globals.player.maxMag) : (Globals.gun.Bullet?.ammo?.recharge ? Infinity : 0);
-                    if (Globals.player.reserveAmmo < 0) Globals.player.reserveAmmo = 0;
-                }
-
-                // Start Game
-                log("TRACER: startGame Async End -> PLAY");
-                Globals.gameState = STATES.PLAY;
-                Globals.elements.welcome.style.display = 'none';
-
-                if (Globals.elements.ui) {
-                    // Manage UI Components Independently
-                    Globals.elements.overlay.style.display = 'none'; // Ensure Game Over screen is hidden
-
-                    // Show Parent UI Container
-                    Globals.elements.ui.style.display = 'block';
-
-                    const statsPanel = document.getElementById('stats-panel');
-                    if (statsPanel) statsPanel.style.display = (Globals.gameData.showStatsPanel !== false) ? 'block' : 'none';
-
-                    // FORCE UI UPDATE for Room Name
-                    if (Globals.elements.roomName) {
-                        Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
-                    }
-                }     // Show Level Title
-                if (Globals.gameData.description || Globals.gameData.name) {
-                    showLevelTitle(Globals.gameData.description || Globals.gameData.name);
-                }
-
-                // Minimap Visibility
-                if (Globals.mapCanvas) Globals.mapCanvas.style.display = (Globals.gameData.showMinimap !== false) ? 'block' : 'none';
-
-                // If starting primarily in Boss Room (Debug Mode), reset intro timer
-                if (Globals.roomData.isBoss) {
-                    Globals.bossIntroEndTime = Date.now() + 2000;
-                }
-
-                spawnEnemies();
-                spawnChests(Globals.roomData);
-
-                // Check for Start Room Bonus (First Start)
-                if (Globals.gameData.rewards && Globals.gameData.rewards.startroom) {
-                    const dropped = spawnRoomRewards(Globals.gameData.rewards.startroom);
-                    if (dropped) {
-                        spawnFloatingText(Globals.player.x, Globals.player.y, "START BONUS!", "#3498db");
-                    }
-                }
-
-                renderDebugForm();
-                updateUI();
-            } catch (err) {
-                console.error("Error starting game assets:", err);
-                // Re-show welcome if failed so user can try again
-                Globals.elements.welcome.style.display = 'flex';
-                Globals.isGameStarting = false;
-            } finally {
-                Globals.isGameStarting = false;
-            }
-        })();
     }
+
+    // Increment Run Count (Persisted)
+    if (!keepState && !Globals.isRestart) {
+        // Only count as new run if not a level transition (keepState) 
+        // Adjust logic: keepState is true for level transition? 
+        // Wait, startGame(true) is used for next level? 
+        // Let's check call sites. 
+        // actually restartGame() sets isRestart=true. 
+        // But a new game from menu? 
+
+        // Simpler: Just check if we are resetting logic.
+        // If keepState is FALSE, it's a fresh run (or restart).
+        Globals.NumberOfRuns++;
+        localStorage.setItem('numberOfRuns', Globals.NumberOfRuns);
+
+        // RESET TIMER
+        Globals.runStartTime = Date.now();
+        Globals.runElapsedTime = 0;
+        Globals.SessionRunTime = 0; // Fix persisted welcome screen timer
+
+        resetSessionStats();
+    }
+
+    // Show Loading Screen immediately to block input/visuals
+    // BUT skip if restarting (same level) to show teleport effect.
+    // Show if transitioning levels (clean slate).
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl && (!Globals.isRestart || Globals.isLevelTransition)) loadingEl.style.display = 'flex';
+    Globals.elements.welcome.style.display = 'none';
+
+    // Apply Selected Player Stats
+    // IF keepState is true, we assume player object is already correctly set (loaded or preserved)
+    if (!keepState && p) {
+        // Apply stats but keep runtime properties like x/y if needed (though start resets them)
+        // Actually initGame reset player.x/y already.
+        const defaults = { x: 300, y: 200, roomX: 0, roomY: 0 };
+        Globals.player = { ...defaults, ...JSON.parse(JSON.stringify(p)) };
+        if (!Globals.player.maxHp) Globals.player.maxHp = Globals.player.hp || 3;
+        if (!Globals.player.inventory) Globals.player.inventory = { keys: 0, bombs: 0 };
+
+        // RE-APPLY GameOverrides (Fixed: startGame was wiping initGame overrides)
+        if (Globals.gameData.gunType) Globals.player.gunType = Globals.gameData.gunType;
+        if (Globals.gameData.bombType) Globals.player.bombType = Globals.gameData.bombType;
+
+        // RESTORE RED SHARDS (Fix: startGame wiped initGame sync)
+        const storedRed = localStorage.getItem('currency_red');
+        if (storedRed && Globals.player.inventory) {
+            Globals.player.inventory.redShards = parseInt(storedRed);
+            Globals.player.redShards = parseInt(storedRed); // Sync legacy too
+        }
+    }
+
+    // Async Load Assets then Start
+    // Async Load Assets then Start
+    (async () => {
+        try {
+            // FIXED: Only fetch weapons if NOT preserving state. 
+            // If keepState is true, 'gun' and 'bomb' globals retain their runtime modifications (upgrades).
+            if (!keepState) {
+                const [gData, bData] = await Promise.all([
+                    (async () => {
+                        try {
+                            const cachedGun = localStorage.getItem('current_gun_config');
+                            if (cachedGun) return JSON.parse(cachedGun);
+                        } catch (e) { }
+
+                        return Globals.player.gunType ? fetch(`/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now())
+                            .then(res => res.json())
+                            .then(async (data) => {
+                                if (data.location) {
+                                    const realRes = await fetch(`json/${data.location}?t=` + Date.now());
+                                    if (realRes.ok) return await realRes.json();
+                                }
+                                return data;
+                            })
+                            : Promise.resolve({ Bullet: { NoBullets: true } });
+                    })(),
+                    (async () => {
+                        try {
+                            const cachedBomb = localStorage.getItem('current_bomb_config');
+                            if (cachedBomb) return JSON.parse(cachedBomb);
+                        } catch (e) { }
+
+                        return Globals.player.bombType ? fetch(`/json/rewards/items/bombs/${Globals.player.bombType}.json?t=` + Date.now())
+                            .then(res => res.json())
+                            .then(async (data) => {
+                                if (data.location) {
+                                    const realRes = await fetch(`json/${data.location}?t=` + Date.now());
+                                    if (realRes.ok) return await realRes.json();
+                                }
+                                return data;
+                            })
+                            : Promise.resolve({});
+                    })()
+
+                ]);
+                Globals.gun = gData;
+                Globals.bomb = bData;
+            } else {
+                log("Keeping existing Weapon State (Gun/Bomb globals preserved)");
+            }
+
+            if (loadingEl) loadingEl.style.display = 'none'; // Hide loading when done
+
+
+            // Initialize Ammo for new gun (Only if NOT keeping state or if we swapped guns?)
+            // If keeping state, ammo should be preserved.
+            if (!keepState && Globals.gun.Bullet?.ammo?.active) {
+                Globals.player.ammoMode = Globals.gun.Bullet?.ammo?.type || 'finite';
+                Globals.player.maxMag = Globals.gun.Bullet?.ammo?.amount || 100;
+                Globals.player.reloadTime = Globals.gun.Bullet?.ammo?.resetTimer !== undefined ? Globals.gun.Bullet?.ammo?.resetTimer : (Globals.gun.Bullet?.ammo?.reload || 1000);
+                Globals.player.ammo = Globals.player.maxMag;
+                Globals.player.reloading = false;
+                Globals.player.reserveAmmo = (Globals.player.ammoMode === 'reload') ? ((Globals.gun.Bullet?.ammo?.maxAmount || 0) - Globals.player.maxMag) : (Globals.gun.Bullet?.ammo?.recharge ? Infinity : 0);
+                if (Globals.player.reserveAmmo < 0) Globals.player.reserveAmmo = 0;
+            }
+
+            // Start Game
+            log("TRACER: startGame Async End -> PLAY");
+            Globals.gameState = STATES.PLAY;
+            Globals.elements.welcome.style.display = 'none';
+
+            if (Globals.elements.ui) {
+                // Manage UI Components Independently
+                Globals.elements.overlay.style.display = 'none'; // Ensure Game Over screen is hidden
+
+                // Show Parent UI Container
+                Globals.elements.ui.style.display = 'block';
+
+                const statsPanel = document.getElementById('stats-panel');
+                if (statsPanel) statsPanel.style.display = (Globals.gameData.showStatsPanel !== false) ? 'block' : 'none';
+
+                // FORCE UI UPDATE for Room Name
+                if (Globals.elements.roomName) {
+                    Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
+                }
+            }     // Show Level Title
+            if (Globals.gameData.description || Globals.gameData.name) {
+                showLevelTitle(Globals.gameData.description || Globals.gameData.name);
+            }
+
+            // Minimap Visibility
+            if (Globals.mapCanvas) Globals.mapCanvas.style.display = (Globals.gameData.showMinimap !== false) ? 'block' : 'none';
+
+            // If starting primarily in Boss Room (Debug Mode), reset intro timer
+            if (Globals.roomData.isBoss) {
+                Globals.bossIntroEndTime = Date.now() + 2000;
+            }
+
+            spawnEnemies();
+            spawnChests(Globals.roomData);
+
+            // Check for Start Room Bonus (First Start)
+            if (Globals.gameData.rewards && Globals.gameData.rewards.startroom) {
+                const dropped = spawnRoomRewards(Globals.gameData.rewards.startroom);
+                if (dropped) {
+                    spawnFloatingText(Globals.player.x, Globals.player.y, "START BONUS!", "#3498db");
+                }
+            }
+
+            renderDebugForm();
+            updateUI();
+        } catch (err) {
+            console.error("Error starting game assets:", err);
+            // Re-show welcome if failed so user can try again
+            Globals.elements.welcome.style.display = 'flex';
+            Globals.isGameStarting = false;
+        } finally {
+            Globals.isGameStarting = false;
+        }
+    })();
 }
 // Position player on opposite side of door (exactly on the boundary and centered on the DOOR)
 export function spawnPlayer(dx, dy, data) {
@@ -1782,15 +1782,6 @@ export function changeRoom(dx, dy) {
 
         if (shouldFollow && !isExcluded) {
             log("The Ghost follows you...");
-            // Trigger time = desired spawn time
-            // roomStartTime = Now - (ConfigTime - TravelTime)
-            // Example: Config=10s, Travel=2s. We want spawn in 2s.
-            // Timer checks: (Now - Start) > 10s.
-            // (Now - Start) should start at 8s.
-            // Start = Now - 8s = Now - (10s - 2s).
-            // We add 100ms buffer to ensure it triggers after the frame update
-            // Actually, if we want it to spawn AFTER travel time, we set the accumulator to (Target - Travel).
-
             const timeAlreadyElapsed = ghostConfig.roomGhostTimer - travelTime;
             // Clamp so we don't wait forever if travel is huge (max delay 3x timer?) or negative?
             // If travelTime > ghostTimer, timeAlreadyElapsed is negative, so we wait longer than usual. Correct.
@@ -1807,15 +1798,11 @@ export function changeRoom(dx, dy) {
                 vy: dy * 2
             };
         } else {
-            // ghostConfig local variable from earlier? Or was it gameData.ghost?
-            // "ghostConfig" was defined earlier in changeRoom as local.
-            // But ghostEntry is Global.
             Globals.ghostEntry = null;
         }
 
         const keyUsedForRoom = keyWasUsedForThisRoom; // Apply key usage penalty to next room
 
-        // Immediate Room Bonus if key used
         // Immediate Room Bonus if key used (First visit only)
         if (keyUsedForRoom && !Globals.levelMap[nextCoord].bonusAwarded) {
             // Use game.json bonuses.key config
