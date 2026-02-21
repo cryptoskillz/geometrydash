@@ -216,7 +216,7 @@ export const Globals = {
             this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        const ids = ['hp', 'keys', 'room', 'overlay', 'welcome', 'ui',
+        const ids = ['hp', 'keys', 'room', 'overlay', 'welcome', 'ui', 'perfect',
             'stats', 'perfect-count', 'nodamage-count', 'shooter-count',
             'roomName', 'bombs', 'ammo', 'gun',
             'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer',
@@ -227,7 +227,6 @@ export const Globals = {
             let prop = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 
             // Manual overrides for specific counters to match Game.js expectation
-            if (id === 'perfect-count') prop = 'perfect';
             if (id === 'nodamage-count') prop = 'nodamage';
             if (id === 'shooter-count') prop = 'shooter';
 
