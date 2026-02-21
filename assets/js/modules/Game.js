@@ -966,6 +966,11 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             roomProtos.push(loadRoomFile(Globals.gameData.shop.room, 'shop'));
         }
 
+        // D. Upgrade Room
+        if (Globals.gameData.upgradeRoom && Globals.gameData.upgradeRoom.active && Globals.gameData.upgradeRoom.room) {
+            roomProtos.push(loadRoomFile(Globals.gameData.upgradeRoom.room, 'upgrade'));
+        }
+
         // WAIT FOR ALL TEMPLATES TO LOAD BEFORE GENERATING LEVEL
         log("WAITING FOR ROOM PROTOS:", roomProtos.length);
         await Promise.all(roomProtos);

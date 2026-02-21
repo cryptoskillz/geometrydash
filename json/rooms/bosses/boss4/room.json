@@ -20,7 +20,9 @@
             "count": 1,
             "dropChance": 0.5
         },
-        "special": []
+        "special": [
+            "json/rewards/unlocks/game/rooms/upgrade.json"
+        ]
     },
     "boss": "json/enemies/bosses/boss4.json",
     "isBoss": true,
@@ -30,7 +32,7 @@
     "height": 600,
     "unlocks": [],
     "unlockItem": {
-        "active": true,
+        "active": false,
         "count": 1,
         "unlockChance": 1,
         "rarity": {
