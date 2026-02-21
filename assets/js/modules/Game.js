@@ -276,9 +276,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // 3. Load Level Specific Data
-        // Use nextLevel if provided.
-        // If !isRestart (Welcome Screen), prioritize Start Level (Fresh Start).
-        // If isRestart (R Key), prioritize Stored Level (Current Level).
         const storedLevel = localStorage.getItem('rogue_current_level');
         let levelFile = nextLevel;
 
@@ -606,12 +603,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             log("Using Cached Items (Size:" + allItems.length + ")");
         }
         window.allItemTemplates = allItems;
-
-        // Filter starters
-        // Legacy: Previously spawned all 'starter:false' items.
-        // NOW: Only spawn if DEBUG flag is set.
-        // Filter starters
-        // Legacy: Previously spawned all 'starter:false' items.
         // NOW: Spawn based on granular DEBUG flags.
         const starters = allItems.filter(i => {
             if (!i) return false;
@@ -624,9 +615,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             const isBomb = i.type === 'bomb';
             const isMod = i.type === 'modifier';
             const loc = (i.location || "").toLowerCase();
-
-            // Inventory (Keys/Bombs/Consumables) - often identified by path or lack of "modifier" type?
-            // Actually user defines them as type="modifier" usually. 
             // Let's look for "inventory" in path.
             const isInventory = isMod && loc.includes('inventory');
 
@@ -807,10 +795,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         const soundUnlocked = Globals.gameData.soundEffects || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('soundEffects');
         if (soundUnlocked) {
             Globals.gameData.soundEffects = true;
-            // Only force mute if explicitly requested? Or default to on.
-            // Globals.sfxMuted = false; // Let's not force false if user muted it?
-            // But if it was locked, it was forced true.
-            // We need a persistence for user preference too ideally, but for now just unlock it.
         } else {
             Globals.sfxMuted = true;
         }
@@ -1094,10 +1078,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         Globals.isInitializing = false;
         const loadingEl = document.getElementById('loading');
         if (loadingEl) loadingEl.style.display = 'none';
-
-        // AUTO START IF CONFIGURED (After everything is ready)
-        // Moved here to ensure isInitializing is false before starting
-        // AUTO START IF CONFIGURED (After everything is ready)
         // Moved here to ensure isInitializing is false before starting
         const params = new URLSearchParams(window.location.search);
         const shouldAutoStart = Globals.gameData.showWelcome === false || isRestart || params.get('autostart') === 'true';
@@ -1182,18 +1162,10 @@ export async function startGame(keepState = false) {
         // FORCE Reset RNG State even if value is same (fixes restart bug)
         Globals.setSeed(val);
     }
-
-    // Check if we need to regenerate level due to seed change
-    // If not keeping state (fresh start) AND seed input exists
-    // We compare with the seed used during initGame (Globals.seed)
-    // If val != Globals.seed, we already set it. 
-    // BUT initGame already ran generateLevel with old seed.
     // So if val was different, we MUST regenerate.
 
     if (!keepState && seedInput && seedInput.value && seedInput.value.trim() !== "") {
         const val = seedInput.value.trim();
-
-
         log("Regenerating level with selected seed:", Globals.seed);
         generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
 
@@ -1209,13 +1181,6 @@ export async function startGame(keepState = false) {
 
     // Increment Run Count (Persisted)
     if (!keepState && !Globals.isRestart) {
-        // Only count as new run if not a level transition (keepState) 
-        // Adjust logic: keepState is true for level transition? 
-        // Wait, startGame(true) is used for next level? 
-        // Let's check call sites. 
-        // actually restartGame() sets isRestart=true. 
-        // But a new game from menu? 
-
         // Simpler: Just check if we are resetting logic.
         // If keepState is FALSE, it's a fresh run (or restart).
         Globals.NumberOfRuns++;
