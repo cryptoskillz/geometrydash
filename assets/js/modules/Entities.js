@@ -2275,30 +2275,25 @@ export function updatePortal() {
     const dist = Math.hypot(Globals.player.x - Globals.portal.x, Globals.player.y - Globals.portal.y);
     if (dist < 30) {
 
-        // SCRAP MECHANIC
-        if (!Globals.portal.scrapping && !Globals.portal.finished) {
-            Globals.portal.scrapping = true;
-            const scrapped = convertItemsToScrap(Globals.portal.x, Globals.portal.y);
+        // Check for Warning Feature
+        if (Globals.gameData.portalWarning && Globals.groundItems.length > 0) {
 
-            if (scrapped > 0) {
-                // Wait for visual effect
-                setTimeout(() => {
-                    Globals.portal.scrapping = false;
-                    Globals.portal.finished = true; // Prevent re-scrap
+            // Only fire once if they are standing on it
+            if (!Globals.portal.warningActive) {
+                Globals.portal.warningActive = true;
 
-                    // EXPLICITLY TRIGGER COMPLETION (Don't wait for re-collision)
-                    handleLevelComplete();
-                }, 1500);
-                return;
-            } else {
-                Globals.portal.scrapping = false;
-                Globals.portal.finished = true;
+                // Pause input manually
+                Globals.inputDisabled = true;
+
+                // Pop Modal (via Global window export)
+                if (window.showPortalWarningModal) {
+                    window.showPortalWarningModal(Globals.groundItems.length);
+                }
             }
+            return;
         }
 
-        if (Globals.portal.scrapping) return; // Wait
-
-        // WIN GAME
+        // WIN GAME (Default Transition)
         handleLevelComplete();
     }
 }

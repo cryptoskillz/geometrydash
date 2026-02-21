@@ -23,6 +23,8 @@ window.addEventListener('load', () => {
     initGame();
 });
 
+import { confirmPortalTransition, cancelPortalTransition, showPortalWarningModal } from './modules/UI.js';
+
 // Expose functions to window for HTML onclick handlers
 window.restartGame = restartGame;
 window.newRun = newRun;
@@ -34,4 +36,7 @@ window.cancelNewGame = cancelNewGame;
 window.bankDeposit = bankDeposit;
 window.bankWithdraw = bankWithdraw;
 window.bankClose = bankClose;
+window.confirmPortalTransition = confirmPortalTransition;
+window.cancelPortalTransition = cancelPortalTransition;
+window.showPortalWarningModal = showPortalWarningModal;
 window.SFX = SFX;
