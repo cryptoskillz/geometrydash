@@ -229,18 +229,26 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         } catch (e) { }
 
-        // LOAD SAVED WEAPONS OVERRIDE
-        const savedGun = localStorage.getItem('current_gun');
-        const savedBomb = localStorage.getItem('current_bomb');
-        if (savedGun) {
-            if (!gData) gData = {};
-            gData.gunType = savedGun;
-            log("Restored Gun: " + savedGun);
-        }
-        if (savedBomb) {
-            if (!gData) gData = {};
-            gData.bombType = savedBomb;
-            log("Restored Bomb: " + savedBomb);
+        // LOAD SAVED WEAPONS OVERRIDE (Only if preserving stats across levels)
+        if (!keepStats) {
+            // New Game / Fresh Start -> Wipe temporary weapon saves
+            localStorage.removeItem('current_gun');
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_gun_config');
+        } else {
+            // Continuing run -> Restore
+            const savedGun = localStorage.getItem('current_gun');
+            const savedBomb = localStorage.getItem('current_bomb');
+            if (savedGun) {
+                if (!gData) gData = {};
+                gData.gunType = savedGun;
+                log("Restored Gun: " + savedGun);
+            }
+            if (savedBomb) {
+                if (!gData) gData = {};
+                gData.bombType = savedBomb;
+                log("Restored Bomb: " + savedBomb);
+            }
         }
 
         // APPLY SAVED UNLOCK OVERRIDES (Moved here to affect startLevel)
@@ -263,16 +271,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         } catch (e) {
             console.error("Failed to apply saved unlocks", e);
-        }
-
-        // 2. Apply Permanent Unlocks to Default Loadout (Fix for Fresh Load/Refresh)
-        if (!gData.gunType && gData.unlocked_peashooter) {
-            gData.gunType = 'peashooter';
-            log("Applying Unlocked Peashooter to Loadout");
-        }
-        if (!gData.bombType && gData.unlocked_bomb_normal) {
-            gData.bombType = 'normal';
-            log("Applying Unlocked Normal Bomb to Loadout");
         }
 
         // --- CAPTURE UPGRADE ROOM UNLOCK STATE ---
@@ -689,8 +687,18 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         // Restore Stats if kept
         if (savedPlayerStats) {
             log("Restoring Full Player State");
+
+            // PREVENT DEEP-MERGE FROM OVERWRITING INTENTIONAL 'NULL' LOADOUTS
+            // To ensure Level 1 (no items) to Level 2 (no items) stays empty:
+            const wasGunless = savedPlayerStats.gunType === null || savedPlayerStats.gunType === "";
+            const wasBombless = savedPlayerStats.bombType === null || savedPlayerStats.bombType === "";
+
             // Use Deep Merge to ensure version compatibility (New keys in defaults are kept)
             deepMerge(Globals.player, savedPlayerStats);
+
+            // Re-assert emptiness if the deepMerge accidentally populated from 'availablePlayers' default
+            if (wasGunless) Globals.player.gunType = null;
+            if (wasBombless) Globals.player.bombType = null;
 
             if (savedPlayerStats.perfectStreak !== undefined) {
                 Globals.perfectStreak = savedPlayerStats.perfectStreak;
