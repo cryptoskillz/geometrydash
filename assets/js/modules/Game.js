@@ -78,10 +78,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     }
 
     // FIX: Enforce Base State on Fresh Run (Reload/Restart)
-    const isDebug = Globals.gameData && Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true;
-    if (!keepStats && !isDebug) {
-        resetWeaponState();
-    }
+    // Removed redundant resetWeaponState here. Weapon wiping is strictly handled by
+    // newRun, restartGame, or the isRestart block further down.
 
     // KILL ZOMBIE AUDIO (Fix for duplicate music glitch)
     // If a legacy window.introMusic exists and is playing, stop it.
@@ -229,14 +227,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
         } catch (e) { }
 
-        // LOAD SAVED WEAPONS OVERRIDE (Only if preserving stats across levels)
-        if (!keepStats && isRestart) {
-            // New Game / Fresh Start -> Wipe temporary weapon saves
-            localStorage.removeItem('current_gun');
-            localStorage.removeItem('current_bomb');
-            localStorage.removeItem('current_gun_config');
-            localStorage.removeItem('current_bomb_config');
-        } else if (keepStats) {
+        // LOAD SAVED WEAPONS OVERRIDE
+        if (keepStats) {
             // Continuing run -> Restore
             const savedGun = localStorage.getItem('current_gun');
             const savedBomb = localStorage.getItem('current_bomb');
@@ -3154,31 +3146,7 @@ export function gameMenu() {
 }
 
 // Helper to reset runtime state to base state (Death/Restart)
-function resetWeaponState() {
-    const baseGun = localStorage.getItem('base_gun');
-    const baseGunConfig = localStorage.getItem('base_gun_config');
-
-    if (baseGun) {
-        localStorage.setItem('current_gun', baseGun);
-        if (baseGunConfig) localStorage.setItem('current_gun_config', baseGunConfig);
-        log(`Reset Gun to Base: ${baseGun}`);
-    } else {
-        // Fallback: If no base saved, CLEAR current so initGame uses player default
-        localStorage.removeItem('current_gun');
-        localStorage.removeItem('current_gun_config');
-        log("No Base Gun found. Cleared Current Gun to force default.");
-    }
-
-    const baseBomb = localStorage.getItem('base_bomb');
-    const baseBombConfig = localStorage.getItem('base_bomb_config');
-    if (baseBomb) {
-        localStorage.setItem('current_bomb', baseBomb);
-        if (baseBombConfig) localStorage.setItem('current_bomb_config', baseBombConfig);
-    } else {
-        localStorage.removeItem('current_bomb');
-        localStorage.removeItem('current_bomb_config');
-    }
-}
+// Removed resetWeaponState. Weapon tracking is now handled strictly via HARD_RESET array on 'New Game'
 
 export function updateSFXToggle() {
     // Key 9 to toggle SFX
@@ -3199,7 +3167,6 @@ export async function restartGame(keepItems = false, targetLevel = null) {
             ? Globals.gameData.showDebugWindow
             : (Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true)
     );
-    if (!keepItems && !isDebug) resetWeaponState();
 
     // Trigger "Cool Teleport Effect" (Glitch Shake)
     Globals.screenShake.power = 20;
@@ -3208,15 +3175,15 @@ export async function restartGame(keepItems = false, targetLevel = null) {
     SFX.restart();
 
     // Wait for init to complete, then auto-start
-    await initGame(true, targetLevel, keepItems);
+    // FIXED: If Debug is enabled, we MUST pass 'true' to keepStats so initGame doesn't nuke the weapons
+    await initGame(true, targetLevel, keepItems || isDebug);
     // startGame is called by initGame internal logic (via shouldAutoStart)
 }
 Globals.restartGame = restartGame;
 
-export async function newRun(targetLevel = null) {
+export async function newRun(targetLevel = null, keepWeapons = false) {
 
     log("Starting New Run (Fresh Seed)");
-    resetWeaponState();
     // Generate new seed manually here before calling init (as init handles restart specially)
     // Actually, calling initGame(false) treats it as a "New Game" which generates a random seed!
     // BUT initGame(false) shows the Welcome Screen by default (shouldAutoStart check).
@@ -3237,7 +3204,7 @@ export async function newRun(targetLevel = null) {
     if (seedInput) seedInput.value = "";
 
     // 2. Call initGame as if it's a restart (to skip welcome) but with the NEW seed already set?
-    await initGame(true, targetLevel);
+    await initGame(true, targetLevel, keepWeapons);
 }
 Globals.newRun = newRun;
 
