@@ -382,7 +382,7 @@ export function spawnEnemies() {
         log("The room is Haunted! The Ghost returns...");
 
         // Ensure ghostSpawned is true so we don't spawn another one later via timer
-        ghostSpawned = true;
+        Globals.ghostSpawned = true;
 
         const template = enemyTemplates["ghost"] || { hp: 2000, speed: 1.2, size: 50, type: "ghost" };
         const inst = JSON.parse(JSON.stringify(template));
@@ -525,8 +525,8 @@ export function spawnEnemies() {
                     }
 
                     if (useFixed) {
-                        inst.x = fixedX;
-                        inst.y = fixedY;
+                        inst.x = Math.max(30, Math.min(fixedX, Globals.canvas.width - 30));
+                        inst.y = Math.max(30, Math.min(fixedY, Globals.canvas.height - 30));
                     } else {
                         inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
                         inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
@@ -1372,6 +1372,51 @@ export function updateUse() {
 
     // Start the Tron music if it hasn't started yet
     // (Handled by startAudio listener now)
+
+    // Piggy Bank Interaction (Home Room)
+    if (Globals.roomData.type === 'home' || Globals.roomData._type === 'home') {
+        const pbDist = Math.hypot(Globals.player.x - 100, Globals.player.y - 320);
+        if (pbDist < 60) {
+            // Open Bank UI
+            if (Globals.elements.bankModal) {
+                let bankedShards = parseInt(localStorage.getItem('piggy_bank_balance') || '0');
+                if (Globals.elements.bankInvVal) Globals.elements.bankInvVal.innerText = Globals.player.inventory.greenShards || 0;
+                if (Globals.elements.bankVaultVal) Globals.elements.bankVaultVal.innerText = bankedShards;
+
+                Globals.elements.bankModal.style.display = 'flex';
+                Globals.gameState = STATES.BANK; // Prevent other inputs
+                if (window.SFX && SFX.pickup) SFX.pickup(); // generic UI open sound
+            }
+            return; // Interaction complete
+        }
+
+        // Bed is x:50-130, y:50-190. Expand box by ~30px for interaction
+        const nearBed = Globals.player.x > 20 && Globals.player.x < 160 && Globals.player.y > 20 && Globals.player.y < 220;
+        if (nearBed) {
+            if (Globals.usedBed) {
+                spawnFloatingText(Globals.player.x, Globals.player.y - 50, "Already rested today!", "white", 2);
+            } else if (Globals.player.hp < Globals.player.maxHp) {
+                Globals.player.hp = Globals.player.maxHp;
+
+                const keysLost = Math.min(Globals.player.inventory.keys, Math.floor(Math.random() * 3) + 1);
+                Globals.player.inventory.keys -= keysLost;
+
+                const bombsLost = Math.min(Globals.player.inventory.bombs, Math.floor(Math.random() * 3) + 1);
+                Globals.player.inventory.bombs -= bombsLost;
+
+                Globals.usedBed = true;
+
+                if (window.SFX && SFX.powerup) SFX.powerup();
+                spawnFloatingText(Globals.player.x, Globals.player.y - 50, `Rested! Lost ${keysLost} Keys & ${bombsLost} Bombs`, "lightgreen", 5);
+                Globals.sleepTimer = Date.now();
+                Globals.roomFreezeUntil = Date.now() + 2000;
+                Globals.player.invulnUntil = Date.now() + 2000;
+            } else {
+                spawnFloatingText(Globals.player.x, Globals.player.y - 50, "Already well rested!", "white", 2);
+            }
+            return;
+        }
+    }
 
     const roomLocked = Globals.isRoomLocked();
     const doors = Globals.roomData.doors || {};
@@ -2713,35 +2758,115 @@ export function drawEnemies() {
             const innerRadius = size / 2;
             let rot = Math.PI / 2 * 3;
             let step = Math.PI / spikes;
-            ctx.moveTo(x, y - outerRadius);
-            for (let i = 0; i < spikes; i++) {
-                let px = x + Math.cos(rot) * outerRadius;
-                let py = y + Math.sin(rot) * outerRadius;
-                ctx.lineTo(px, py);
-                rot += step;
-                px = x + Math.cos(rot) * innerRadius;
-                py = y + Math.sin(rot) * innerRadius;
-                ctx.lineTo(px, py);
-                rot += step;
+
+            if (isGhost) {
+                ctx.moveTo(x, y - outerRadius);
+                // i = 0
+                ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius); rot += step;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius); rot += step;
+                // i = 1
+                ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius); rot += step;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius); rot += step;
+
+                // SKIRT
+                ctx.lineTo(x + size, y + size);
+                const waves = 3;
+                const waveWidth = (size * 2) / waves;
+                for (let j = 1; j <= waves; j++) {
+                    const waveX = (x + size) - (waveWidth * j);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (j - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+
+                // Resume at i = 3 inner (skip bottom points)
+                rot = Math.PI / 2 * 3 + step * 7;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius); rot += step;
+                // i = 4
+                ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius); rot += step;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius);
+                ctx.closePath();
+            } else {
+                ctx.moveTo(x, y - outerRadius);
+                for (let i = 0; i < spikes; i++) {
+                    let px = x + Math.cos(rot) * outerRadius;
+                    let py = y + Math.sin(rot) * outerRadius;
+                    ctx.lineTo(px, py);
+                    rot += step;
+                    px = x + Math.cos(rot) * innerRadius;
+                    py = y + Math.sin(rot) * innerRadius;
+                    ctx.lineTo(px, py);
+                    rot += step;
+                }
+                ctx.lineTo(x, y - outerRadius);
+                ctx.closePath();
             }
-            ctx.lineTo(x, y - outerRadius);
-            ctx.closePath();
         } else if (shape === "hexagon" || shape === "pentagon") {
             const sides = shape === "hexagon" ? 6 : 5;
             const angleStep = (Math.PI * 2) / sides;
             const startAngle = -Math.PI / 2;
-            ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
-            for (let i = 1; i <= sides; i++) {
-                const angle = startAngle + i * angleStep;
-                ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+
+            if (isGhost) {
+                ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
+                if (sides === 5) {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 1 * angleStep), y + size * Math.sin(startAngle + 1 * angleStep));
+                } else {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 1 * angleStep), y + size * Math.sin(startAngle + 1 * angleStep));
+                    ctx.lineTo(x + size * Math.cos(startAngle + 2 * angleStep), y + size * Math.sin(startAngle + 2 * angleStep));
+                }
+
+                // SKIRT
+                ctx.lineTo(x + size, y + size);
+                const waves = 3;
+                const waveWidth = (size * 2) / waves;
+                for (let j = 1; j <= waves; j++) {
+                    const waveX = (x + size) - (waveWidth * j);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (j - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+
+                if (sides === 5) {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 4 * angleStep), y + size * Math.sin(startAngle + 4 * angleStep));
+                } else {
+                    ctx.lineTo(x + size * Math.cos(startAngle + 4 * angleStep), y + size * Math.sin(startAngle + 4 * angleStep));
+                    ctx.lineTo(x + size * Math.cos(startAngle + 5 * angleStep), y + size * Math.sin(startAngle + 5 * angleStep));
+                }
+                ctx.closePath();
+            } else {
+                ctx.moveTo(x + size * Math.cos(startAngle), y + size * Math.sin(startAngle));
+                for (let i = 1; i <= sides; i++) {
+                    const angle = startAngle + i * angleStep;
+                    ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+                }
+                ctx.closePath();
             }
-            ctx.closePath();
         } else if (shape === "diamond") {
-            ctx.moveTo(x, y - size);
-            ctx.lineTo(x + size, y);
-            ctx.lineTo(x, y + size);
-            ctx.lineTo(x - size, y);
-            ctx.closePath();
+            if (isGhost) {
+                ctx.moveTo(x, y - size); // Top
+                ctx.lineTo(x + size, y); // Right
+                // Skirt
+                ctx.lineTo(x + size, y + size);
+                const waves = 3;
+                const waveWidth = (size * 2) / waves;
+                for (let j = 1; j <= waves; j++) {
+                    const waveX = (x + size) - (waveWidth * j);
+                    const waveY = (y + size);
+                    const cX = (x + size) - (waveWidth * (j - 0.5));
+                    const cY = waveY - (size * 0.3);
+                    ctx.quadraticCurveTo(cX, cY, waveX, waveY);
+                }
+                ctx.lineTo(x - size, y); // Left
+                ctx.closePath();
+            } else {
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x + size, y);
+                ctx.lineTo(x, y + size);
+                ctx.lineTo(x - size, y);
+                ctx.closePath();
+            }
         } else if (en.type === 'ghost' || en.type === 'ghost_trophy' || (isGhost && (shape === 'circle' || !shape))) {
             const r = size;
             const h = r * 0.8;
@@ -3076,7 +3201,6 @@ export function drawEnemies() {
 }
 // export function playerHit(en, invuln = false, knockback = false, shakescreen = false) {
 // Refactored for Solidity vs Invulnerability Separation
-// Refactored for Solidity vs Invulnerability Separation
 export function playerHit(en, checkInvuln = true, applyKnockback = false, shakescreen = false) {
 
     // 1. DAMAGE CHECK (Invulnerability)
@@ -3098,12 +3222,6 @@ export function playerHit(en, checkInvuln = true, applyKnockback = false, shakes
     }
 
     // 2. PHYSICS CHECK (Solidity)
-    // Only apply knockback if explicitly requested (usually on collision)
-    // AND if the player is solid OR the enemy is forceful enough to push nonsolid?
-    // User requested: "invuln makes you not solid" -> "change invuln to solid"
-    // Interpretation: If player.solid is FALSE, they do not get knocked back by enemies (pass through).
-
-    // Default solid to true if undefined
     // Default solid to true if undefined
     const playerIsSolid = (Globals.player.solid !== undefined) ? Globals.player.solid : true;
     const enemyIsSolid = (en.solid !== undefined) ? en.solid : true;
@@ -3158,13 +3276,6 @@ export function drawBombs(doors) {
             b.explosionStartAt = now;
             SFX.explode(0.3);
 
-            // Local Explosion Shake (Stronger than remote)
-            // Globals.screenShake or just screenShake? 
-            // Previous code used screenShake variable. Assuming it's Global or filtered via Utils?
-            // Usually Globals.screenShake in this codebase? Or maybe Utils handles it.
-            // Let's assume Globals.screenShake if available, otherwise ignore or use function.
-            // Actually previous code: screenShake.power = 20.
-            // Let's use Globals.screenShake if defined.
             if (Globals.screenShake) {
                 Globals.screenShake.power = 20;
                 Globals.screenShake.endAt = now + 500;
@@ -3546,6 +3657,21 @@ export function updateMovementAndDoors(doors, roomLocked) {
                 let collided = false;
                 let hitMoveable = false;
 
+                // Home Room Statics Collision
+                if (Globals.roomData.type === 'home' || Globals.roomData._type === 'home') {
+                    const size = Globals.player.size;
+                    const bedCheck = nextX + size > 50 && nextX - size < 130 && Globals.player.y + size > 50 && Globals.player.y - size < 190;
+                    // Circle collision for table at 200, 200, radius 45
+                    const distTable = Math.hypot(nextX - 300, Globals.player.y - 200);
+                    const tableCheck = distTable < 45 + size;
+                    const tvCheck = nextX + size > 260 && nextX - size < 380 && Globals.player.y + size > -20 && Globals.player.y - size < 60;
+                    //check piggy bank at (100, 320)
+                    const pbCheck = nextX + size > 75 && nextX - size < 125 && Globals.player.y + size > 300 && Globals.player.y - size < 340;
+                    if (bedCheck || tableCheck || tvCheck || pbCheck) {
+                        collided = true;
+                    }
+                }
+
                 Globals.bombs.forEach(b => {
                     if (b.solid && !b.exploding) {
                         const dist = Math.hypot(nextX - b.x, Globals.player.y - b.y);
@@ -3572,7 +3698,6 @@ export function updateMovementAndDoors(doors, roomLocked) {
                 if (!collided && (!crossingLimit || (inDoorRange && canPass))) {
                     Globals.player.x = nextX;
                 } else if (collided && !hitMoveable) {
-                    Globals.player.x -= dx * 5; // Knockback only if not pushing
                     Globals.player.x = Math.max(BOUNDARY + Globals.player.size, Math.min(Globals.canvas.width - BOUNDARY - Globals.player.size, Globals.player.x));
                 } else if (crossingLimit && !canPass && inDoorRange) {
                     if (door.hidden) {
@@ -3586,6 +3711,21 @@ export function updateMovementAndDoors(doors, roomLocked) {
                 const nextY = Globals.player.y + dy * Globals.player.speed;
                 let collided = false;
                 let hitMoveable = false;
+
+                // Home Room Statics Collision (Vertical)
+                if (Globals.roomData.type === 'home' || Globals.roomData._type === 'home') {
+                    const size = Globals.player.size;
+                    const bedCheck = Globals.player.x + size > 50 && Globals.player.x - size < 130 && nextY + size > 50 && nextY - size < 190;
+                    const distTable = Math.hypot(Globals.player.x - 300, nextY - 200);
+                    const tableCheck = distTable < 45 + size;
+                    const tvCheck = Globals.player.x + size > 260 && Globals.player.x - size < 380 && nextY + size > -20 && nextY - size < 60;
+                    // Piggy Bank collision box (100, 320)
+                    const pbCheck = Globals.player.x + size > 75 && Globals.player.x - size < 125 && nextY + size > 300 && nextY - size < 340;
+
+                    if (bedCheck || tableCheck || tvCheck || pbCheck) {
+                        collided = true;
+                    }
+                }
 
                 // Bomb Collision (Vertical)
                 Globals.bombs.forEach(b => {
@@ -3618,7 +3758,6 @@ export function updateMovementAndDoors(doors, roomLocked) {
                 if (!collided && (!crossingLimit || (inDoorRange && canPass))) {
                     Globals.player.y = nextY;
                 } else if (collided && !hitMoveable) {
-                    Globals.player.y -= dy * 5; // Knockback only if not pushing
                     Globals.player.y = Math.max(BOUNDARY + Globals.player.size + shrink, Math.min(Globals.canvas.height - BOUNDARY - Globals.player.size - shrink, Globals.player.y));
                 }
             }

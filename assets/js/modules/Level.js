@@ -21,6 +21,7 @@ export function generateLevel(length) {
         path.push(`${cx},${cy}`);
     }
 
+    Globals.goldenPath = [...path];
     Globals.goldenPathIndex = 0;
     Globals.goldenPathFailed = false;
     Globals.bossCoord = path[path.length - 1];

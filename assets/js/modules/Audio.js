@@ -141,6 +141,48 @@ export const SFX = {
     yelp: (vol = 0.2) => playTone(600, 'triangle', 0.1, vol),
     pickup: (vol = 0.2) => playTone(1200, 'sine', 0.1, vol),
     coin: (vol = 0.2) => playTone(1500, 'square', 0.1, vol),
+    coin: (vol = 0.2) => playTone(1500, 'square', 0.1, vol),
+    atmDeposit: (vol = 0.2) => {
+        if (!Globals.audioCtx || Globals.sfxMuted) return;
+        // Cash Register style "Cha-Ching"
+        const osc = Globals.audioCtx.createOscillator();
+        const gain = Globals.audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1000, Globals.audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(2000, Globals.audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(vol, Globals.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, Globals.audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(Globals.audioCtx.destination);
+        osc.start();
+        osc.stop(Globals.audioCtx.currentTime + 0.3);
+    },
+    atmWithdraw: (vol = 0.2) => {
+        if (!Globals.audioCtx || Globals.sfxMuted) return;
+        // Mechanical Dispenser "Brrr"
+        const osc = Globals.audioCtx.createOscillator();
+        const gain = Globals.audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, Globals.audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, Globals.audioCtx.currentTime + 0.4);
+        // Fast vibrato for mechanical sound
+        const lfo = Globals.audioCtx.createOscillator();
+        const lfoGain = Globals.audioCtx.createGain();
+        lfo.type = 'square';
+        lfo.frequency.value = 25; // 25Hz rumbling flutter
+        lfoGain.gain.value = 50; // Pitch modulation depth
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start();
+        lfo.stop(Globals.audioCtx.currentTime + 0.4);
+
+        gain.gain.setValueAtTime(vol, Globals.audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, Globals.audioCtx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(Globals.audioCtx.destination);
+        osc.start();
+        osc.stop(Globals.audioCtx.currentTime + 0.4);
+    },
     //make this a cannot so / fail sound
     cantPickup: (vol = 0.2) => {
         if (!Globals.audioCtx || Globals.sfxMuted) return;

@@ -5,6 +5,7 @@ export const Globals = {
     mapCanvas: null,
     mctx: null,
     statsPanel: null,
+    usedBed: false,
 
     randomGreenMinCount: 1,
     randomGreenMaxCount: 100,
@@ -29,12 +30,13 @@ export const Globals = {
         debugPanel: null,
         debugLog: null,
         timer: null,
-        tMin: null, tSec: null, tMs: null
+        tMin: null, tSec: null, tMs: null,
+        bankModal: null,
+        bankInvVal: null,
+        bankVaultVal: null
     },
 
-
-
-    //gane counters
+    //game counters
     playerDeathCount: parseInt(localStorage.getItem('playerDeathCount') || '0'),
     playerDeathSessionCount: 0,
 
@@ -214,18 +216,17 @@ export const Globals = {
             this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        const ids = ['hp', 'keys', 'room', 'overlay', 'welcome', 'ui',
+        const ids = ['hp', 'keys', 'room', 'overlay', 'welcome', 'ui', 'perfect',
             'stats', 'perfect-count', 'nodamage-count', 'shooter-count',
             'roomName', 'bombs', 'ammo', 'gun',
             'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer',
-            't-min', 't-sec', 't-ms'];
+            't-min', 't-sec', 't-ms', 'bankModal', 'bankInvVal', 'bankVaultVal'];
 
         ids.forEach(id => {
             // camelCase conversion for property name
             let prop = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 
             // Manual overrides for specific counters to match Game.js expectation
-            if (id === 'perfect-count') prop = 'perfect';
             if (id === 'nodamage-count') prop = 'nodamage';
             if (id === 'shooter-count') prop = 'shooter';
 

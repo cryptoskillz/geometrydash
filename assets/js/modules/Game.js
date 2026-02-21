@@ -130,9 +130,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         Globals.portal.scrapping = false;
     }
 
-    // ... [Previous debug and player reset logic remains the same] ...
-    // Room debug display setup moved after config load
-
     // Room debug display setup moved after config load
 
     // Preserved Stats for Next Level
@@ -279,9 +276,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         // 3. Load Level Specific Data
-        // Use nextLevel if provided.
-        // If !isRestart (Welcome Screen), prioritize Start Level (Fresh Start).
-        // If isRestart (R Key), prioritize Stored Level (Current Level).
         const storedLevel = localStorage.getItem('rogue_current_level');
         let levelFile = nextLevel;
 
@@ -609,12 +603,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             log("Using Cached Items (Size:" + allItems.length + ")");
         }
         window.allItemTemplates = allItems;
-
-        // Filter starters
-        // Legacy: Previously spawned all 'starter:false' items.
-        // NOW: Only spawn if DEBUG flag is set.
-        // Filter starters
-        // Legacy: Previously spawned all 'starter:false' items.
         // NOW: Spawn based on granular DEBUG flags.
         const starters = allItems.filter(i => {
             if (!i) return false;
@@ -627,9 +615,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             const isBomb = i.type === 'bomb';
             const isMod = i.type === 'modifier';
             const loc = (i.location || "").toLowerCase();
-
-            // Inventory (Keys/Bombs/Consumables) - often identified by path or lack of "modifier" type?
-            // Actually user defines them as type="modifier" usually. 
             // Let's look for "inventory" in path.
             const isInventory = isMod && loc.includes('inventory');
 
@@ -810,10 +795,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         const soundUnlocked = Globals.gameData.soundEffects || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('soundEffects');
         if (soundUnlocked) {
             Globals.gameData.soundEffects = true;
-            // Only force mute if explicitly requested? Or default to on.
-            // Globals.sfxMuted = false; // Let's not force false if user muted it?
-            // But if it was locked, it was forced true.
-            // We need a persistence for user preference too ideally, but for now just unlock it.
         } else {
             Globals.sfxMuted = true;
         }
@@ -1053,7 +1034,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         const startEntry = Globals.levelMap["0,0"];
         Globals.roomData = startEntry.roomData;
-        Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
+        //only show intro if it is first time in the room
+        if (!Globals.visitedRooms["0,0"]) {
+            Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
+        }
         Globals.visitedRooms["0,0"] = startEntry;
 
         // If we loaded a specific room/level (via nextLevel or debug), we need to ensure enemies are spawned
@@ -1094,10 +1078,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         Globals.isInitializing = false;
         const loadingEl = document.getElementById('loading');
         if (loadingEl) loadingEl.style.display = 'none';
-
-        // AUTO START IF CONFIGURED (After everything is ready)
-        // Moved here to ensure isInitializing is false before starting
-        // AUTO START IF CONFIGURED (After everything is ready)
         // Moved here to ensure isInitializing is false before starting
         const params = new URLSearchParams(window.location.search);
         const shouldAutoStart = Globals.gameData.showWelcome === false || isRestart || params.get('autostart') === 'true';
@@ -1169,7 +1149,7 @@ export async function startGame(keepState = false) {
     // Check Lock
     const p = Globals.availablePlayers[Globals.selectedPlayerIndex];
 
-    if (p && p.locked) {
+    if (!keepState && p && p.locked) {
         log("Player Locked - Cannot Start");
         Globals.isGameStarting = false;
         return;
@@ -1182,53 +1162,25 @@ export async function startGame(keepState = false) {
         // FORCE Reset RNG State even if value is same (fixes restart bug)
         Globals.setSeed(val);
     }
-
-    // Check if we need to regenerate level due to seed change
-    // If not keeping state (fresh start) AND seed input exists
-    // We compare with the seed used during initGame (Globals.seed)
-    // If val != Globals.seed, we already set it. 
-    // BUT initGame already ran generateLevel with old seed.
     // So if val was different, we MUST regenerate.
 
     if (!keepState && seedInput && seedInput.value && seedInput.value.trim() !== "") {
         const val = seedInput.value.trim();
-        // If we just changed the seed (setSeed logs it, but we can verify)
-        // Actually we just set it above. 
-        // We need to know if the level CURRENTLY generated matches this seed.
-        // A simple way is: if we are allowing seed input, we should probably ALWAYS regenerate the level 
-        // on "Start Game" to be safe, OR track "seedUsedForGeneration".
-
-        // Let's just regenerate if it's a fresh start. It's cheap enough.
-        // Unless it's a "Restart" (keepState=false, isRestart=true) which handled seed in initGame.
-        // But "Restart" doesn't show Welcome Screen input usually? 
-        // Wait, restartGame calls initGame(true), which hides welcome. 
-        // So this input logic only applies to MANUAL start from Welcome Screen.
-
         log("Regenerating level with selected seed:", Globals.seed);
         generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
 
         // Also must respawn enemies for the start room (0,0) as generateLevel resets map
         if (Globals.levelMap["0,0"]) {
             Globals.roomData = Globals.levelMap["0,0"].roomData;
-            Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
-            // spawnEnemies(Globals.roomData); // spawnEnemies uses Globals.roomData by default
-            // Actually, initGame does NOT spawn enemies for 0,0 by default? 
-            // updateEnemies loop handles it if they exist?
-            // Let's check initGame again. It only spawns for debug/nextLevel.
-            // Standard spawning happens in update() -> updateRoom() -> if (room != lastRoom)
-            // So we just need to reset player.roomX/Y which we do below.
+            if (!Globals.visitedRooms["0,0"]) {
+                Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
+
+            }
         }
     }
 
     // Increment Run Count (Persisted)
     if (!keepState && !Globals.isRestart) {
-        // Only count as new run if not a level transition (keepState) 
-        // Adjust logic: keepState is true for level transition? 
-        // Wait, startGame(true) is used for next level? 
-        // Let's check call sites. 
-        // actually restartGame() sets isRestart=true. 
-        // But a new game from menu? 
-
         // Simpler: Just check if we are resetting logic.
         // If keepState is FALSE, it's a fresh run (or restart).
         Globals.NumberOfRuns++;
@@ -1749,8 +1701,12 @@ export function changeRoom(dx, dy) {
                     Globals.introMusic.play().catch(e => console.warn("Music Switch Play Blocked", e));
                 }
             }
+
         }
-        Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
+        //only show intro if it is the first time 
+        if (!Globals.visitedRooms[nextCoord]) {
+            Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
+        }
         Globals.visitedRooms[nextCoord] = nextEntry; // Add to visited for minimap
 
         Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
@@ -1791,15 +1747,6 @@ export function changeRoom(dx, dy) {
 
         if (shouldFollow && !isExcluded) {
             log("The Ghost follows you...");
-            // Trigger time = desired spawn time
-            // roomStartTime = Now - (ConfigTime - TravelTime)
-            // Example: Config=10s, Travel=2s. We want spawn in 2s.
-            // Timer checks: (Now - Start) > 10s.
-            // (Now - Start) should start at 8s.
-            // Start = Now - 8s = Now - (10s - 2s).
-            // We add 100ms buffer to ensure it triggers after the frame update
-            // Actually, if we want it to spawn AFTER travel time, we set the accumulator to (Target - Travel).
-
             const timeAlreadyElapsed = ghostConfig.roomGhostTimer - travelTime;
             // Clamp so we don't wait forever if travel is huge (max delay 3x timer?) or negative?
             // If travelTime > ghostTimer, timeAlreadyElapsed is negative, so we wait longer than usual. Correct.
@@ -1816,15 +1763,11 @@ export function changeRoom(dx, dy) {
                 vy: dy * 2
             };
         } else {
-            // ghostConfig local variable from earlier? Or was it gameData.ghost?
-            // "ghostConfig" was defined earlier in changeRoom as local.
-            // But ghostEntry is Global.
             Globals.ghostEntry = null;
         }
 
         const keyUsedForRoom = keyWasUsedForThisRoom; // Apply key usage penalty to next room
 
-        // Immediate Room Bonus if key used
         // Immediate Room Bonus if key used (First visit only)
         if (keyUsedForRoom && !Globals.levelMap[nextCoord].bonusAwarded) {
             // Use game.json bonuses.key config
@@ -2281,6 +2224,7 @@ export async function draw() {
     drawDoors()
     drawBossSwitch() // Draw switch underneath entities
     drawStartRoomObjects(); // New: Draw start room specific floor items
+    drawHomeRoomObjects();
     drawSwitches();
     drawPortal(); // Draw portal on floor
     drawPlayer()
@@ -2353,6 +2297,38 @@ export async function draw() {
     drawRoomIntro();
     // drawPortal() moved to before drawPlayer
     drawFloatingTexts(); // Draw notification texts on top
+
+    // --- SLEEP FADE EFFECT ---
+    if (Globals.sleepTimer) {
+        const elapsed = Date.now() - Globals.sleepTimer;
+        const totalDuration = 2000; // total duration of sleep/freeze
+        const fadeTime = 500; // 500ms fade in, 500ms fade out
+
+        if (elapsed < totalDuration) {
+            let alpha = 0;
+            if (elapsed < fadeTime) {
+                alpha = elapsed / fadeTime; // Fade in
+            } else if (elapsed > totalDuration - fadeTime) {
+                alpha = 1 - ((elapsed - (totalDuration - fadeTime)) / fadeTime); // Fade out
+            } else {
+                alpha = 1; // Solid black in middle
+            }
+            Globals.ctx.save();
+            Globals.ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+            Globals.ctx.fillRect(0, 0, Globals.canvas.width, Globals.canvas.height);
+            // Draw a Zzz sleeping text
+            if (alpha > 0.3) {
+                Globals.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                Globals.ctx.font = "bold 40px monospace";
+                Globals.ctx.textAlign = "center";
+                Globals.ctx.fillText("Zzz...", Globals.canvas.width / 2, Globals.canvas.height / 2);
+            }
+            Globals.ctx.restore();
+        } else {
+            Globals.sleepTimer = 0; // End the sleep effect
+        }
+    }
+
     drawDebugLogs();
     requestAnimationFrame(() => { update(); draw(); });
 }
@@ -2425,6 +2401,134 @@ export function drawStartRoomObjects() {
     if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0) {
 
     }
+}
+
+export function drawHomeRoomObjects() {
+    if (Globals.roomData.type !== 'home' && Globals.roomData._type !== 'home') return;
+
+    Globals.ctx.save();
+
+    // Draw Bed (Top Left)
+    Globals.ctx.fillStyle = "#34495e"; // Bed Frame
+    Globals.ctx.fillRect(50, 50, 80, 140);
+    Globals.ctx.fillStyle = "#ecf0f1"; // Mattress/Sheets
+    Globals.ctx.fillRect(55, 80, 70, 105);
+    Globals.ctx.fillStyle = "#bdc3c7"; // Pillow
+    Globals.ctx.fillRect(60, 55, 60, 20);
+
+    // Draw Table (Center right)
+    Globals.ctx.fillStyle = "#8e44ad"; // Table top
+    Globals.ctx.beginPath();
+    Globals.ctx.arc(300, 200, 45, 0, Math.PI * 2);
+    Globals.ctx.fill();
+    Globals.ctx.lineWidth = 4;
+    Globals.ctx.strokeStyle = "#9b59b6";
+    Globals.ctx.stroke();
+
+    // Draw TV (Top Right)
+    Globals.ctx.fillStyle = "#2c3e50"; // TV Stand
+    Globals.ctx.fillRect(270, 40, 100, 20);
+    Globals.ctx.fillStyle = "#34495e"; // TV Border
+    Globals.ctx.fillRect(280, 30, 80, 10);
+    Globals.ctx.fillRect(260, -20, 120, 60);
+    Globals.ctx.fillStyle = "#111"; // Screen
+    Globals.ctx.fillRect(265, -15, 110, 50);
+
+    // TV Static/Glow
+    Globals.ctx.fillStyle = "rgba(41, 128, 185, 0.4)";
+    Globals.ctx.fillRect(265, -15, 110, 50);
+    if (Math.random() > 0.8) {
+        Globals.ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        for (let i = 0; i < 5; i++) {
+            Globals.ctx.fillRect(265, -15 + Math.random() * 45, 110, 2);
+        }
+    }
+
+    // Draw Piggy Bank (Bottom Left)
+    const px = 100, py = 320;
+
+    // Body (Pink ellipse)
+    Globals.ctx.fillStyle = "#ffb6c1"; // light pink
+    Globals.ctx.beginPath();
+    Globals.ctx.ellipse(px, py, 25, 20, 0, 0, Math.PI * 2);
+    Globals.ctx.fill();
+    Globals.ctx.lineWidth = 2;
+    Globals.ctx.strokeStyle = "#ff69b4"; // hot pink border
+    Globals.ctx.stroke();
+
+    // Snout
+    Globals.ctx.fillStyle = "#ffc0cb"; // slightly different pink
+    Globals.ctx.beginPath();
+    Globals.ctx.ellipse(px + 23, py, 8, 12, 0, 0, Math.PI * 2);
+    Globals.ctx.fill();
+    Globals.ctx.stroke();
+
+    // Eye
+    Globals.ctx.fillStyle = "#2c3e50";
+    Globals.ctx.beginPath();
+    Globals.ctx.arc(px + 12, py - 5, 2, 0, Math.PI * 2);
+    Globals.ctx.fill();
+
+    // Coin Slot
+    Globals.ctx.fillStyle = "#34495e";
+    Globals.ctx.fillRect(px - 5, py - 15, 10, 3);
+
+    // Legs
+    Globals.ctx.fillStyle = "#ff69b4";
+    Globals.ctx.fillRect(px - 15, py + 15, 6, 8);
+    Globals.ctx.fillRect(px + 5, py + 15, 6, 8);
+
+    // Tail (Curly)
+    Globals.ctx.beginPath();
+    Globals.ctx.arc(px - 25, py - 5, 4, 0, Math.PI);
+    Globals.ctx.stroke();
+
+    // Draw Used Portal (Center)
+    // We temporarily override the global portal properties just to draw it
+    const originalPortalState = Globals.portal.active;
+    const originalPortalX = Globals.portal.x;
+    const originalPortalY = Globals.portal.y;
+
+    Globals.portal.active = true;
+    Globals.portal.x = Globals.canvas.width / 2;
+    Globals.portal.y = Globals.canvas.height / 2;
+
+    drawPortal('green'); // Draw the green 'used' matrix-style portal
+
+    // Restore original portal state
+    Globals.portal.active = originalPortalState;
+    Globals.portal.x = originalPortalX;
+    Globals.portal.y = originalPortalY;
+
+    // Proximity Prompts
+    const pbDist = Math.hypot(Globals.player.x - px, Globals.player.y - py);
+    if (pbDist < 60) {
+        Globals.ctx.fillStyle = "white";
+        Globals.ctx.font = "14px monospace";
+        Globals.ctx.textAlign = "center";
+        Globals.ctx.fillText("Press Space to open bank", px, py - 40);
+    }
+
+    // Bed is x:50-130, y:50-190. Expand box by ~30px for interaction
+    const nearBed = Globals.player.x > 20 && Globals.player.x < 160 && Globals.player.y > 20 && Globals.player.y < 220;
+
+    if (nearBed) {
+        Globals.ctx.fillStyle = "white";
+        Globals.ctx.font = "14px monospace";
+        Globals.ctx.textAlign = "center";
+
+        if (Globals.usedBed) {
+            Globals.ctx.fillStyle = "red";
+            Globals.ctx.fillText("Already rested today", 90, 40);
+        } else if (Globals.player.hp >= Globals.player.maxHp) {
+            Globals.ctx.fillStyle = "red";
+            Globals.ctx.fillText("Player well rested", 90, 40);
+        } else {
+            Globals.ctx.fillText("Press Space to sleep", 90, 40);
+        }
+    }
+
+    Globals.ctx.restore();
 }
 
 export function updateMusicToggle() {
@@ -3096,10 +3200,6 @@ export async function newRun(targetLevel = null) {
     if (seedInput) seedInput.value = "";
 
     // 2. Call initGame as if it's a restart (to skip welcome) but with the NEW seed already set?
-    // Wait, initGame(true) RE-SETS seed to Globals.seed. 
-    // So if we set Globals.seed then call initGame(true), it should work!
-    // If targetLevel is passed, use it (and use logic to restart AT that level)
-
     await initGame(true, targetLevel);
 }
 Globals.newRun = newRun;
@@ -3154,27 +3254,6 @@ export function goContinue() {
 Globals.handleUnlocks = handleUnlocks;
 Globals.gameOver = gameOver; // Assign for circular dependency fix
 Globals.spawnEnemy = (type, x, y, overrides = {}) => {
-    // Import dynamically or use the one we imported?
-    // We imported spawnEnemies from Entities.js.
-    // Entities.spawnEnemies(count, type, x, y) signature?
-    // Let's check Entities.js signature.
-    // spawnEnemies(amount, type) -> random pos
-    // We want specific pos. 
-    // Entities.js likely has "spawnEnemy(type, x, y)" or similar helper?
-    // If not, we might need to add one or use a hack.
-    // Looking at Entities.js...
-
-    // For now, let's assume we can reuse spawnEnemies but we need to pass x,y.
-    // If spawnEnemies doesn't support x,y, we should add support or export a single spawn function.
-    // Let's check Entities.js content first.
-    // Wait, I can't check it inside this replace block.
-    // I will assume I need to export a helper from Entities and attach it here.
-    // OR, I can just attach it here if I have access to the class/function.
-
-    // Actually, looking at imports in Game.js:
-    // import { spawnEnemies ... } from './Entities.js';
-
-    // I'll attach a wrapper here.
     import('./Entities.js').then(m => {
         m.spawnEnemyAt(type, x, y, overrides);
     });
@@ -3391,3 +3470,86 @@ export function drawGhostBorder() {
         }
     }
 }
+// --- BANK / ATM UI ---
+export function bankDeposit(amountStr) {
+    if (Globals.gameState !== STATES.BANK) return;
+
+    let amount = parseInt(amountStr);
+    if (isNaN(amount) || amount <= 0) return;
+
+    let bankedShards = parseInt(localStorage.getItem('piggy_bank_balance') || '0');
+    let inventoryShards = Globals.player.inventory.greenShards || 0;
+
+    if (inventoryShards > 0) {
+        // Cap deposit amount to what player actually has
+        const depositAmt = Math.min(amount, inventoryShards);
+
+        bankedShards += depositAmt;
+        Globals.player.inventory.greenShards -= depositAmt;
+        localStorage.setItem('piggy_bank_balance', bankedShards);
+
+        // Update UI
+        if (Globals.elements.bankInvVal) Globals.elements.bankInvVal.innerText = Globals.player.inventory.greenShards;
+        if (Globals.elements.bankVaultVal) Globals.elements.bankVaultVal.innerText = bankedShards;
+
+        SFX.atmDeposit();
+        log(`Deposited ${depositAmt} green shards. Total: ${bankedShards}`);
+        document.getElementById('bankMessage').innerText = "Deposited " + depositAmt + " green shards.";
+        spawnFloatingText(depositAmt, 'green', Globals.player.x, Globals.player.y);
+    } else {
+        if (SFX && SFX.cantPickup) SFX.cantPickup();
+    }
+}
+
+export function bankWithdraw(amountStr) {
+    if (Globals.gameState !== STATES.BANK) return;
+
+    let amount = parseInt(amountStr);
+    if (isNaN(amount) || amount <= 0) return;
+
+    let bankedShards = parseInt(localStorage.getItem('piggy_bank_balance') || '0');
+
+    if (bankedShards > 0) {
+        // Calculate the player's max capacity (usually 100 unless upgraded)
+        const maxCapacity = Globals.player.inventory.maxGreenShards || Globals.player.maxGreenShards || 100;
+
+        // Calculate how much room the player actually has
+        const spaceAvailable = maxCapacity - Globals.player.inventory.greenShards;
+
+        if (spaceAvailable <= 0) {
+            document.getElementById('bankMessage').innerText = "Inventory full!";
+            if (SFX && SFX.cantPickup) SFX.cantPickup();
+            return;
+        }
+
+        // Cap withdraw amount to MIN of (requested amount, bank balance, available space)
+        const withdrawAmt = Math.min(amount, bankedShards, spaceAvailable);
+        document.getElementById('bankMessage').innerText = ""; // Clear message on success
+
+        Globals.player.inventory.greenShards += withdrawAmt;
+        bankedShards -= withdrawAmt;
+        localStorage.setItem('piggy_bank_balance', bankedShards);
+
+        // Update UI
+        if (Globals.elements.bankInvVal) Globals.elements.bankInvVal.innerText = Globals.player.inventory.greenShards;
+        if (Globals.elements.bankVaultVal) Globals.elements.bankVaultVal.innerText = bankedShards;
+
+        // Save inventory so player actually has them
+
+        localStorage.setItem('currency_green', Globals.player.inventory.greenShards);
+
+        if (SFX && SFX.atmWithdraw) SFX.atmWithdraw();
+        spawnFloatingText(withdrawAmt, 'green', Globals.player.x, Globals.player.y);
+        document.getElementById('bankMessage').innerText = "Withdrew " + withdrawAmt + " green shards.";
+    } else {
+        if (SFX && SFX.cantPickup) SFX.cantPickup();
+    }
+}
+
+export function bankClose() {
+    if (Globals.elements.bankModal) {
+        Globals.elements.bankModal.style.display = 'none';
+    }
+    Globals.gameState = STATES.PLAY; // Resume play
+}
+
