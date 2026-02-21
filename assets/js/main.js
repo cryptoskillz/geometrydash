@@ -2,6 +2,7 @@ import { Globals } from './modules/Globals.js'; // Path relative to index.html? 
 // If main.js is in assets/js/, then ./modules/Globals.js is correct.
 import { setupInput } from './modules/Input.js';
 import { initGame, restartGame, newRun, goToWelcome, goContinue, confirmNewGame, cancelNewGame, gameMenu, bankDeposit, bankWithdraw, bankClose } from './modules/Game.js';
+import { SFX } from './modules/Audio.js';
 
 window.addEventListener('load', () => {
     console.log("Main.js loaded - Initializing Game...");
@@ -33,3 +34,4 @@ window.cancelNewGame = cancelNewGame;
 window.bankDeposit = bankDeposit;
 window.bankWithdraw = bankWithdraw;
 window.bankClose = bankClose;
+window.SFX = SFX;

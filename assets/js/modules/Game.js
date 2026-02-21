@@ -130,9 +130,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         Globals.portal.scrapping = false;
     }
 
-    // ... [Previous debug and player reset logic remains the same] ...
-    // Room debug display setup moved after config load
-
     // Room debug display setup moved after config load
 
     // Preserved Stats for Next Level
@@ -3543,12 +3540,12 @@ export function bankDeposit(amountStr) {
         if (Globals.elements.bankInvVal) Globals.elements.bankInvVal.innerText = Globals.player.inventory.greenShards;
         if (Globals.elements.bankVaultVal) Globals.elements.bankVaultVal.innerText = bankedShards;
 
-        if (window.SFX && SFX.coin) window.SFX.coin();
+        SFX.atmDeposit();
         log(`Deposited ${depositAmt} green shards. Total: ${bankedShards}`);
         document.getElementById('bankMessage').innerText = "Deposited " + depositAmt + " green shards.";
         spawnFloatingText(depositAmt, 'green', Globals.player.x, Globals.player.y);
     } else {
-        if (window.SFX && SFX.cantPickup) window.SFX.cantPickup();
+        if (SFX && SFX.cantPickup) SFX.cantPickup();
     }
 }
 
@@ -3569,7 +3566,7 @@ export function bankWithdraw(amountStr) {
 
         if (spaceAvailable <= 0) {
             document.getElementById('bankMessage').innerText = "Inventory full!";
-            if (window.SFX && SFX.cantPickup) window.SFX.cantPickup();
+            if (SFX && SFX.cantPickup) SFX.cantPickup();
             return;
         }
 
@@ -3589,11 +3586,11 @@ export function bankWithdraw(amountStr) {
 
         localStorage.setItem('currency_green', Globals.player.inventory.greenShards);
 
-        if (window.SFX && SFX.coin) window.SFX.coin();
+        if (SFX && SFX.atmWithdraw) SFX.atmWithdraw();
         spawnFloatingText(withdrawAmt, 'green', Globals.player.x, Globals.player.y);
         document.getElementById('bankMessage').innerText = "Withdrew " + withdrawAmt + " green shards.";
     } else {
-        if (window.SFX && SFX.cantPickup) window.SFX.cantPickup();
+        if (SFX && SFX.cantPickup) SFX.cantPickup();
     }
 }
 
