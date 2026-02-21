@@ -1,3 +1,11 @@
+@font-face {
+    font-family: 'Orbitron';
+    font-style: normal;
+    font-weight: 900;
+    font-display: swap;
+    src: url('../fonts/orbitron-900.ttf') format('truetype');
+}
+
 body {
     background: #222;
     display: flex;

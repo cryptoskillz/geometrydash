@@ -2,10 +2,8 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- Store Google font locally to make it work offline.
 - Golden path bonus shows on the perfect bonus counter.
-- Second boss, if you dont pick up they gun or bomb, you should be pushed out of the portal and it says "Are you sure you want to do a pacifist run?" and you have to go back in to do it.
-- don't spawn bosses near the portal
+- use portalWarning; if its true do a check that looks for items in the room and if there it brings up a modal that says "Are you sure you want to enter the portal?". If you do enter a portal with items in the room you get bonus red shards
 - `Entities.js:385` Uncaught ReferenceError: `ghostSpawned` is not defined.
 - Gun turret requires its x, y back (if it spawns off-screen, move it until it is on-screen).
 - Unlock spawns are slow after a boss kill.
