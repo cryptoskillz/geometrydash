@@ -132,11 +132,15 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
     // Preserved Stats for Next Level
     let savedPlayerStats = null;
+    let savedGun = null;
+    let savedBomb = null;
     log(`initGame called. isRestart=${isRestart}, keepStats=${keepStats}, player.bombType=${Globals.player ? Globals.player.bombType : 'null'}`);
 
     if (keepStats && Globals.player) {
         // Deep Clone to preserve ALL properties (items, modifiers, etc.)
         savedPlayerStats = JSON.parse(JSON.stringify(Globals.player));
+        savedGun = localStorage.getItem('current_gun');
+        savedBomb = localStorage.getItem('current_bomb');
 
         // Remove volatile runtime state
         delete savedPlayerStats.x;
@@ -234,13 +238,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         } catch (e) { }
 
         // LOAD SAVED WEAPONS OVERRIDE
-        if (!keepStats && isRestart) {
-            // New Game / Fresh Start -> Wipe temporary weapon saves
-            localStorage.removeItem('current_gun');
-            localStorage.removeItem('current_bomb');
-            localStorage.removeItem('current_gun_config');
-            localStorage.removeItem('current_bomb_config');
-        } else if (keepStats) {
+        if (keepStats) {
             if (savedGun) {
                 if (!gData) gData = {};
                 gData.gunType = savedGun;
@@ -729,6 +727,30 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             Globals.player.bombType = Globals.gameData.bombType;
         }
 
+        // --- Apply Permanent Upgrades ---
+        if (!savedPlayerStats) {
+            const bonusMaxHp = parseFloat(localStorage.getItem('upgrade_permanent_maxHp') || '0');
+            if (bonusMaxHp > 0) {
+                Globals.player.maxHp = (Globals.player.maxHp || 3) + bonusMaxHp;
+                Globals.player.hp = Globals.player.maxHp;
+                log("Applied permanent maxHp bonus:", bonusMaxHp);
+            }
+
+            const bonusKeys = parseFloat(localStorage.getItem('upgrade_permanent_keys') || '0');
+            if (bonusKeys > 0) {
+                if (!Globals.player.inventory) Globals.player.inventory = {};
+                Globals.player.inventory.maxKeys = (Globals.player.inventory.maxKeys || 5) + bonusKeys;
+                Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + bonusKeys;
+                log("Applied permanent keys bonus:", bonusKeys);
+            }
+
+            const bonusSpeed = parseFloat(localStorage.getItem('upgrade_permanent_speed') || '0');
+            if (bonusSpeed > 0) {
+                Globals.player.speed += bonusSpeed;
+                log("Applied permanent speed bonus:", bonusSpeed);
+            }
+        }
+
         // Load player specific assets
         let fetchedGun = null;
         let fetchedBomb = null;
@@ -737,7 +759,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             if (Globals.player.gunType) {
                 // FIRST: Check cache for runtime upgrades during current run
                 const cachedGunData = localStorage.getItem('current_gun_config');
-                if (cachedGunData && savedPlayerStats) {
+                if (cachedGunData) {
                     fetchedGun = JSON.parse(cachedGunData);
                     log("Loaded Gun from LocalStorage Cache (Preserving Modifiers)");
                 } else {
@@ -782,7 +804,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (bombUrl) {
             try {
                 const cachedBombData = localStorage.getItem('current_bomb_config');
-                if (cachedBombData && savedPlayerStats) {
+                if (cachedBombData) {
                     fetchedBomb = JSON.parse(cachedBombData);
                     log("Loaded Bomb from LocalStorage Cache");
                 } else {
@@ -816,11 +838,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         if (!savedPlayerStats && !isRestart) {
             if (!localStorage.getItem('base_gun') && Globals.player.gunType) {
                 localStorage.setItem('base_gun', Globals.player.gunType);
-                log("Saved Base Gun:", Globals.player.gunType);
+                localStorage.setItem('base_gun_config', JSON.stringify(Globals.gun));
+                log("Saved Base Gun & Config:", Globals.player.gunType);
             }
             if (!localStorage.getItem('base_bomb') && Globals.player.bombType) {
                 localStorage.setItem('base_bomb', Globals.player.bombType);
-                log("Saved Base Bomb:", Globals.player.bombType);
+                localStorage.setItem('base_bomb_config', JSON.stringify(Globals.bomb));
+                log("Saved Base Bomb & Config:", Globals.player.bombType);
             }
         }
 
@@ -1258,6 +1282,28 @@ export async function startGame(keepState = false) {
         if (storedRed && Globals.player.inventory) {
             Globals.player.inventory.redShards = parseInt(storedRed);
             Globals.player.redShards = parseInt(storedRed); // Sync legacy too
+        }
+
+        // --- Apply Permanent Upgrades ---
+        const bonusMaxHp = parseFloat(localStorage.getItem('upgrade_permanent_maxHp') || '0');
+        if (bonusMaxHp > 0) {
+            Globals.player.maxHp = (Globals.player.maxHp || 3) + bonusMaxHp;
+            Globals.player.hp = Globals.player.maxHp; 
+            log("Applied permanent maxHp bonus:", bonusMaxHp);
+        }
+
+        const bonusKeys = parseFloat(localStorage.getItem('upgrade_permanent_keys') || '0');
+        if (bonusKeys > 0) {
+            if (!Globals.player.inventory) Globals.player.inventory = {};
+            Globals.player.inventory.maxKeys = (Globals.player.inventory.maxKeys || 5) + bonusKeys;
+            Globals.player.inventory.keys = (Globals.player.inventory.keys || 0) + bonusKeys; 
+            log("Applied permanent keys bonus:", bonusKeys);
+        }
+        
+        const bonusSpeed = parseFloat(localStorage.getItem('upgrade_permanent_speed') || '0');
+        if (bonusSpeed > 0) {
+            Globals.player.speed += bonusSpeed;
+            log("Applied permanent speed bonus:", bonusSpeed);
         }
     }
 
@@ -3473,6 +3519,12 @@ export function confirmNewGame() {
     // Clear Persistence to ensure fresh start
     // Clear Persistence to ensure fresh start (Hard Reset)
     STORAGE_KEYS.HARD_RESET.forEach(key => localStorage.removeItem(key));
+
+    // Clear Permanent Upgrades and Payment Progress
+    const keysToRemove = Object.keys(localStorage).filter(k =>
+        k.startsWith('upgrade_permanent_') || k.startsWith('upgrade_amountSpent_')
+    );
+    keysToRemove.forEach(k => localStorage.removeItem(k));
 
     location.reload();
 }

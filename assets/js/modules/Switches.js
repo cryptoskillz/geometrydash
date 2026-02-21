@@ -271,6 +271,12 @@ function handleUpgradeSwitch(s) {
     Globals.player.inventory[inventoryKey] -= payment;
     s.amountSpent += payment;
 
+    // Also deduct from permanent banked currency
+    const bankKey = `currency_${shardType}`;
+    let bankedCurrency = parseInt(localStorage.getItem(bankKey) || '0');
+    bankedCurrency = Math.max(0, bankedCurrency - payment);
+    localStorage.setItem(bankKey, bankedCurrency);
+
     const floatColor = shardType === 'red' ? '#e74c3c' : '#2ecc71';
     spawnFloatingText(s.x, s.y - 10, "-" + payment, floatColor);
 
@@ -288,6 +294,12 @@ function handleUpgradeSwitch(s) {
         s.amountSpent = 0;
         if (s.modify && s.modify.attr) {
             localStorage.setItem(`upgrade_amountSpent_${s.modify.attr}`, 0);
+
+            // Apply permanent stat bonus
+            const attr = s.modify.attr;
+            const amt = parseFloat(s.modify.amount) || 1;
+            let currentBonus = parseFloat(localStorage.getItem(`upgrade_permanent_${attr}`) || '0');
+            localStorage.setItem(`upgrade_permanent_${attr}`, currentBonus + amt);
         }
 
         spawnFloatingText(s.x, s.y - 30, "UPGRADE COMPLETE!", "#f1c40f");
