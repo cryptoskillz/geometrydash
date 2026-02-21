@@ -190,7 +190,7 @@ export async function updateUI() {
     }
 
     // Gun & Ammo
-    const gunName = Globals.player.gunType || "Default";
+    const gunName = Globals.player.gunType || "Peashooter";
     if (Globals.elements.gun) Globals.elements.gun.innerText = gunName.toUpperCase();
 
     let ammoText = "INF";

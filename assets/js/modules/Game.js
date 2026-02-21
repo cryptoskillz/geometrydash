@@ -148,6 +148,12 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         delete savedPlayerStats.invulnUntil;
         delete savedPlayerStats.frozen;
 
+        // FIXED: If preserving stats but player is DEAD (restarting from game over), revive them.
+        if (savedPlayerStats.hp <= 0) {
+            savedPlayerStats.hp = savedPlayerStats.maxHp || 3;
+            log("Revived Player HP for kept-stats restart");
+        }
+
         log("Saved Complete Player State");
     }
 
@@ -228,10 +234,13 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         } catch (e) { }
 
         // LOAD SAVED WEAPONS OVERRIDE
-        if (keepStats) {
-            // Continuing run -> Restore
-            const savedGun = localStorage.getItem('current_gun');
-            const savedBomb = localStorage.getItem('current_bomb');
+        if (!keepStats && isRestart) {
+            // New Game / Fresh Start -> Wipe temporary weapon saves
+            localStorage.removeItem('current_gun');
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_gun_config');
+            localStorage.removeItem('current_bomb_config');
+        } else if (keepStats) {
             if (savedGun) {
                 if (!gData) gData = {};
                 gData.gunType = savedGun;
@@ -3146,7 +3155,31 @@ export function gameMenu() {
 }
 
 // Helper to reset runtime state to base state (Death/Restart)
-// Removed resetWeaponState. Weapon tracking is now handled strictly via HARD_RESET array on 'New Game'
+function resetWeaponState() {
+    const baseGun = localStorage.getItem('base_gun');
+    const baseGunConfig = localStorage.getItem('base_gun_config');
+
+    if (baseGun) {
+        localStorage.setItem('current_gun', baseGun);
+        if (baseGunConfig) localStorage.setItem('current_gun_config', baseGunConfig);
+        log(`Reset Gun to Base: ${baseGun}`);
+    } else {
+        // Fallback: If no base saved, CLEAR current so initGame uses player default
+        localStorage.removeItem('current_gun');
+        localStorage.removeItem('current_gun_config');
+        log("No Base Gun found. Cleared Current Gun to force default.");
+    }
+
+    const baseBomb = localStorage.getItem('base_bomb');
+    const baseBombConfig = localStorage.getItem('base_bomb_config');
+    if (baseBomb) {
+        localStorage.setItem('current_bomb', baseBomb);
+        if (baseBombConfig) localStorage.setItem('current_bomb_config', baseBombConfig);
+    } else {
+        localStorage.removeItem('current_bomb');
+        localStorage.removeItem('current_bomb_config');
+    }
+}
 
 export function updateSFXToggle() {
     // Key 9 to toggle SFX
@@ -3168,6 +3201,11 @@ export async function restartGame(keepItems = false, targetLevel = null) {
             : (Globals.gameData.debug && Globals.gameData.debug.windowEnabled === true)
     );
 
+    // If restarting game and not explicitly asked to keep items, reset weapons manually.
+    if (!keepItems) {
+        resetWeaponState();
+    }
+
     // Trigger "Cool Teleport Effect" (Glitch Shake)
     Globals.screenShake.power = 20;
     Globals.screenShake.endAt = Date.now() + 600;
@@ -3175,8 +3213,7 @@ export async function restartGame(keepItems = false, targetLevel = null) {
     SFX.restart();
 
     // Wait for init to complete, then auto-start
-    // FIXED: If Debug is enabled, we MUST pass 'true' to keepStats so initGame doesn't nuke the weapons
-    await initGame(true, targetLevel, keepItems || isDebug);
+    await initGame(true, targetLevel, keepItems);
     // startGame is called by initGame internal logic (via shouldAutoStart)
 }
 Globals.restartGame = restartGame;
