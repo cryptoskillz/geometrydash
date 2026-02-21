@@ -2,10 +2,6 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- Tried to run out of a room with a ghost and enemies; it wouldn't let me even though I blew it with a red bomb.
-- Unlock spawns are slow after a boss kill.
-- Don't spawn the same unlock again if it has already been picked up
-- Give red shards if there are no unlocks left.
 - Enemies spawn outside the room if they are very big.
 - Shield shows when you go into the portal.
 - Bomb goes blue when you leave a room and re-enter.
@@ -19,8 +15,6 @@ DONT DO ANY OF THESE TASKS AI
 - `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
 - Golden bomb doesn't stay on the next level if you pick it up (stays if equipped at the start).
 - You pick up `360 gun` and drop `360` (name mismatch).
-- Ensure "staysAngryWhenHit" is correctly set to false.
-- Death speech isn't always working.
 
 
 # Rooms & Levels
@@ -94,6 +88,7 @@ DONT DO ANY OF THESE TASKS AI
 - Defeating Ghost: Buy ghost trap (10k red shards) -> Catch ghost (5 seconds) -> take to portal room to let out -> he dies. Upgrade trap timer.
 
 # Enemies & NPCs
+- Add stay angry when hit feature
 - Add Shopkeeper NPC.
 - Boss speech events (entry & death).
 - Add physics and hit/death sounds to enemy JSON instead of hardcoded in `logic.js`.
@@ -140,3 +135,5 @@ DONT DO ANY OF THESE TASKS AI
 
 # Balance
 - Speedy timer should be set for standard peashooter time, but adjust down for more powerful guns.
+- change the portal bonus based on how many items are in the room.
+

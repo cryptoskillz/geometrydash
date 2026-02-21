@@ -4322,51 +4322,67 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
 
         // 2. Filter Unlocked
         const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
+        Globals.sessionSpawnedUnlocks = Globals.sessionSpawnedUnlocks || [];
+
         const available = allUnlocks.filter(path => {
             // Normalize manifest path to simple ID (filename)
-            // This ensures "inventory/add3bombs" checks against "add3bombs" in storage
             const simpleId = path.split('/').pop().replace(/\.json$/i, '');
-            // Check both simple ID and full path (legacy support)
-            return !unlockedIds.includes(simpleId) && !unlockedIds.includes(path);
+            // Check against permanent storage AND the current session's spawned items
+            return !unlockedIds.includes(simpleId) && !unlockedIds.includes(path) && !Globals.sessionSpawnedUnlocks.includes(path);
         });
 
         log(`SpawnUnlockItem: Found ${allUnlocks.length} total, ${unlockedIds.length} unlocked. Available: ${available.length}`);
 
         if (available.length === 0) {
             log("All items unlocked! Spawning EXTRA Shards!");
+            // Provide Red Shards if no unlocks left
             spawnCurrencyShard(x, y, 'red', 25);
             return;
         }
 
         // 3. Pick Random (Filter Spawnable logic + Rarity)
-        // We need to fetch details to check spawnable property BEFORE picking
-        const candidates = [];
-        const priorityCandidates = []; // for hasItem: false items
+        // Parallelize fetching to eliminate the massive boss kill lag
+        Globals.unlockDetailsCache = Globals.unlockDetailsCache || {};
 
-        for (const id of available) {
+        const fetchPromises = available.map(async id => {
+            if (Globals.unlockDetailsCache[id]) {
+                return { id, d: Globals.unlockDetailsCache[id] };
+            }
             try {
                 const dRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${id}.json?t=${Date.now()}`);
                 if (dRes.ok) {
                     const d = await dRes.json();
-
-                    // Filter: Spawnable Check (Reverted: Skip if false)
-                    if (d.spawnable === false) continue;
-
-                    // Filter: Rarity Check (if filter provided)
-                    if (rarityFilter) {
-                        const r = d.rarity || 'common'; // Default to common if missing?
-                        if (!rarityFilter[r]) continue; // Skip if rarity not enabled
-                    }
-
-                    // User Request: Prioritize hasItem: false (Meta Unlocks)
-                    if (d.hasItem === false) {
-                        priorityCandidates.push(id);
-                    } else {
-                        // Regular unlock
-                        candidates.push(id);
-                    }
+                    Globals.unlockDetailsCache[id] = d;
+                    return { id, d };
                 }
             } catch (e) { }
+            return null;
+        });
+
+        const results = await Promise.all(fetchPromises);
+
+        const candidates = [];
+        const priorityCandidates = []; // for hasItem: false items
+
+        for (const res of results) {
+            if (!res) continue;
+            const { id, d } = res;
+
+            // Filter: Spawnable Check
+            if (d.spawnable === false) continue;
+
+            // Filter: Rarity Check (if filter provided)
+            if (rarityFilter) {
+                const r = d.rarity || 'common'; // Default to common
+                if (!rarityFilter[r]) continue;
+            }
+
+            // User Request: Prioritize hasItem: false (Meta Unlocks)
+            if (d.hasItem === false) {
+                priorityCandidates.push(id);
+            } else {
+                candidates.push(id);
+            }
         }
 
         // PRIORITIZE "hasItem: false" items first
@@ -4378,24 +4394,20 @@ export async function spawnUnlockItem(x, y, isBossDrop = false, rarityFilter = n
         } else if (candidates.length > 0) {
             nextUnlockId = candidates[Math.floor(Math.random() * candidates.length)];
         } else {
+            // Give red shards if no valid candidate left matching filters
             spawnCurrencyShard(x, y, 'red', 25);
             return;
         }
+
         log("Spawning Unlock Item:", nextUnlockId);
 
-        // Fetch Unlock Details to get Real Name
+        // Flag this item as spawned to prevent concurrent identical boss drops
+        Globals.sessionSpawnedUnlocks.push(nextUnlockId);
+
+        // Details pull from cache safely now
         let unlockName = "Unlock Reward";
-        let unlockDetails = null;
-        try {
-            const detailRes = await fetch(`${JSON_PATHS.ROOT}rewards/unlocks/${nextUnlockId}.json?t=${Date.now()}`);
-            if (detailRes.ok) {
-                const detail = await detailRes.json();
-                unlockDetails = detail;
-                if (detail.name) unlockName = detail.name;
-            }
-        } catch (e) {
-            console.warn("Failed to fetch unlock details for name:", nextUnlockId);
-        }
+        let unlockDetails = Globals.unlockDetailsCache[nextUnlockId] || null;
+        if (unlockDetails && unlockDetails.name) unlockName = unlockDetails.name;
 
         // 4. Spawn Physical Item
 
