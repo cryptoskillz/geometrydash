@@ -382,7 +382,7 @@ export function spawnEnemies() {
         log("The room is Haunted! The Ghost returns...");
 
         // Ensure ghostSpawned is true so we don't spawn another one later via timer
-        ghostSpawned = true;
+        Globals.ghostSpawned = true;
 
         const template = enemyTemplates["ghost"] || { hp: 2000, speed: 1.2, size: 50, type: "ghost" };
         const inst = JSON.parse(JSON.stringify(template));
@@ -525,8 +525,8 @@ export function spawnEnemies() {
                     }
 
                     if (useFixed) {
-                        inst.x = fixedX;
-                        inst.y = fixedY;
+                        inst.x = Math.max(30, Math.min(fixedX, Globals.canvas.width - 30));
+                        inst.y = Math.max(30, Math.min(fixedY, Globals.canvas.height - 30));
                     } else {
                         inst.x = Globals.random() * (Globals.canvas.width - 60) + 30;
                         inst.y = Globals.random() * (Globals.canvas.height - 60) + 30;
