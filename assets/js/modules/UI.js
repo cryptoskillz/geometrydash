@@ -424,7 +424,7 @@ export function drawTutorial() {
         drawKey("D", lx + 45, ly);
 
         // SHOOT (Arrows)
-        if (Globals.player.gunType) {
+        if (Globals.player.gunType || Object.keys(Globals.gun).length > 0) {
             const rx = Globals.canvas.width - 200;
             Globals.ctx.fillText("SHOOT", rx, ly - 90);
             Globals.ctx.beginPath();
@@ -438,6 +438,7 @@ export function drawTutorial() {
             drawKey("↓", rx, ly + 45);
         }
 
+
         // Action Keys (Bottom Row)
         let mx = Globals.canvas.width / 6;
         let my = Globals.canvas.height - 80;
@@ -448,7 +449,7 @@ export function drawTutorial() {
         if (Globals.gameData.music) actions.push({ label: "MUSIC", key: "0" });
         if (Globals.gameData.soundEffects) actions.push({ label: "SFX", key: "9" });
 
-        if (Globals.player.bombType) {
+        if (Globals.player.bombType || Object.keys(Globals.bomb || {}).length > 0) {
             actions.push({ label: "BOMB", key: "B" });
         }
 
