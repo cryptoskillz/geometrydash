@@ -7,13 +7,26 @@
     <script>
         // Custom Refresh Handler
         const blockRefresh = (e) => {
+            const modal = document.getElementById('custom-refresh-modal');
+            const isModalActive = modal && modal.style.display === 'flex';
+
+            if (isModalActive) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (e.type === 'keydown') {
+                    if (e.key === 'r' || e.key === 'R') {
+                        window.location.reload();
+                    } else if (e.key === 'c' || e.key === 'C' || e.key === 'Escape') {
+                        modal.style.display = 'none';
+                    }
+                }
+                return;
+            }
+
             if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyR' || e.key === 'r')) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 if (e.type === 'keydown') {
-                    // Use a custom HTML modal instead of confirm()
-                    // confirm() halts the JS thread, which allows Chrome to bypass preventDefault on Mac
-                    const modal = document.getElementById('custom-refresh-modal');
                     if (modal) modal.style.display = 'flex';
                 }
             }
