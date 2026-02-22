@@ -2,13 +2,11 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- entry to the boss room was a secret it should never be a secret
-- upgrade room on seed was a secret room, upgrade room should always be an open door to the left of start. 
+
 - check if you go to the next level with the correct gun, bomb, keys etc
 - if you click escape in portal modal the unlock is gone when you go back
 - unlocks already dropped are being dropped again
 - speedy timer, ghost health unlocks etc not showing instantly
-- on a hard refresh the game is not stating unril 
 - You can move bombs into other bombs that are solid.
 - Bomb goes blue when you leave a room and re-enter.
 - Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.

@@ -548,13 +548,13 @@ export function generateLevel(length) {
                     // ... existing generic logic if needed ...
                     data.doors[d.name].locked = 0;
                     data.doors[d.name].active = 1;
-                    data.doors[d.name].hidden = false;
+                    data.doors[d.name].hidden = !isTargetBossOrUpgrade; // Protect Boss/Upgrade
                     data.doors[d.name].forcedOpen = true;
                 } else if ((Globals.secretRooms && Globals.secretRooms[neighborCoord])) {
                     // Neighbor is generic secret
                     data.doors[d.name].locked = 1;
                     data.doors[d.name].active = 1;
-                    data.doors[d.name].hidden = true;
+                    data.doors[d.name].hidden = !isTargetBossOrUpgrade; // Protect Boss/Upgrade from being hidden
                 }
 
                 // Sync door coordinates if missing
