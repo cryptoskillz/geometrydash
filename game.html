@@ -5,6 +5,15 @@
     <title>JS Dungeon Crawler</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script>
+        // Auto-Focus Canvas on first key press if not focused
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const cvs = document.getElementById('gameCanvas');
+            if (cvs && document.activeElement !== cvs && e.target.tagName !== 'INPUT') {
+                cvs.focus();
+            }
+        });
+
         // Custom Refresh Handler
         const blockRefresh = (e) => {
             const modal = document.getElementById('custom-refresh-modal');
@@ -14,7 +23,7 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 if (e.type === 'keydown') {
-                    if (e.key === 'r' || e.key === 'R') {
+                    if (e.key === 'r' || e.key === 'R' || e.key === 'Enter') {
                         window.location.reload();
                     } else if (e.key === 'c' || e.key === 'C' || e.key === 'Escape') {
                         modal.style.display = 'none';
