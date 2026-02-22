@@ -2,18 +2,17 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
+- level 0 inpout not working until you click it
+- level 1 portal not working
 - You can move bombs into other bombs that are solid.
-- Shield shows when you go into the portal.
 - Bomb goes blue when you leave a room and re-enter.
 - Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
 - Bomb drop icon has a big 'B'.
-- Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
-- If you press 0 or 9, it should update the debug buttons to on/off.
 - Chained explosions should blow in sequence, not all at the same time.
-- Leaving a room with a remote bomb prevents detonation with the space bar.
-- `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
 - Golden bomb doesn't stay on the next level if you pick it up (stays if equipped at the start).
-- You pick up `360 gun` and drop `360` (name mismatch).
+- `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
+- Shield shows when you go into the portal.
+- Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
 
 
 # Rooms & Levels
@@ -43,6 +42,7 @@ DONT DO ANY OF THESE TASKS AI
 - Add bullet time.
 - Drops should calculate room hardness and player modifiers to increase drop pool chances.
 - **Modifiers**:
+  - You pick up `360 gun` and drop `360` (name mismatch).
   - Global gun/bomb modifiers as unlockables.
   - Lose gun modifiers on complete level, but they return on player restart if you pick the gun back up.
   - Dropped guns shouldn't lose their modifiers.
@@ -116,6 +116,7 @@ DONT DO ANY OF THESE TASKS AI
 - Shield parameters: hp, maxHp, regenActive, regen, regenTimer.
 
 # Editor & Debug
+- If you press 0 or 9, it should update the debug buttons to on/off.
 - Update debug editor so it updates in real-time when the game runs.
 - Clicking off the debug window should focus back on the game.
 - Add God mode to the debug window.

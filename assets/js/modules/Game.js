@@ -1490,7 +1490,7 @@ export function spawnPlayer(dx, dy, data) {
             en.angryUntil = Infinity;
 
             // Apply Angry Stats immediately
-            const angryStats = gameData.enemyConfig?.modeStats?.angry;
+            const angryStats = Globals.gameData.enemyConfig?.modeStats?.angry;
             if (angryStats) {
                 if (angryStats.damage) en.damage = (en.baseStats?.damage || en.damage || 1) * angryStats.damage;
                 if (angryStats.speed) en.speed = (en.baseStats?.speed || en.speed || 1) * angryStats.speed;
@@ -3364,7 +3364,7 @@ Globals.spawnEnemy = (type, x, y, overrides = {}) => {
 
 export async function handleUnlocks(unlockKeys) {
     Globals.handleUnlocks = handleUnlocks; // Expose for Entities
-    if (Globals.isUnlocking) return;
+    if (Globals.isUnlocking) return Promise.resolve();
     Globals.isUnlocking = true;
     Globals.unlockQueue = [...unlockKeys]; // Copy
 
@@ -3382,8 +3382,8 @@ export async function handleUnlocks(unlockKeys) {
         document.body.appendChild(unlockEl);
     }
 
-    // Process first unlock
-    await showNextUnlock();
+    // Process first unlock and return the promise so Entities.js waits
+    return showNextUnlock();
 }
 
 
@@ -3402,7 +3402,9 @@ export async function showNextUnlock() {
             return;
         }
 
-        const key = Globals.unlockQueue.shift();
+        let key = Globals.unlockQueue.shift();
+        if (key.startsWith('/')) key = key.substring(1);
+
         // Try to fetch unlock data
         try {
             // Handle "victory" specially or just ignore if file missing (user deleted it)

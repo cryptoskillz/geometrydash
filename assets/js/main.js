@@ -19,6 +19,11 @@ window.addEventListener('load', () => {
         goPause: () => gameMenu()
     });
 
+    // Ensure window forms keyboard focus
+    window.focus();
+    const cvs = document.getElementById('gameCanvas');
+    if (cvs) cvs.focus();
+
     // Start Game Initialization
     initGame();
 });

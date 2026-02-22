@@ -2284,6 +2284,8 @@ export function updatePortal() {
     const dist = Math.hypot(Globals.player.x - Globals.portal.x, Globals.player.y - Globals.portal.y);
     if (dist < 30) {
 
+        let shardsCollected = false;
+
         // Check for Warning Feature
         if (Globals.gameData.portalWarning && Globals.groundItems.length > 0) {
 
@@ -2295,6 +2297,7 @@ export function updatePortal() {
                     // Auto-collect the shard
                     pickupItem(item, "You");
                     Globals.groundItems.splice(i, 1);
+                    shardsCollected = true;
                 } else {
                     realItems.push(item);
                 }
@@ -2317,7 +2320,20 @@ export function updatePortal() {
         }
 
         // WIN GAME (Default Transition)
-        handleLevelComplete();
+        if (!Globals.portal.transitioning) {
+            Globals.portal.transitioning = true;
+            Globals.inputDisabled = true; // prevent moving while waiting
+
+            if (shardsCollected) {
+                setTimeout(() => {
+                    Globals.inputDisabled = false;
+                    handleLevelComplete();
+                }, 1000);
+            } else {
+                Globals.inputDisabled = false;
+                handleLevelComplete();
+            }
+        }
     }
 }
 
