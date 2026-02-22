@@ -134,7 +134,8 @@
             "modify": {
                 "type": "player",
                 "attr": "inventory.ghostrap",
-                "amount": 1
+                "amount": 0,
+                "value": true
             },
             "x": 50,
             "y": 150,
@@ -153,7 +154,8 @@
             "modify": {
                 "type": "player",
                 "attr": "inventory.matrixKey",
-                "amount": 1
+                "amount": 0,
+                "value": true
             },
             "x": 200,
             "y": 150,
@@ -172,7 +174,8 @@
             "modify": {
                 "type": "player",
                 "attr": "inventory.houseKey",
-                "amount": 1
+                "amount": 0,
+                "value": true
             },
             "x": 350,
             "y": 150,
