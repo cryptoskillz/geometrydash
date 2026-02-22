@@ -1,0 +1,23 @@
+{
+    "name": "Key +1",
+    "description": "Adds a key to your inventory",
+    "purchasable": {
+        "active": true,
+        "purchaseType": "greenshards",
+        "cost": 50
+    },
+    "location": "rewards/items/inventory/addkey.json",
+    "type": "modifier",
+    "modify": "player",
+    "modifiers": {
+        "inventory.keys": "+1"
+    },
+    "starter": false,
+    "special": false,
+    "consumed": true,
+    "unlocked": {
+        "active": true,
+        "modifyType": "session"
+    },
+    "rarity": "common"
+}

@@ -301,9 +301,9 @@ export function generateLevel(length) {
     let secretRoomTemplates = Globals.gameData.secrectrooms || [];
     secretRoomTemplates = secretRoomTemplates.filter(tmplPath => {
         if (!tmplPath) return false;
-        if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active && tmplPath.includes(Globals.gameData.trophyRoom.room)) return false;
-        if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active && tmplPath.includes(Globals.gameData.homeRoom.room)) return false;
-        if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active && tmplPath.includes(Globals.gameData.matrixRoom.room)) return false;
+        if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active && (tmplPath.includes(Globals.gameData.trophyRoom.room) || Globals.gameData.trophyRoom.room.includes(tmplPath))) return false;
+        if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active && (tmplPath.includes(Globals.gameData.homeRoom.room) || Globals.gameData.homeRoom.room.includes(tmplPath))) return false;
+        if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active && (tmplPath.includes(Globals.gameData.matrixRoom.room) || Globals.gameData.matrixRoom.room.includes(tmplPath))) return false;
         return true;
     });
 
@@ -550,8 +550,9 @@ export function generateLevel(length) {
                     data.doors[d.name].active = 1;
                     data.doors[d.name].hidden = !isTargetBossOrUpgrade; // Protect Boss/Upgrade
                 } else if (neighborCoord === Globals.homeCoord || neighborCoord === Globals.matrixCoord) {
-                    // I am a random neighbor of Home/Matrix. I should NOT see a door.
+                    // I am a random neighbor of Home/Matrix. I should NOT see a door and it cannot be bombed.
                     data.doors[d.name].active = 0;
+                    data.doors[d.name].unbombable = true;
 
                     // 4. Generic Secret Room (Legacy)
                 } else if ((Globals.secretRooms && Globals.secretRooms[coord])) {

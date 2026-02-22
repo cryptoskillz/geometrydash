@@ -43,6 +43,14 @@ export function spawnSwitches(roomData) {
             if (saved !== null) amountSpent = parseInt(saved);
         }
 
+        let scaledDefaultCost = cfg.defaultCost || 1000;
+        if (cfg.action === 'upgrade') {
+            const sType = cfg.shard || 'green';
+            const maxKey = sType === 'red' ? 'maxRedShards' : 'maxGreenShards';
+            const maxShards = Globals.player.inventory[maxKey] || 500;
+            scaledDefaultCost = Math.max(1, Math.ceil(maxShards * 0.10));
+        }
+
         Globals.switches.push({
             x: cfg.x,
             y: cfg.y,
@@ -56,7 +64,7 @@ export function spawnSwitches(roomData) {
             cooldown: 0,
             isPressed: false,
             // Upgrade stuff
-            defaultCost: cfg.defaultCost || 1000,
+            defaultCost: scaledDefaultCost,
             amountSpent: amountSpent,
             maxAllowed: cfg.maxAllowed || 99,
             item: cfg.item || null,

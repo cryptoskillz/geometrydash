@@ -2303,8 +2303,10 @@ export function updatePortal() {
                 }
             }
 
-            // Only fire modal if REAL items (not just shards) are left
-            if (realItems.length > 0) {
+            // Only fire modal if REAL items (not just shards) are left and its an active 
+            // portal
+            log("Portal", Globals.portal.active)
+            if (realItems.length > 0 && Globals.portal.active) {
                 if (!Globals.portal.warningActive) {
                     Globals.portal.warningActive = true;
                     // Pause input manually
@@ -3321,16 +3323,20 @@ export function drawBombs(doors) {
                     // If bomb blast hits the door
                     const distCheck = Math.hypot(b.x - dX, b.y - dY);
                     if (distCheck < b.maxR + 30) {
-                        // log("Bomb hit door:", dir, "locked:", door.locked, "hidden:", door.hidden, "openSecretRooms:", b.openSecretRooms); // Debug
-                        if (b.openLockedDoors && door.locked) door.locked = 0; // Unlock standard locks
-                        if (b.openRedDoors) {
-                            // Force open even if enemies are present
-                            door.forcedOpen = true;
-                        }
-                        if (b.openSecretRooms && door.hidden) {
-                            door.hidden = false;
-                            door.active = true;
-                            log("Secret Room Revealed:", dir);
+                        if (!door.unbombable) {
+                            // log("Bomb hit door:", dir, "locked:", door.locked, "hidden:", door.hidden, "openSecretRooms:", b.openSecretRooms); // Debug
+                            if (b.openLockedDoors && door.locked) door.locked = 0; // Unlock standard locks
+                            if (b.openRedDoors) {
+                                // Force open even if enemies are present
+                                door.forcedOpen = true;
+                            }
+                            if (b.openSecretRooms && door.hidden) {
+                                door.hidden = false;
+                                door.active = true;
+                                log("Secret Room Revealed:", dir);
+                            }
+                        } else {
+                            log("Bomb hit UNBOMBABLE door, ignoring.");
                         }
                     }
                 });
