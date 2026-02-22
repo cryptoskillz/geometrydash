@@ -1207,7 +1207,7 @@ export async function startGame(keepState = false) {
             if (!introMusic.src || !introMusic.src.includes(Globals.levelMusic.split('/').pop())) {
                 introMusic.src = Globals.levelMusic;
                 introMusic.load();
-                introMusic.play();
+                introMusic.play().catch(e => console.warn("Switched Level Music Play Blocked", e));
                 log("Switched to Level Music:", Globals.levelMusic);
             }
         }
