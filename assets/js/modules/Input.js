@@ -59,6 +59,18 @@ export function setupInput(callbacks) {
             if (e.code === 'KeyM') callbacks.goToWelcome();
         }
         else if (Globals.gameState === STATES.PLAY) {
+            // Portal Modal Override
+            if (Globals.portal && Globals.portal.warningActive) {
+                if (e.code === 'Enter' || e.code === 'Space') {
+                    if (window.confirmPortalTransition) window.confirmPortalTransition();
+                    return;
+                }
+                if (e.code === 'Escape') {
+                    if (window.cancelPortalTransition) window.cancelPortalTransition();
+                    return;
+                }
+            }
+
             // Pause Game
             if (e.code === 'KeyP' || e.code === 'Escape') {
                 // Prevent pause if Ghost is hunting

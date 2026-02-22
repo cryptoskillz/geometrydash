@@ -1000,8 +1000,8 @@ export function confirmPortalTransition() {
 
     // Resume processing & Force warp
     Globals.inputDisabled = false;
-    if (window.entities && window.entities.handleLevelComplete) {
-        window.entities.handleLevelComplete();
+    if (Globals.handleLevelComplete) {
+        Globals.handleLevelComplete();
     }
 }
 

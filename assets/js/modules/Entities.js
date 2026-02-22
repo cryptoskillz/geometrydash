@@ -2382,6 +2382,7 @@ export function handleLevelComplete() {
     // GUARD: Prevent multiple triggers
     if (Globals.portal && !Globals.portal.active) return;
     if (Globals.portal) Globals.portal.active = false;
+    Globals.handleLevelComplete = handleLevelComplete; // Expose for UI.js
 
     // 0. Handle Unlocks (First priority as requested)
     const roomUnlocks = Globals.roomData.unlocks || [];
