@@ -41,6 +41,6 @@
         "rarity": "common"
     },
     "nextLevel": "json/levels/2.json",
-    "welcomeScreen": false,
+    "welcomeScreen": true,
     "completedItMate": false
 }
