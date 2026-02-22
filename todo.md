@@ -2,9 +2,11 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
+- portal in matrix room is active
+- a secret room lead to the matrix, matrix and house should be exluded from the special room pool
+- check if you go to the next level with the correct gun, bomb, keys etc
 - switch is 10% of the cost of the item it should be 10% of your maxRedShards
 - increase font for switch info 
-- check if you go to the next level with the correct gun, bomb, keys etc
 - if you click escape in portal modal the unlock is gone when you go back
 - unlocks already dropped are being dropped again
 - speedy timer, ghost health unlocks etc not showing instantly
