@@ -2419,12 +2419,23 @@ function proceedLevelComplete() {
         localStorage.setItem('rogue_level_splits', JSON.stringify(Globals.levelSplits));
     }
 
-    // 1. Credits / Completed It Mate (Highest Priority)
-    if (Globals.roomData.completedItMate) {
-        // Update Win Stats
+    const { nextLevel, welcomeScreen, completedItMate } = Globals.roomData;
+    const hasNextLevel = nextLevel && nextLevel.trim() !== "";
+
+    // 1. Always go to welcome screen
+    if (hasNextLevel && welcomeScreen === true && completedItMate === false) {
+        log("Level Complete. Returning to Welcome Screen. Pending Next Level:", nextLevel);
+        localStorage.setItem('rogue_transition', 'true');
+        localStorage.setItem('rogue_current_level', nextLevel);
+        localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
+        if (Globals.goToWelcome) Globals.goToWelcome();
+        return;
+    }
+
+    // 2. Always go to end credits
+    if (hasNextLevel && welcomeScreen === false && completedItMate === true) {
         const endTime = Date.now();
         const duration = endTime - Globals.runStartTime;
-
         Globals.SessionRunTime = duration;
         Globals.NumberOfSessionRuns++;
 
@@ -2432,50 +2443,37 @@ function proceedLevelComplete() {
             Globals.BestRunTime = duration;
             localStorage.setItem('bestRunTime', duration);
         }
-        // Ensure total runs is saved
         localStorage.setItem('numberOfRuns', Globals.NumberOfRuns);
 
         showCredits();
         return;
     }
 
-    // 2. Welcome Screen / Break in Play (Second Priority)
-    if (Globals.roomData.welcomeScreen) {
-        log("Level Complete. Returning to Welcome Screen. Pending Next Level:", Globals.roomData.nextLevel);
-
-        // Save the next level so when the user hits "Start", they continue from there.
-        if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
-            localStorage.setItem('rogue_transition', 'true');
-            localStorage.setItem('rogue_current_level', Globals.roomData.nextLevel);
-            localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
-        }
-
-        if (Globals.goToWelcome) Globals.goToWelcome();
-        return;
-    }
-
-    // 3. Next Level (Default Action)
-    log("Checking Next Level Transition. Room:", Globals.roomData.name, "Next:", Globals.roomData.nextLevel);
-    if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
-        log("Proceeding to Next Level:", Globals.roomData.nextLevel);
+    // 3. Always go to next level
+    if (hasNextLevel && welcomeScreen === false && completedItMate === false) {
+        log("Proceeding to Next Level:", nextLevel);
         if (Globals.introMusic) {
             Globals.introMusic.pause();
             Globals.introMusic.currentTime = 0;
         }
         localStorage.setItem('rogue_transition', 'true');
-        localStorage.setItem('rogue_current_level', Globals.roomData.nextLevel);
+        localStorage.setItem('rogue_current_level', nextLevel);
         localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
-        initGame(true, Globals.roomData.nextLevel, true);
+        initGame(true, nextLevel, true);
         return;
     }
 
-    // 4. End Game / Victory (Legacy?)
-    if (Globals.roomData.endGame) {
-        Globals.gameState = STATES.WIN;
-        updateUI();
-        if (Globals.gameOver) Globals.gameOver();
+    // 4. Inactive / Tutorial Portals (No transition logic defined)
+    if (!hasNextLevel && !welcomeScreen && !completedItMate) {
+        log("Inactive portal touched. Ignoring logic.");
+        if (Globals.portal) Globals.portal.transitioning = false;
+        Globals.inputDisabled = false;
         return;
     }
+
+    // 5. Any other configuration throw an error
+    console.error("INVALID LEVEL TRANSITION CONFIGURATION!", { nextLevel, welcomeScreen, completedItMate });
+    //if (window.alert) alert("INVALID PORTAL CONFIGURATION. Check console errors.");
 }
 
 export function updateGhost() {
