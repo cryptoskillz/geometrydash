@@ -2,7 +2,8 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
-- hard refresh alert is no longer waiting for confirmation
+- entry to the boss room was a secret it should never be a secret
+- upgrade room on seed was a secret room, upgrade room should always be an open door to the left of start. 
 - check if you go to the next level with the correct gun, bomb, keys etc
 - if you click escape in portal modal the unlock is gone when you go back
 - unlocks already dropped are being dropped again

@@ -481,6 +481,9 @@ export function generateLevel(length) {
                 }
 
                 // SECRET / SPECIAL ROOM LOGIC
+                // Prevent Boss Room or Upgrade Room from ever being hidden/secret
+                let isTargetBossOrUpgrade = (neighborCoord === Globals.bossCoord || neighborCoord === upgradeCoord);
+
                 // 1. Trophy Room Logic
                 if (coord === Globals.trophyCoord) {
                     // Only allow connections to: Host, Home, Matrix
@@ -503,7 +506,7 @@ export function generateLevel(length) {
                         // Must be the host (or a random neighbor we shouldn't connect to?)
                         // For now: Default secret behavior (Hidden)
                         allowed = true; // It's a secret door
-                        hidden = true;
+                        hidden = !isTargetBossOrUpgrade; // Never hide Boss or Upgrade connection
                         locked = 0;
                     }
 
@@ -535,7 +538,7 @@ export function generateLevel(length) {
                     // I am the Host (or random neighbor). Secret Door to Trophy.
                     data.doors[d.name].locked = 0; // Standard Secret Door (Unlocked but Hidden)
                     data.doors[d.name].active = 1;
-                    data.doors[d.name].hidden = true;
+                    data.doors[d.name].hidden = !isTargetBossOrUpgrade; // Protect Boss/Upgrade
                 } else if (neighborCoord === Globals.homeCoord || neighborCoord === Globals.matrixCoord) {
                     // I am a random neighbor of Home/Matrix. I should NOT see a door.
                     data.doors[d.name].active = 0;
