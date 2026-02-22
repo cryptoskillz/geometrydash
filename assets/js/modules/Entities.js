@@ -2418,29 +2418,7 @@ function proceedLevelComplete() {
         localStorage.setItem('rogue_level_splits', JSON.stringify(Globals.levelSplits));
     }
 
-    // 1. Next Level?
-    log("Checking Next Level Transition. Room:", Globals.roomData.name, "Next:", Globals.roomData.nextLevel);
-    if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
-        log("Proceeding to Next Level:", Globals.roomData.nextLevel);
-        if (Globals.introMusic) {
-            Globals.introMusic.pause();
-            Globals.introMusic.currentTime = 0;
-        }
-        localStorage.setItem('rogue_transition', 'true');
-        localStorage.setItem('rogue_current_level', Globals.roomData.nextLevel);
-        localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
-        initGame(true, Globals.roomData.nextLevel, true);
-        return;
-    }
-
-    // 2. Welcome Screen?
-    if (Globals.roomData.welcomeScreen) {
-        log("Level Complete. Returning to Welcome Screen.");
-        if (Globals.goToWelcome) Globals.goToWelcome();
-        return;
-    }
-
-    // 3. Credits / Completed It Mate (Last priority)
+    // 1. Credits / Completed It Mate (Highest Priority)
     if (Globals.roomData.completedItMate) {
         // Update Win Stats
         const endTime = Date.now();
@@ -2457,6 +2435,36 @@ function proceedLevelComplete() {
         localStorage.setItem('numberOfRuns', Globals.NumberOfRuns);
 
         showCredits();
+        return;
+    }
+
+    // 2. Welcome Screen / Break in Play (Second Priority)
+    if (Globals.roomData.welcomeScreen) {
+        log("Level Complete. Returning to Welcome Screen. Pending Next Level:", Globals.roomData.nextLevel);
+
+        // Save the next level so when the user hits "Start", they continue from there.
+        if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
+            localStorage.setItem('rogue_transition', 'true');
+            localStorage.setItem('rogue_current_level', Globals.roomData.nextLevel);
+            localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
+        }
+
+        if (Globals.goToWelcome) Globals.goToWelcome();
+        return;
+    }
+
+    // 3. Next Level (Default Action)
+    log("Checking Next Level Transition. Room:", Globals.roomData.name, "Next:", Globals.roomData.nextLevel);
+    if (Globals.roomData.nextLevel && Globals.roomData.nextLevel.trim() !== "") {
+        log("Proceeding to Next Level:", Globals.roomData.nextLevel);
+        if (Globals.introMusic) {
+            Globals.introMusic.pause();
+            Globals.introMusic.currentTime = 0;
+        }
+        localStorage.setItem('rogue_transition', 'true');
+        localStorage.setItem('rogue_current_level', Globals.roomData.nextLevel);
+        localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
+        initGame(true, Globals.roomData.nextLevel, true);
         return;
     }
 

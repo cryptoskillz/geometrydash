@@ -2,6 +2,8 @@ DONT DO ANY OF THESE TASKS AI
 133262
 
 # Bugs & Fixes
+- level 0 inpout not working until you click it
+- level 1 portal not working
 - You can move bombs into other bombs that are solid.
 - Bomb goes blue when you leave a room and re-enter.
 - Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
