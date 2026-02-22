@@ -1313,7 +1313,15 @@ export async function startGame(keepState = false) {
                     current = current[parts[i]];
                 }
                 const last = parts[parts.length - 1];
-                current[last] = (parseFloat(current[last]) || 0) + (parseFloat(u.value) || 1);
+
+                // If it's explicitly a boolean (or string boolean), just set it.
+                if (typeof u.value === 'boolean') {
+                    current[last] = u.value;
+                } else if (typeof u.value === 'string' && (u.value.toLowerCase() === 'true' || u.value.toLowerCase() === 'false')) {
+                    current[last] = u.value.toLowerCase() === 'true';
+                } else {
+                    current[last] = (parseFloat(current[last]) || 0) + (parseFloat(u.value) || 1);
+                }
 
                 // Special linking syncs
                 if (u.attr === 'maxHp') {

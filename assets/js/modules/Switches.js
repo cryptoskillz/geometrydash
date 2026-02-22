@@ -303,10 +303,14 @@ function handleUpgradeSwitch(s) {
                 upgrades = [];
             }
 
+            // Determine what value to store. If 'value' is explicitly set (e.g. true/false/string), use it.
+            // Otherwise default back to the old amount parser behavior.
+            let upgradeValue = s.modify.value !== undefined ? s.modify.value : (parseFloat(s.modify.amount) || 1);
+
             upgrades.push({
                 type: s.modify.type || 'player',
                 attr: s.modify.attr,
-                value: parseFloat(s.modify.amount) || 1
+                value: upgradeValue
             });
 
             localStorage.setItem('game_upgrades', JSON.stringify(upgrades));
