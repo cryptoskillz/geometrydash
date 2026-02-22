@@ -13,6 +13,9 @@ export function setupInput(callbacks) {
         // EXCEPTION: Allow Enter key to trigger start even from input
         if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.code !== 'Enter') return;
 
+        // IGNORE BROWSER SHORTCUTS (Prevent Ctrl+R from also triggering game restart)
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+
         // Update Key State
         Globals.keys[e.code] = true;
 

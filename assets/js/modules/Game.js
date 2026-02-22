@@ -21,6 +21,7 @@ import { spawnSwitches, updateSwitches, drawSwitches } from './Switches.js';
 // Placeholders for functions to be appended
 // Prevent accidental tab closure
 window.addEventListener('beforeunload', (e) => {
+    Globals.keys = {};
     e.preventDefault();
     e.returnValue = '';
 });
