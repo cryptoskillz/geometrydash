@@ -3,6 +3,7 @@ DONT DO ANY OF THESE TASKS AI
 709726
 
 # Bugs & Fixes
+- check you start with normal bomb on reload
 - switch is 10% of the cost of the item it should be 10% of your maxRedShards
 - increase font for switch info 
 - if you click escape in portal modal the unlock is gone when you go back
