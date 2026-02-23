@@ -2323,6 +2323,7 @@ export async function draw() {
         Globals.roomData.isBoss = true; // Kept to lock the room if that was the intent
 
         drawMatrixRain();
+        drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
     }
     // Ghost Trap Effect
     if (Globals.ghostTrapActive) {
