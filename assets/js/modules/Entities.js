@@ -2335,7 +2335,8 @@ export function updatePortal() {
         const { nextLevel, welcomeScreen, completedItMate } = Globals.gameData;
         const hasNextLevel = nextLevel && nextLevel.trim() !== "";
         const isSpecialRoom = ['start', 'matrix', 'home'].includes(Globals.roomData.type) || ['start', 'matrix', 'home'].includes(Globals.roomData._type);
-        const isInactivePortal = (!hasNextLevel && !welcomeScreen && !completedItMate) || isSpecialRoom;
+        // A Boss Room portal is NEVER inactive
+        const isInactivePortal = !Globals.roomData.isBoss && ((!hasNextLevel && !welcomeScreen && !completedItMate) || isSpecialRoom);
 
         if (Globals.gameData.portalWarning && Globals.groundItems.length > 0 && !isInactivePortal) {
 
