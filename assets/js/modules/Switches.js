@@ -236,7 +236,15 @@ function handleUpgradeSwitch(s) {
             if (currentVal[p] !== undefined) currentVal = currentVal[p];
             else { currentVal = 0; break; }
         }
-        if (currentVal >= s.maxAllowed) {
+
+        let isMaxed = false;
+        if (typeof currentVal === 'boolean') {
+            isMaxed = currentVal === true;
+        } else {
+            isMaxed = currentVal >= s.maxAllowed;
+        }
+
+        if (isMaxed) {
             spawnFloatingText(s.x, s.y - 20, "MAX LEVEL REACHED", "#95a5a6");
             s.cooldown = 60;
             if (SFX && SFX.cantDoIt) SFX.cantDoIt();
@@ -395,7 +403,14 @@ export function drawSwitches() {
                 if (currentVal[p] !== undefined) currentVal = currentVal[p];
                 else { currentVal = 0; break; }
             }
-            if (currentVal >= s.maxAllowed) {
+
+            if (typeof currentVal === 'boolean') {
+                isMaxed = currentVal === true;
+            } else {
+                isMaxed = currentVal >= s.maxAllowed;
+            }
+
+            if (isMaxed) {
                 isMaxed = true;
                 label = "MAXED";
             }
