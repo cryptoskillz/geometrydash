@@ -383,12 +383,8 @@ export function drawTutorial() {
     if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0 && !Globals.roomData.isBoss && !STATES.DEBUG_START_BOSS && !STATES.DEBUG_TEST_ROOM) {
         Globals.ctx.save();
 
-        //uodate start room name in the UI
+        //update start room name in the UI
         if (Globals.elements.roomName) Globals.elements.roomName.innerText = Globals.roomData.name;
-
-        // Force Portal Active & Centered for Start Room
-        Globals.portal.active = false;
-        drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
 
         // Internal helper for keycaps
         const drawKey = (text, x, y) => {

@@ -2324,7 +2324,6 @@ export async function draw() {
         Globals.roomData.isBoss = true; // Kept to lock the room if that was the intent
 
         drawMatrixRain();
-        drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
     }
     // Ghost Trap Effect
     if (Globals.ghostTrapActive) {
@@ -2601,9 +2600,6 @@ export function drawHomeRoomObjects() {
     Globals.ctx.beginPath();
     Globals.ctx.arc(px - 25, py - 5, 4, 0, Math.PI);
     Globals.ctx.stroke();
-
-    // Draw Used Portal (Center)
-    drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
 
     // Proximity Prompts
     const pbDist = Math.hypot(Globals.player.x - px, Globals.player.y - py);
