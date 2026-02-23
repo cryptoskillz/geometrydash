@@ -1037,6 +1037,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
         // D. Upgrade Room
         if (Globals.isUpgradeUnlocked && Globals.gameData.upgradeRoom && typeof Globals.gameData.upgradeRoom === 'object' && Globals.gameData.upgradeRoom.room) {
+
             roomProtos.push(loadRoomFile(Globals.gameData.upgradeRoom.room, 'upgrade'));
         }
 
@@ -2335,6 +2336,7 @@ export async function draw() {
     drawBossSwitch() // Draw switch underneath entities
     drawStartRoomObjects(); // New: Draw start room specific floor items
     drawHomeRoomObjects();
+    drawUpgradeRoomObjects();
     drawSwitches();
     drawPortal(); // Draw portal on floor
     drawPlayer()
@@ -2511,6 +2513,12 @@ export function drawStartRoomObjects() {
     // Check if we are in Start Room
     if (Globals.roomData.name == "The Beginning" && Globals.player.roomX === 0 && Globals.player.roomY === 0) {
 
+    }
+}
+
+export function drawUpgradeRoomObjects() {
+    if (Globals.roomData.name === "Upgrade Room") {
+        drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
     }
 }
 

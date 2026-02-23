@@ -133,7 +133,7 @@
             "item": "/json/rewards/items/inventory/addghosttrap.json",
             "modify": {
                 "type": "player",
-                "attr": "inventory.ghostrap",
+                "attr": "inventory.ghostTrap",
                 "amount": 0,
                 "value": true
             },
