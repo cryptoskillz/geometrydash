@@ -4,10 +4,10 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- [x] if (realItems.length > 0 && Globals.portal.transitioning) {. <--- this bug does not show dialog on level 2
+- draw inactice portal in matix room
 - switch is 10% of the cost of the item it should be 10% of your maxRedShards
 - increase font for switch info 
-- [x] dont draw the player if you go into a portal as we want to make it look like hes has been absorbed into the portal, we will draw him again if/when he comes out the other side
+has been absorbed into the portal, we will draw him again if/when he comes out the other side
 - if you click escape in portal modal the unlock is gone when you go back
 - unlocks already dropped are being dropped again
 - speedy timer, ghost health unlocks etc not showing instantly
