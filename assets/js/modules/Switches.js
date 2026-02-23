@@ -43,6 +43,14 @@ export function spawnSwitches(roomData) {
             if (saved !== null) amountSpent = parseInt(saved);
         }
 
+        let scaledDefaultCost = cfg.defaultCost || 1000;
+        if (cfg.action === 'upgrade') {
+            const sType = cfg.shard || 'green';
+            const maxKey = sType === 'red' ? 'maxRedShards' : 'maxGreenShards';
+            const maxShards = Globals.player.inventory[maxKey] || 500;
+            scaledDefaultCost = Math.max(1, Math.ceil(maxShards * 0.10));
+        }
+
         Globals.switches.push({
             x: cfg.x,
             y: cfg.y,
@@ -56,7 +64,7 @@ export function spawnSwitches(roomData) {
             cooldown: 0,
             isPressed: false,
             // Upgrade stuff
-            defaultCost: cfg.defaultCost || 1000,
+            defaultCost: scaledDefaultCost,
             amountSpent: amountSpent,
             maxAllowed: cfg.maxAllowed || 99,
             item: cfg.item || null,
@@ -303,10 +311,14 @@ function handleUpgradeSwitch(s) {
                 upgrades = [];
             }
 
+            // Determine what value to store. If 'value' is explicitly set (e.g. true/false/string), use it.
+            // Otherwise default back to the old amount parser behavior.
+            let upgradeValue = s.modify.value !== undefined ? s.modify.value : (parseFloat(s.modify.amount) || 1);
+
             upgrades.push({
                 type: s.modify.type || 'player',
                 attr: s.modify.attr,
-                value: parseFloat(s.modify.amount) || 1
+                value: upgradeValue
             });
 
             localStorage.setItem('game_upgrades', JSON.stringify(upgrades));

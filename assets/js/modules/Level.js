@@ -28,6 +28,7 @@ export function generateLevel(length) {
     Globals.trophyCoord = null;
     Globals.homeCoord = null;
     Globals.matrixCoord = null;
+    Globals.secretRooms = {};
 
     // 2. Add Branches (Dead Ends)
     let fullMapCoords = [...path];
@@ -296,7 +297,17 @@ export function generateLevel(length) {
     }
 
     // Legacy Secret Room Logic (keep for other levels or generic secrets)
-    const secretRoomTemplates = Globals.gameData.secrectrooms || [];
+    // Filter out Trophy/Home/Matrix rooms from being spawned generically,
+    // as they are handled by the cluster logic above.
+    let secretRoomTemplates = Globals.gameData.secrectrooms || [];
+    secretRoomTemplates = secretRoomTemplates.filter(tmplPath => {
+        if (!tmplPath) return false;
+        if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active && (tmplPath.includes(Globals.gameData.trophyRoom.room) || Globals.gameData.trophyRoom.room.includes(tmplPath))) return false;
+        if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active && (tmplPath.includes(Globals.gameData.homeRoom.room) || Globals.gameData.homeRoom.room.includes(tmplPath))) return false;
+        if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active && (tmplPath.includes(Globals.gameData.matrixRoom.room) || Globals.gameData.matrixRoom.room.includes(tmplPath))) return false;
+        return true;
+    });
+
     if (secretRoomTemplates.length > 0) {
         secretRoomTemplates.forEach(templatePath => {
             // ... (rest of legacy logic)
@@ -481,6 +492,9 @@ export function generateLevel(length) {
                 }
 
                 // SECRET / SPECIAL ROOM LOGIC
+                // Prevent Boss Room or Upgrade Room from ever being hidden/secret
+                let isTargetBossOrUpgrade = (neighborCoord === Globals.bossCoord || neighborCoord === upgradeCoord);
+
                 // 1. Trophy Room Logic
                 if (coord === Globals.trophyCoord) {
                     // Only allow connections to: Host, Home, Matrix
@@ -503,7 +517,7 @@ export function generateLevel(length) {
                         // Must be the host (or a random neighbor we shouldn't connect to?)
                         // For now: Default secret behavior (Hidden)
                         allowed = true; // It's a secret door
-                        hidden = true;
+                        hidden = !isTargetBossOrUpgrade; // Never hide Boss or Upgrade connection
                         locked = 0;
                     }
 
@@ -535,23 +549,24 @@ export function generateLevel(length) {
                     // I am the Host (or random neighbor). Secret Door to Trophy.
                     data.doors[d.name].locked = 0; // Standard Secret Door (Unlocked but Hidden)
                     data.doors[d.name].active = 1;
-                    data.doors[d.name].hidden = true;
+                    data.doors[d.name].hidden = !isTargetBossOrUpgrade; // Protect Boss/Upgrade
                 } else if (neighborCoord === Globals.homeCoord || neighborCoord === Globals.matrixCoord) {
-                    // I am a random neighbor of Home/Matrix. I should NOT see a door.
+                    // I am a random neighbor of Home/Matrix. I should NOT see a door and it cannot be bombed.
                     data.doors[d.name].active = 0;
+                    data.doors[d.name].unbombable = true;
 
                     // 4. Generic Secret Room (Legacy)
                 } else if ((Globals.secretRooms && Globals.secretRooms[coord])) {
                     // ... existing generic logic if needed ...
                     data.doors[d.name].locked = 0;
                     data.doors[d.name].active = 1;
-                    data.doors[d.name].hidden = false;
+                    data.doors[d.name].hidden = !isTargetBossOrUpgrade; // Protect Boss/Upgrade
                     data.doors[d.name].forcedOpen = true;
                 } else if ((Globals.secretRooms && Globals.secretRooms[neighborCoord])) {
                     // Neighbor is generic secret
                     data.doors[d.name].locked = 1;
                     data.doors[d.name].active = 1;
-                    data.doors[d.name].hidden = true;
+                    data.doors[d.name].hidden = !isTargetBossOrUpgrade; // Protect Boss/Upgrade from being hidden
                 }
 
                 // Sync door coordinates if missing

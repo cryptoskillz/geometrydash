@@ -1313,7 +1313,15 @@ export async function startGame(keepState = false) {
                     current = current[parts[i]];
                 }
                 const last = parts[parts.length - 1];
-                current[last] = (parseFloat(current[last]) || 0) + (parseFloat(u.value) || 1);
+
+                // If it's explicitly a boolean (or string boolean), just set it.
+                if (typeof u.value === 'boolean') {
+                    current[last] = u.value;
+                } else if (typeof u.value === 'string' && (u.value.toLowerCase() === 'true' || u.value.toLowerCase() === 'false')) {
+                    current[last] = u.value.toLowerCase() === 'true';
+                } else {
+                    current[last] = (parseFloat(current[last]) || 0) + (parseFloat(u.value) || 1);
+                }
 
                 // Special linking syncs
                 if (u.attr === 'maxHp') {
@@ -1667,7 +1675,7 @@ export function changeRoom(dx, dy) {
                         // Max Radius (approximate if stored, else default)
                         const maxR = sb.maxR || 100;
                         if (Math.hypot(sb.x - dX, sb.y - dY) < maxR + 30) {
-                            if (sb.openLockedDoors && door.locked) {
+                            if (sb.openLockedDoors && (door.locked === 1 || door.locked === true)) {
                                 door.locked = 0;
                                 log(`Simulated Explosion: Unlocked ${dir} door`);
                             }
@@ -2312,15 +2320,10 @@ export async function draw() {
 
     // Global Matrix Effect (Background)
     if (Globals.roomData && Globals.roomData.name === "Guns Lots of Guns") {
-        Globals.portal.active = true;
-        Globals.roomData.isBoss = true;
-        // Fix: Set Coordinates so it draws on screen (center)
-        Globals.portal.x = Globals.canvas.width / 2;
-        Globals.portal.y = Globals.canvas.height / 2;
-        Globals.portal.color = 'green';
+        Globals.roomData.isBoss = true; // Kept to lock the room if that was the intent
 
         drawMatrixRain();
-        // createPortal is drawn at end of loop if active
+        drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
     }
     // Ghost Trap Effect
     if (Globals.ghostTrapActive) {
@@ -2442,20 +2445,20 @@ export async function draw() {
 
 export function drawPortal(overrideColor = null) {
     // Only draw if active
-    // log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
     if (!Globals.portal.active) return;
+    drawInactivePortal(Globals.portal.x, Globals.portal.y, overrideColor || Globals.portal.color || 'purple');
+}
+
+export function drawInactivePortal(x, y, colorMode = 'purple') {
     const time = Date.now() / 500;
 
     Globals.ctx.save();
-    Globals.ctx.translate(Globals.portal.x, Globals.portal.y);
+    Globals.ctx.translate(x, y);
 
     // Determine Colors based on Room (Matrix Room = Green/Used)
     let mainColor = "#8e44ad"; // Default Purple
     let glowColor = "#8e44ad";
     let swirlColor = "#ffffff";
-
-    // Check Override, Portal Obj Prop, or Room Name (Deprecated room name check)
-    const colorMode = overrideColor || Globals.portal.color || 'purple';
 
     if (colorMode === 'green') {
         mainColor = "#2ecc71"; // Matrix Green
@@ -2470,14 +2473,14 @@ export function drawPortal(overrideColor = null) {
     // Portal shape
     Globals.ctx.fillStyle = mainColor;
     Globals.ctx.beginPath();
-    Globals.ctx.ellipse(0, 0, 30, 50, 0, 0, Math.PI * 2);
+    Globals.ctx.ellipse(0, 0, 50, 70, 0, 0, Math.PI * 2);
     Globals.ctx.fill();
 
     // Swirl effect
     Globals.ctx.strokeStyle = swirlColor;
     Globals.ctx.lineWidth = 3;
     Globals.ctx.beginPath();
-    Globals.ctx.ellipse(0, 0, 20 + Math.sin(time) * 5, 40 + Math.cos(time) * 5, time, 0, Math.PI * 2);
+    Globals.ctx.ellipse(0, 0, 50 + Math.sin(time) * 5, 70 + Math.cos(time) * 5, time, 0, Math.PI * 2);
     Globals.ctx.stroke();
 
     Globals.ctx.restore();
@@ -2500,6 +2503,7 @@ export function drawSwitch(cx = Globals.canvas.width / 2, cy = Globals.canvas.he
 
 export function drawBossSwitch() {
     if (!Globals.roomData.isBoss) return;
+    if (Globals.roomData._type === 'matrix' || Globals.roomData.name === "Guns Lots of Guns") return;
     drawSwitch()
 }
 
@@ -2591,21 +2595,7 @@ export function drawHomeRoomObjects() {
     Globals.ctx.stroke();
 
     // Draw Used Portal (Center)
-    // We temporarily override the global portal properties just to draw it
-    const originalPortalState = Globals.portal.active;
-    const originalPortalX = Globals.portal.x;
-    const originalPortalY = Globals.portal.y;
-
-    Globals.portal.active = true;
-    Globals.portal.x = Globals.canvas.width / 2;
-    Globals.portal.y = Globals.canvas.height / 2;
-
-    drawPortal('green'); // Draw the green 'used' matrix-style portal
-
-    // Restore original portal state
-    Globals.portal.active = originalPortalState;
-    Globals.portal.x = originalPortalX;
-    Globals.portal.y = originalPortalY;
+    drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
 
     // Proximity Prompts
     const pbDist = Math.hypot(Globals.player.x - px, Globals.player.y - py);
@@ -3051,46 +3041,45 @@ export function drawDoors() {
 
         let color = "#222"; // default open
 
+        let isHidden = false;
+
         if (door.hidden) {
-            // Hidden = Invisible (matches wall)
-            // We simply don't draw it, OR we draw it as a wall if needed. 
-            // But existing logic "continues" loop if !active. 
-            // If active=1 and hidden=1, we skip drawing the door rect?
-            // Actually, if we return, it looks like a gap?
-            // No, walls are drawn by room background. Doors are drawn ON TOP.
-            // So if we RETURN, we see the background/wall. Correct.
-            return;
+            isHidden = true;
         } else if (roomLocked && !door.forcedOpen) {
             color = "#c0392b"; // red if locked by enemies
         } else if (door.locked) {
             color = "#f1c40f"; // yellow if locked by key
         }
 
-        Globals.ctx.fillStyle = color;
         const dx = door.x ?? Globals.canvas.width / 2, dy = door.y ?? Globals.canvas.height / 2;
         const s = Globals.roomShrinkSize || 0;
 
-        if (dir === 'top') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, 0 + s, DOOR_SIZE, DOOR_THICKNESS);
-        if (dir === 'bottom') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, Globals.canvas.height - DOOR_THICKNESS - s, DOOR_SIZE, DOOR_THICKNESS);
-        if (dir === 'left') Globals.ctx.fillRect(0 + s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
-        if (dir === 'right') Globals.ctx.fillRect(Globals.canvas.width - DOOR_THICKNESS - s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
+        if (!isHidden) {
+            Globals.ctx.fillStyle = color;
+            if (dir === 'top') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, 0 + s, DOOR_SIZE, DOOR_THICKNESS);
+            if (dir === 'bottom') Globals.ctx.fillRect(dx - DOOR_SIZE / 2, Globals.canvas.height - DOOR_THICKNESS - s, DOOR_SIZE, DOOR_THICKNESS);
+            if (dir === 'left') Globals.ctx.fillRect(0 + s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
+            if (dir === 'right') Globals.ctx.fillRect(Globals.canvas.width - DOOR_THICKNESS - s, dy - DOOR_SIZE / 2, DOOR_THICKNESS, DOOR_SIZE);
+        }
 
-        // DEBUG: Draw Hitbox Overlay
-        const dit = true; // Enabled per user request
-        if (dit) {
+        // Draw Hitbox Overlay when debug window is active
+        if (DEBUG_FLAGS.WINDOW) {
             Globals.ctx.save();
-            Globals.ctx.strokeStyle = "magenta";
+            // User requested: "how when debug is on we draw paurple line... i want the same for secret doors"
+            // We use purple (#8e44ad) for secret doors and magenta for standard doors
+            Globals.ctx.strokeStyle = isHidden ? "#8e44ad" : "magenta";
+            if (isHidden) {
+                Globals.ctx.setLineDash([5, 5]); // Dashed line to further indicate hidden status in debug mode
+            }
             Globals.ctx.lineWidth = 2;
             const doorRangeW = DOOR_SIZE; // +/- DOOR_SIZE from center = 2*DOOR_SIZE width
             const doorRangeH = 45; // BOUNDARY (20) + TOLERANCE (25)
-            //show if debug is active
 
-            if (DEBUG_FLAGS.WINDOW) {
-                if (dir === 'top') Globals.ctx.strokeRect(dx - doorRangeW, 0, doorRangeW * 2, doorRangeH);
-                if (dir === 'bottom') Globals.ctx.strokeRect(dx - doorRangeW, Globals.canvas.height - doorRangeH, doorRangeW * 2, doorRangeH);
-                if (dir === 'left') Globals.ctx.strokeRect(0, dy - doorRangeW, doorRangeH, doorRangeW * 2);
-                if (dir === 'right') Globals.ctx.strokeRect(Globals.canvas.width - doorRangeH, dy - doorRangeW, doorRangeH, doorRangeW * 2);
-            }
+            if (dir === 'top') Globals.ctx.strokeRect(dx - doorRangeW, 0, doorRangeW * 2, doorRangeH);
+            if (dir === 'bottom') Globals.ctx.strokeRect(dx - doorRangeW, Globals.canvas.height - doorRangeH, doorRangeW * 2, doorRangeH);
+            if (dir === 'left') Globals.ctx.strokeRect(0, dy - doorRangeW, doorRangeH, doorRangeW * 2);
+            if (dir === 'right') Globals.ctx.strokeRect(Globals.canvas.width - doorRangeH, dy - doorRangeW, doorRangeH, doorRangeW * 2);
+
             Globals.ctx.restore();
         }
 

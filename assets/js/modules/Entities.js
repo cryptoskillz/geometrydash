@@ -1713,8 +1713,53 @@ export function updateBombsPhysics() {
                 }
             }
 
-        }
+            // Bomb vs Bomb Collision (Solid only)
+            if (b.solid) {
+                // To avoid checking the same pair twice, we just check against the rest of the array
+                // We'll iterate manually since this is inside a forEach
+                for (let j = 0; j < Globals.bombs.length; j++) {
+                    const b2 = Globals.bombs[j];
+                    if (b === b2 || !b2.solid || b2.exploding) continue;
 
+                    const dx = b.x - b2.x;
+                    const dy = b.y - b2.y;
+                    const dist = Math.hypot(dx, dy);
+                    const r1 = b.baseR || 15;
+                    const r2 = b2.baseR || 15;
+                    const minDist = r1 + r2;
+
+                    if (dist < minDist && dist > 0) {
+                        const overlap = minDist - dist;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+
+                        // Push both bombs apart equally (assuming similar mass for simplicity)
+                        b.x += nx * (overlap / 2);
+                        b.y += ny * (overlap / 2);
+                        b2.x -= nx * (overlap / 2);
+                        b2.y -= ny * (overlap / 2);
+
+                        // Basic elastic bounce
+                        const vxDiff = b.vx - b2.vx;
+                        const vyDiff = b.vy - b2.vy;
+                        const dot = vxDiff * nx + vyDiff * ny;
+
+                        if (dot < 0) { // Only bounce if moving towards each other
+                            const m1 = b.physics?.mass || 1.5;
+                            const m2 = b2.physics?.mass || 1.5;
+                            const res = Math.min(b.physics?.restitution || 0.5, b2.physics?.restitution || 0.5);
+
+                            const impulse = -(1 + res) * dot / ((1 / m1) + (1 / m2));
+
+                            b.vx += (impulse / m1) * nx;
+                            b.vy += (impulse / m1) * ny;
+                            b2.vx -= (impulse / m2) * nx;
+                            b2.vy -= (impulse / m2) * ny;
+                        }
+                    }
+                }
+            }
+        }
     });
 }
 
@@ -2265,7 +2310,9 @@ export function updateEnemies() {
     // Check for active threats (ignore indestructible/static like turrets)
     const activeThreats = Globals.enemies.filter(en => !en.isDead && !en.indestructible);
 
-    if (Globals.roomData.isBoss && activeThreats.length === 0 && !Globals.portal.active) {
+    const isMatrixRoom = Globals.roomData._type === 'matrix' || Globals.roomData.name === "Guns Lots of Guns";
+
+    if (Globals.roomData.isBoss && activeThreats.length === 0 && !Globals.portal.active && !isMatrixRoom) {
         Globals.portal.active = true;
         Globals.portal.scrapping = false; // Reset flags
         Globals.portal.finished = false;
@@ -2280,14 +2327,22 @@ export function updatePortal() {
     const currentCoord = `${Globals.player.roomX},${Globals.player.roomY}`;
     // Only interact if active
     // if (!Globals.roomData.isBoss) return; // Allow anywhere per user request
-
+    log(Globals.portal);
     const dist = Math.hypot(Globals.player.x - Globals.portal.x, Globals.player.y - Globals.portal.y);
     if (dist < 30) {
 
         let shardsCollected = false;
 
         // Check for Warning Feature
-        if (Globals.gameData.portalWarning && Globals.groundItems.length > 0) {
+        const nextLevel = Globals.roomData.nextLevel !== undefined ? Globals.roomData.nextLevel : Globals.gameData.nextLevel;
+        const welcomeScreen = Globals.roomData.welcomeScreen !== undefined ? Globals.roomData.welcomeScreen : Globals.gameData.welcomeScreen;
+        const completedItMate = Globals.roomData.completedItMate !== undefined ? Globals.roomData.completedItMate : Globals.gameData.completedItMate;
+        const hasNextLevel = nextLevel && nextLevel.trim() !== "";
+        const isSpecialRoom = ['start', 'matrix', 'home'].includes(Globals.roomData.type) || ['start', 'matrix', 'home'].includes(Globals.roomData._type);
+        // A Boss Room portal is NEVER inactive
+        const isInactivePortal = !Globals.roomData.isBoss && ((!hasNextLevel && !welcomeScreen && !completedItMate) || isSpecialRoom);
+
+        if (Globals.gameData.portalWarning && Globals.groundItems.length > 0 && !isInactivePortal) {
 
             // Auto-collect shards and evaluate if any real items remain
             const realItems = [];
@@ -2303,7 +2358,7 @@ export function updatePortal() {
                 }
             }
 
-            // Only fire modal if REAL items (not just shards) are left
+            // Only fire modal if REAL items (not just shards) are left and its an active portal
             if (realItems.length > 0) {
                 if (!Globals.portal.warningActive) {
                     Globals.portal.warningActive = true;
@@ -2317,6 +2372,12 @@ export function updatePortal() {
                 }
                 return;
             }
+        }
+
+        // 4. Inactive / Tutorial Portals
+        if (isInactivePortal) {
+            log("Inactive portal touched. Ignoring logic.");
+            return;
         }
 
         // WIN GAME (Default Transition)
@@ -2419,7 +2480,9 @@ function proceedLevelComplete() {
         localStorage.setItem('rogue_level_splits', JSON.stringify(Globals.levelSplits));
     }
 
-    const { nextLevel, welcomeScreen, completedItMate } = Globals.roomData;
+    const nextLevel = Globals.roomData.nextLevel !== undefined ? Globals.roomData.nextLevel : Globals.gameData.nextLevel;
+    const welcomeScreen = Globals.roomData.welcomeScreen !== undefined ? Globals.roomData.welcomeScreen : Globals.gameData.welcomeScreen;
+    const completedItMate = Globals.roomData.completedItMate !== undefined ? Globals.roomData.completedItMate : Globals.gameData.completedItMate;
     const hasNextLevel = nextLevel && nextLevel.trim() !== "";
 
     // 1. Always go to welcome screen
@@ -3321,16 +3384,20 @@ export function drawBombs(doors) {
                     // If bomb blast hits the door
                     const distCheck = Math.hypot(b.x - dX, b.y - dY);
                     if (distCheck < b.maxR + 30) {
-                        // log("Bomb hit door:", dir, "locked:", door.locked, "hidden:", door.hidden, "openSecretRooms:", b.openSecretRooms); // Debug
-                        if (b.openLockedDoors && door.locked) door.locked = 0; // Unlock standard locks
-                        if (b.openRedDoors) {
-                            // Force open even if enemies are present
-                            door.forcedOpen = true;
-                        }
-                        if (b.openSecretRooms && door.hidden) {
-                            door.hidden = false;
-                            door.active = true;
-                            log("Secret Room Revealed:", dir);
+                        if (!door.unbombable) {
+                            // log("Bomb hit door:", dir, "locked:", door.locked, "hidden:", door.hidden, "openSecretRooms:", b.openSecretRooms); // Debug
+                            if (b.openLockedDoors && (door.locked === 1 || door.locked === true)) door.locked = 0; // Unlock standard locks
+                            if (b.openRedDoors) {
+                                // Force open even if enemies are present
+                                door.forcedOpen = true;
+                            }
+                            if (b.openSecretRooms && door.hidden) {
+                                door.hidden = false;
+                                door.active = true;
+                                log("Secret Room Revealed:", dir);
+                            }
+                        } else {
+                            log("Bomb hit UNBOMBABLE door, ignoring.");
                         }
                     }
                 });
@@ -4725,6 +4792,7 @@ export function spawnRoomRewards(dropConfig, label = null) {
 }
 
 export function drawPlayer() {
+    if (Globals.portal?.transitioning) return;
     const now = Date.now();
     // 4. --- PLAYER ---
 

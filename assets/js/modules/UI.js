@@ -1,6 +1,6 @@
 import { Globals } from './Globals.js';
 import { STATES, CONFIG, STORAGE_KEYS } from './Constants.js';
-import { drawPortal, drawSwitch } from './Game.js';
+import { drawPortal, drawInactivePortal, drawSwitch } from './Game.js';
 import { introMusic } from './Audio.js';
 // Utils might be needed if logging
 import { log } from './Utils.js';
@@ -387,11 +387,8 @@ export function drawTutorial() {
         if (Globals.elements.roomName) Globals.elements.roomName.innerText = Globals.roomData.name;
 
         // Force Portal Active & Centered for Start Room
-        Globals.portal.active = true;
-        Globals.portal.x = Globals.canvas.width / 2;
-        Globals.portal.y = Globals.canvas.height / 2;
-        Globals.portal.color = 'green';
-        drawPortal('green'); // Pass override just in case
+        Globals.portal.active = false;
+        drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
 
         // Internal helper for keycaps
         const drawKey = (text, x, y) => {
@@ -424,7 +421,7 @@ export function drawTutorial() {
         drawKey("D", lx + 45, ly);
 
         // SHOOT (Arrows)
-        if (Globals.player.gunType) {
+        if (Globals.player.gunType || Object.keys(Globals.gun).length > 0) {
             const rx = Globals.canvas.width - 200;
             Globals.ctx.fillText("SHOOT", rx, ly - 90);
             Globals.ctx.beginPath();
@@ -438,6 +435,7 @@ export function drawTutorial() {
             drawKey("↓", rx, ly + 45);
         }
 
+
         // Action Keys (Bottom Row)
         let mx = Globals.canvas.width / 6;
         let my = Globals.canvas.height - 80;
@@ -448,7 +446,7 @@ export function drawTutorial() {
         if (Globals.gameData.music) actions.push({ label: "MUSIC", key: "0" });
         if (Globals.gameData.soundEffects) actions.push({ label: "SFX", key: "9" });
 
-        if (Globals.player.bombType) {
+        if (Globals.player.bombType || Object.keys(Globals.bomb || {}).length > 0) {
             actions.push({ label: "BOMB", key: "B" });
         }
 

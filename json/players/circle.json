@@ -41,6 +41,7 @@
     "gunType": "",
     "inventory": {
         "keys": 0,
+        "ghostTrap": false,
         "houseKey": true,
         "matrixKey": true,
         "bombs": 0,
