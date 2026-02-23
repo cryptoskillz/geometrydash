@@ -4,10 +4,10 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- 415303 has 2 trophy rooms, one is ok the other has bombale matrix and home room from the outside.  To confirm 1 trophy room per level this was on level 6
-- Shield shows when you go into the portal.
+- [x] if (realItems.length > 0 && Globals.portal.transitioning) {. <--- this bug does not show dialog on level 2
 - switch is 10% of the cost of the item it should be 10% of your maxRedShards
 - increase font for switch info 
+- [x] dont draw the player if you go into a portal as we want to make it look like hes has been absorbed into the portal, we will draw him again if/when he comes out the other side
 - if you click escape in portal modal the unlock is gone when you go back
 - unlocks already dropped are being dropped again
 - speedy timer, ghost health unlocks etc not showing instantly

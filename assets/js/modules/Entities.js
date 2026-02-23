@@ -2348,10 +2348,8 @@ export function updatePortal() {
                 }
             }
 
-            // Only fire modal if REAL items (not just shards) are left and its an active 
-            // portal
-            log("Portal", Globals.portal)
-            if (realItems.length > 0 && Globals.portal.transitioning) {
+            // Only fire modal if REAL items (not just shards) are left and its an active portal
+            if (realItems.length > 0) {
                 if (!Globals.portal.warningActive) {
                     Globals.portal.warningActive = true;
                     // Pause input manually
@@ -4776,6 +4774,7 @@ export function spawnRoomRewards(dropConfig, label = null) {
 }
 
 export function drawPlayer() {
+    if (Globals.portal?.transitioning) return;
     const now = Date.now();
     // 4. --- PLAYER ---
 

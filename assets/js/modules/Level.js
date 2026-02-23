@@ -28,6 +28,7 @@ export function generateLevel(length) {
     Globals.trophyCoord = null;
     Globals.homeCoord = null;
     Globals.matrixCoord = null;
+    Globals.secretRooms = {};
 
     // 2. Add Branches (Dead Ends)
     let fullMapCoords = [...path];
