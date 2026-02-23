@@ -4,7 +4,6 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- draw inactice portal in matix room
 - switch is 10% of the cost of the item it should be 10% of your maxRedShards
 - increase font for switch info 
 has been absorbed into the portal, we will draw him again if/when he comes out the other side

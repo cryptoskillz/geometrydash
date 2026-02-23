@@ -2503,6 +2503,7 @@ export function drawSwitch(cx = Globals.canvas.width / 2, cy = Globals.canvas.he
 
 export function drawBossSwitch() {
     if (!Globals.roomData.isBoss) return;
+    if (Globals.roomData._type === 'matrix' || Globals.roomData.name === "Guns Lots of Guns") return;
     drawSwitch()
 }
 
