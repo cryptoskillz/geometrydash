@@ -2450,20 +2450,20 @@ export async function draw() {
 
 export function drawPortal(overrideColor = null) {
     // Only draw if active
-    // log(Globals.portal.active + ' ' + Globals.roomData.isBoss) // Remove debug log?
     if (!Globals.portal.active) return;
+    drawInactivePortal(Globals.portal.x, Globals.portal.y, overrideColor || Globals.portal.color || 'purple');
+}
+
+export function drawInactivePortal(x, y, colorMode = 'purple') {
     const time = Date.now() / 500;
 
     Globals.ctx.save();
-    Globals.ctx.translate(Globals.portal.x, Globals.portal.y);
+    Globals.ctx.translate(x, y);
 
     // Determine Colors based on Room (Matrix Room = Green/Used)
     let mainColor = "#8e44ad"; // Default Purple
     let glowColor = "#8e44ad";
     let swirlColor = "#ffffff";
-
-    // Check Override, Portal Obj Prop, or Room Name (Deprecated room name check)
-    const colorMode = overrideColor || Globals.portal.color || 'purple';
 
     if (colorMode === 'green') {
         mainColor = "#2ecc71"; // Matrix Green
@@ -2599,21 +2599,7 @@ export function drawHomeRoomObjects() {
     Globals.ctx.stroke();
 
     // Draw Used Portal (Center)
-    // We temporarily override the global portal properties just to draw it
-    const originalPortalState = Globals.portal.active;
-    const originalPortalX = Globals.portal.x;
-    const originalPortalY = Globals.portal.y;
-
-    Globals.portal.active = true;
-    Globals.portal.x = Globals.canvas.width / 2;
-    Globals.portal.y = Globals.canvas.height / 2;
-
-    drawPortal('green'); // Draw the green 'used' matrix-style portal
-
-    // Restore original portal state
-    Globals.portal.active = originalPortalState;
-    Globals.portal.x = originalPortalX;
-    Globals.portal.y = originalPortalY;
+    drawInactivePortal(Globals.canvas.width / 2, Globals.canvas.height / 2, 'green');
 
     // Proximity Prompts
     const pbDist = Math.hypot(Globals.player.x - px, Globals.player.y - py);
