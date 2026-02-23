@@ -43,14 +43,6 @@ export function spawnSwitches(roomData) {
             if (saved !== null) amountSpent = parseInt(saved);
         }
 
-        let scaledDefaultCost = cfg.defaultCost || 1000;
-        if (cfg.action === 'upgrade') {
-            const sType = cfg.shard || 'green';
-            const maxKey = sType === 'red' ? 'maxRedShards' : 'maxGreenShards';
-            const maxShards = Globals.player.inventory[maxKey] || 500;
-            scaledDefaultCost = Math.max(1, Math.ceil(maxShards * 0.10));
-        }
-
         Globals.switches.push({
             x: cfg.x,
             y: cfg.y,
@@ -64,7 +56,7 @@ export function spawnSwitches(roomData) {
             cooldown: 0,
             isPressed: false,
             // Upgrade stuff
-            defaultCost: scaledDefaultCost,
+            defaultCost: cfg.defaultCost || 1000,
             amountSpent: amountSpent,
             maxAllowed: cfg.maxAllowed || 99,
             item: cfg.item || null,
@@ -252,12 +244,13 @@ function handleUpgradeSwitch(s) {
         }
     }
 
-    // 2. Define payment (1/10th of defaultCost)
-    let payment = Math.max(1, Math.floor(s.defaultCost / 10));
-
-    // Find player's shards
+    // 2. Define payment (10% of your max shard capacity)
     const shardType = s.shard || 'red';
     const inventoryKey = shardType === 'red' ? 'redShards' : 'greenShards';
+    const maxKey = shardType === 'red' ? 'maxRedShards' : 'maxGreenShards';
+    const maxShards = Globals.player.inventory[maxKey] || 500;
+
+    let payment = Math.max(1, Math.ceil(maxShards * 0.10));
     let currentShards = Globals.player.inventory[inventoryKey] || 0;
 
     // Cap payment by how much they actually HAVE and what's left to pay
