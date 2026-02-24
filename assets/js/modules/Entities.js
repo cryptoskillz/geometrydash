@@ -2488,6 +2488,15 @@ function proceedLevelComplete() {
     // 1. Always go to welcome screen
     if (hasNextLevel && welcomeScreen === true && completedItMate === false) {
         log("Level Complete. Returning to Welcome Screen. Pending Next Level:", nextLevel);
+        // Force save current weapon config to prevent loss on transition
+        if (Globals.gun) {
+            localStorage.setItem('current_gun', Globals.player.gunType || 'peashooter');
+            localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
+        }
+        if (Globals.bomb) {
+            localStorage.setItem('current_bomb', Globals.player.bombType || 'normal');
+            localStorage.setItem('current_bomb_config', JSON.stringify(Globals.bomb));
+        }
         localStorage.setItem('rogue_transition', 'true');
         localStorage.setItem('rogue_current_level', nextLevel);
         localStorage.setItem('rogue_player_state', JSON.stringify(Globals.player));
@@ -2518,6 +2527,15 @@ function proceedLevelComplete() {
         if (Globals.introMusic) {
             Globals.introMusic.pause();
             Globals.introMusic.currentTime = 0;
+        }
+        // Force save current weapon config to prevent loss on transition
+        if (Globals.gun) {
+            localStorage.setItem('current_gun', Globals.player.gunType || 'peashooter');
+            localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
+        }
+        if (Globals.bomb) {
+            localStorage.setItem('current_bomb', Globals.player.bombType || 'normal');
+            localStorage.setItem('current_bomb_config', JSON.stringify(Globals.bomb));
         }
         localStorage.setItem('rogue_transition', 'true');
         localStorage.setItem('rogue_current_level', nextLevel);
