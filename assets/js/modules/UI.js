@@ -162,6 +162,9 @@ export function updateWelcomeScreen() {
         <p style="font-size: 0.8em; color: #555; margin-top: 40px;">v0.94/p>
     `;
     }
+
+    // Record timestamp so we can debounce instant start bypass
+    Globals.welcomeScreenStartTime = Date.now();
 }
 
 export async function updateUI() {
@@ -801,13 +804,13 @@ export function showCredits() {
     Globals.creditsStartTime = Date.now();
 
     // Cleanup old listener just in case
-    if (Globals.creditsListener) document.removeEventListener('keydown', Globals.creditsListener);
+    if (Globals.creditsListener) document.removeEventListener('keyup', Globals.creditsListener);
 
     const closeCredits = (e) => {
         // Debounce slightly to prevent immediate skip if key held
         if (Date.now() - (Globals.creditsStartTime || 0) < 1500) return;
 
-        document.removeEventListener('keydown', closeCredits);
+        document.removeEventListener('keyup', closeCredits);
         Globals.creditsListener = null;
         creditsEl.style.display = 'none';
 
@@ -832,7 +835,7 @@ export function showCredits() {
     };
 
     Globals.creditsListener = closeCredits;
-    document.addEventListener('keydown', closeCredits);
+    document.addEventListener('keyup', closeCredits);
 }
 
 export function updateGameStats(statType, data) {

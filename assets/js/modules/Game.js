@@ -3316,6 +3316,13 @@ Globals.goToWelcome = goToWelcome;
 
 export function beginPlay() {
     log("TRACER: beginPlay Called. GameState=", Globals.gameState);
+
+    // Prevent immediate start if we just arrived at the welcome screen (e.g. from closing credits)
+    if (Date.now() - (Globals.welcomeScreenStartTime || 0) < 500) {
+        log("TRACER: beginPlay blocked by debounce.");
+        return;
+    }
+
     // Check if we are in START state, then call startGame
     if (Globals.gameState === STATES.START) {
         startGame(false); // Fresh start from welcome screen
