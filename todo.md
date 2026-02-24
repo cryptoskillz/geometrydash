@@ -4,12 +4,11 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- when you finish the last level you start the game again with the gun you should go back to the welcome screen after the end credits
 - when you start from a new game when you get to level 5 you lose your peashooter but get it back if you restart.
-- music restarts when you go through a portal to the next levelq
 - unlocks already dropped / unlocked are being dropped again
-- speedy timer, ghost health unlocks etc not showing instantly
-- when you pick up the peashooter and the normal bomb when you go to the next level you no longer have the normal bomb.  I spawned 3 bombs and pressing B did nothing.  This happens on a restart as well.
+- speedy timer, ghost health unlocks etc not showing instantly. Some do like timer, stats and minimap
+- music restarts when you go through a portal to the next level
+- [x] when you finish the last level you start the game again with the gun you should go back to the welcome screen after the end creditslonger have the normal bomb. I spawned 3 bombs and pressing B did nothing. This happens on a restart as well.
 - You can move bombs into other bombs that are solid.
 - red bomb drops with a large B
 - Bomb goes blue when you leave a room and re-enter.
@@ -19,7 +18,7 @@ DONT DO ANY OF THESE TASKS AI
 - Golden bomb doesn't stay on the next level if you pick it up (stays if equipped at the start).
 - `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
 - Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
-- the refresh modal isnt actually refreshing the game, its not the end as this is mainly used for code updates anyway whihch the user will never experience.
+3
 
 # Upgrades
 - start with shield

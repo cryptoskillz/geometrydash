@@ -3309,6 +3309,7 @@ Globals.newRun = newRun;
 
 export function goToWelcome() {
     saveGameStats();
+    localStorage.removeItem('rogue_current_level');
     initGame(false);
 }
 Globals.goToWelcome = goToWelcome;

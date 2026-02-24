@@ -815,6 +815,13 @@ export function showCredits() {
         // Clear SESSION DATA (Level, Inventory) but KEEP UNLOCKS
         STORAGE_KEYS.SESSION_WIPE.forEach(key => localStorage.removeItem(key));
 
+        // Ensure the player doesn't restart with weapons from the completed run
+        const runWipeKeys = [
+            'current_gun', 'current_bomb', 'current_gun_config', 'current_bomb_config',
+            'base_gun', 'base_bomb', 'base_gun_config', 'base_bomb_config'
+        ];
+        runWipeKeys.forEach(k => localStorage.removeItem(k));
+
         // Use Global Helper to Reset State & Go to Welcome
         if (Globals.goToWelcome) {
             Globals.goToWelcome();
