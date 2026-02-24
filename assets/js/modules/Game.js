@@ -776,8 +776,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 if (!Globals.player.gunType) Globals.player.gunType = localStorage.getItem('current_gun') || "unknown";
             } else if (Globals.player.gunType) {
                 // SECOND: No cache, so fetch from gunType
-                log("Loaded Gun from LocalStorage Cache (Preserving Modifiers)");
-            } else {
                 const gunUrl = `/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now();
                 const gRes = await fetch(gunUrl);
                 if (gRes.ok) {
@@ -789,402 +787,390 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                         if (realRes.ok) fetchedGun = await realRes.json();
                     }
                 } else console.error("Gun fetch failed:", gRes.status, gRes.statusText);
-            }
-        } else {
-            log("No player.gunType defined, skipping initial fetch.");
-        }
-    } catch (e) { console.error("Gun fetch error:", e); }
-
-    if (!fetchedGun && !savedPlayerStats && Globals.player.gunType) {
-        log(`Attempting fallback to '${Globals.player.gunType}'...`);
-        try {
-            const res = await fetch(`/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now());
-            if (res.ok) {
-                fetchedGun = await res.json();
-                if (fetchedGun.location) {
-                    // Normalize location path
-                    let loc = fetchedGun.location;
-                    if (loc.startsWith('items/')) loc = 'rewards/' + loc;
-                    const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
-                    if (realRes.ok) fetchedGun = await realRes.json();
-                }
-                Globals.player.gunType = Globals.player.gunType; // Update player state
-            }
-        } catch (e) {
-            console.error("Failed fallback load for gun:", Globals.player.gunType, e);
-        }
-    }
-
-    const bombUrl = Globals.player.bombType ? `/json/rewards/items/bombs/${Globals.player.bombType}.json?t=` + Date.now() : null;
-    if (bombUrl) {
-        try {
-            const cachedBombData = localStorage.getItem('current_bomb_config');
-            if (cachedBombData) {
-                fetchedBomb = JSON.parse(cachedBombData);
-                log("Loaded Bomb from LocalStorage Cache");
             } else {
-                const bRes = await fetch(bombUrl);
-                if (bRes.ok) {
-                    fetchedBomb = await bRes.json();
-                    if (fetchedBomb.location) {
-                        let loc = fetchedBomb.location;
+                log("No cache and no player.gunType defined, skipping initial fetch.");
+            }
+        } catch (e) { console.error("Gun fetch error:", e); }
+
+        if (!fetchedGun && !savedPlayerStats && Globals.player.gunType) {
+            log(`Attempting fallback to '${Globals.player.gunType}'...`);
+            try {
+                const res = await fetch(`/json/rewards/items/guns/player/${Globals.player.gunType}.json?t=` + Date.now());
+                if (res.ok) {
+                    fetchedGun = await res.json();
+                    if (fetchedGun.location) {
+                        // Normalize location path
+                        let loc = fetchedGun.location;
                         if (loc.startsWith('items/')) loc = 'rewards/' + loc;
                         const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
-                        if (realRes.ok) fetchedBomb = await realRes.json();
+                        if (realRes.ok) fetchedGun = await realRes.json();
+                    }
+                    Globals.player.gunType = Globals.player.gunType; // Update player state
+                }
+            } catch (e) {
+                console.error("Failed fallback load for gun:", Globals.player.gunType, e);
+            }
+        }
+
+        const bombUrl = Globals.player.bombType ? `/json/rewards/items/bombs/${Globals.player.bombType}.json?t=` + Date.now() : null;
+        if (bombUrl) {
+            try {
+                const cachedBombData = localStorage.getItem('current_bomb_config');
+                if (cachedBombData) {
+                    fetchedBomb = JSON.parse(cachedBombData);
+                    log("Loaded Bomb from LocalStorage Cache");
+                } else {
+                    const bRes = await fetch(bombUrl);
+                    if (bRes.ok) {
+                        fetchedBomb = await bRes.json();
+                        if (fetchedBomb.location) {
+                            let loc = fetchedBomb.location;
+                            if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                            const realRes = await fetch(`${JSON_PATHS.ROOT}${loc}?t=` + Date.now());
+                            if (realRes.ok) fetchedBomb = await realRes.json();
+                        }
                     }
                 }
+            } catch (e) {
+                console.error("Failed fallback load for bomb:", Globals.player.bombType, e);
             }
-        } catch (e) {
-            console.error("Failed fallback load for bomb:", Globals.player.bombType, e);
         }
-    }
 
-    if (!fetchedGun) {
-        console.error("CRITICAL: Could not load ANY gun. Player will be unarmed.", {
-            gunType: Globals.player?.gunType,
-            cachedGun: localStorage.getItem('current_gun'),
-            cachedGunConfig: localStorage.getItem('current_gun_config') ? "PRESENT" : "MISSING/NULL"
-        });
-        // HARD FALLBACK TO PREVENT CRASH
-        Globals.gun = {
-            name: "emergency_peashooter", filename: "peashooter", description: "Fallback", type: "gun",
-            Bullet: {
-                active: true, ammo: { active: true, amount: 10, type: "recharge" },
-                speed: 5, size: 10, damage: 1, range: 50, fireRate: 0.5, geometry: { shape: "circle", filled: true }
+        if (!fetchedGun) {
+            console.error("CRITICAL: Could not load ANY gun. Player will be unarmed.");
+            Globals.gun = { Bullet: { NoBullets: true } };
+        } else {
+            Globals.gun = fetchedGun;
+            log("Loaded Gun Data:", Globals.gun.name);
+        }
+        Globals.bomb = fetchedBomb || {};
+
+        // SAVE BASE LOADOUT (For Resets/Deaths)
+        // Only save if NOT already saved, to preserve the true "starting" weapon
+        if (!savedPlayerStats && !isRestart) {
+            if (!localStorage.getItem('base_gun') && Globals.player.gunType) {
+                localStorage.setItem('base_gun', Globals.player.gunType);
+                localStorage.setItem('base_gun_config', JSON.stringify(Globals.gun));
+                log("Saved Base Gun & Config:", Globals.player.gunType);
             }
+            if (!localStorage.getItem('base_bomb') && Globals.player.bombType) {
+                localStorage.setItem('base_bomb', Globals.player.bombType);
+                localStorage.setItem('base_bomb_config', JSON.stringify(Globals.bomb));
+                log("Saved Base Bomb & Config:", Globals.player.bombType);
+            }
+        }
+
+        // Check for SFX mute and ensure unlock status is respected
+        const soundUnlocked = Globals.gameData.soundEffects || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('soundEffects');
+        if (soundUnlocked) {
+            Globals.gameData.soundEffects = true;
+        } else {
+            Globals.sfxMuted = true;
+        }
+
+        if (Globals.gameData.music || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('music')) {
+            // Force enable if unlocked (override default config)
+            Globals.gameData.music = true;
+            // Respect previous state or load from storage
+            if (Globals.musicMuted === undefined) {
+                Globals.musicMuted = localStorage.getItem('music_muted') === 'true';
+            }
+            // --- 1. INSTANT AUDIO SETUP ---
+            // Ensure global audio is ready
+            introMusic.loop = true;
+            introMusic.volume = 0.4;
+            Globals.introMusic = introMusic; // Expose for Entities
+
+            // This attempts to play immediately.
+            // If the browser blocks it, the 'keydown' listener below will catch it.
+            if (!Globals.musicMuted) {
+                introMusic.play().catch(() => {
+                    log("Autoplay blocked: Waiting for first user interaction to start music.");
+                });
+            }
+
+            // Fallback: Start music on the very first key press or click if autoplay failed
+            const startAudio = () => {
+                if (introMusic.paused && !Globals.musicMuted) fadeIn(introMusic, 5000);
+                if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
+                window.removeEventListener('keydown', startAudio);
+                window.removeEventListener('mousedown', startAudio);
+            };
+            window.addEventListener('keydown', startAudio);
+            window.addEventListener('mousedown', startAudio);
+        }
+
+        // Init Menu UI
+        if (!isRestart) updateWelcomeScreen();
+        // Initialize Ammo
+        if (gun.Bullet?.ammo?.active) {
+            player.ammoMode = gun.Bullet?.ammo?.type || 'finite'; // 'finite', 'reload', 'recharge'
+            player.maxMag = gun.Bullet?.ammo?.amount || 100; // Clip size
+            // Handle resetTimer being 0 or undefined, treat as 0 if finite, but if reload/recharge usually non-zero.
+            // But if user sets resetTimer to 0, it instant reloads?
+            player.reloadTime = gun.Bullet?.ammo?.resetTimer !== undefined ? gun.Bullet?.ammo?.resetTimer : (gun.Bullet?.ammo?.reload || 1000);
+
+            // Initial State
+            player.ammo = player.maxMag;
+            player.reloading = false;
+
+            // Reserve Logic
+            if (player.ammoMode === 'reload') {
+                // Magazine Mode: maxAmount is total reserve
+                player.reserveAmmo = (gun.Bullet?.ammo?.maxAmount || 0) - player.maxMag;
+                if (player.reserveAmmo < 0) player.reserveAmmo = 0;
+            } else if (player.ammoMode === 'recharge') {
+                // Recharge Mode: Infinite reserve
+                player.reserveAmmo = Infinity;
+            } else {
+                // Finite Mode: No reserve
+                player.reserveAmmo = 0;
+            }
+        }
+
+
+
+        // 4. Load Room Templates (Dynamic from Level Data)
+        Globals.roomTemplates = {};
+        const roomProtos = [];
+
+        // Helper to load a room file
+        const loadRoomFile = (path, type) => {
+            if (!path || path.trim() === "") return Promise.resolve();
+            // Handle relative paths from JSON (e.g. "rooms/start.json")
+            // Ensure we don't double stack "json/" if valid path provided
+            const url = path.startsWith('http') || path.startsWith('/') || path.startsWith('json/') ? path : `json/${path}`;
+            return fetch(url + '?t=' + Date.now())
+                .then(res => {
+                    if (!res.ok) throw new Error("404");
+                    return res.json();
+                })
+                .then(data => {
+                    log(data)
+
+                    // ID Generation: Handle "room.json" collision
+                    const parts = path.split('/');
+                    let id = parts[parts.length - 1].replace('.json', '');
+                    if (id === 'room' && parts.length > 1) {
+                        id = parts[parts.length - 2]; // Use folder name (e.g. "boss4", "start")
+                    }
+
+                    data.templateId = id;
+                    // Tag it
+                    if (type) data._type = type;
+
+                    // Store
+                    // SAFETY CHECK: Don't overwrite a 'start' room with a 'normal' one (Race condition fix)
+                    if (Globals.roomTemplates[id] && Globals.roomTemplates[id]._type === 'start' && type !== 'start') {
+                        // We already have a definitive Start Room for this ID. Don't downgrade it.
+                        // However, we might want to store it by path still?
+                        Globals.roomTemplates[path] = data; // Store path variant anyway
+                        log(`Skipping override of Start Room ${id} with normal variant.`);
+                        return;
+                    }
+
+                    Globals.roomTemplates[id] = data;
+                    // Also store by full path just in case
+                    Globals.roomTemplates[path] = data;
+                    log(`Loaded Room: ${id} (${type || 'normal'})`);
+                })
+                .catch(err => console.error(`Failed to load room: ${path}`, err));
         };
-    } else {
-        Globals.gun = fetchedGun;
-        log("Loaded Gun Data:", Globals.gun.name);
-    }
-    Globals.bomb = fetchedBomb || {};
 
-    // SAVE BASE LOADOUT (For Resets/Deaths)
-    // Only save if NOT already saved, to preserve the true "starting" weapon
-    if (!savedPlayerStats && !isRestart) {
-        if (!localStorage.getItem('base_gun') && Globals.player.gunType) {
-            localStorage.setItem('base_gun', Globals.player.gunType);
-            localStorage.setItem('base_gun_config', JSON.stringify(Globals.gun));
-            log("Saved Base Gun & Config:", Globals.player.gunType);
+        // A. Standard Rooms
+        let available = Globals.gameData.avalibleroons || Globals.gameData.availablerooms || [];
+        available = available.filter(p => p && p.trim() !== "");
+        // If empty, fallback to manifest?
+        // ONE CHECK: Only fallback if we DON'T have a startRoom/bossRoom config
+        // meaning we are truly in a "default game" state, not a specific level file state.
+        //is this required?
+        if (available.length === 0 && !Globals.gameData.startRoom && !Globals.gameData.bossRoom) {
+            // FALLBACK: Load from old manifest
+            try {
+                const m = await fetch(JSON_PATHS.MANIFESTS.ROOMS + '?t=' + Date.now()).then(res => res.json());
+                if (m.rooms) {
+                    m.rooms.forEach(r => roomProtos.push(loadRoomFile(`rooms/${r}/room.json`, 'normal')));
+                    // Also try to load start/boss legacy
+                    roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.START_ROOM, 'start'));
+                    roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.BOSS_ROOM, 'boss'));
+                }
+            } catch (e) { console.warn("No legacy manifest found"); }
+        } else {
+            available.forEach(path => roomProtos.push(loadRoomFile(path, 'normal')));
         }
-        if (!localStorage.getItem('base_bomb') && Globals.player.bombType) {
-            localStorage.setItem('base_bomb', Globals.player.bombType);
-            localStorage.setItem('base_bomb_config', JSON.stringify(Globals.bomb));
-            log("Saved Base Bomb & Config:", Globals.player.bombType);
+
+        // C. Explicit Start Room
+        if (Globals.gameData.startRoom) {
+            roomProtos.push(loadRoomFile(Globals.gameData.startRoom, 'start'));
         }
-    }
 
-    // Check for SFX mute and ensure unlock status is respected
-    const soundUnlocked = Globals.gameData.soundEffects || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('soundEffects');
-    if (soundUnlocked) {
-        Globals.gameData.soundEffects = true;
-    } else {
-        Globals.sfxMuted = true;
-    }
-
-    if (Globals.gameData.music || JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]').includes('music')) {
-        // Force enable if unlocked (override default config)
-        Globals.gameData.music = true;
-        // Respect previous state or load from storage
-        if (Globals.musicMuted === undefined) {
-            Globals.musicMuted = localStorage.getItem('music_muted') === 'true';
-        }
-        // --- 1. INSTANT AUDIO SETUP ---
-        // Ensure global audio is ready
-        introMusic.loop = true;
-        introMusic.volume = 0.4;
-        Globals.introMusic = introMusic; // Expose for Entities
-
-        // This attempts to play immediately.
-        // If the browser blocks it, the 'keydown' listener below will catch it.
-        if (!Globals.musicMuted) {
-            introMusic.play().catch(() => {
-                log("Autoplay blocked: Waiting for first user interaction to start music.");
+        // D. Secret Rooms (FIX: Needed to be explicitly loaded)
+        if (Globals.gameData.secrectrooms) {
+            Globals.gameData.secrectrooms.forEach(path => {
+                roomProtos.push(loadRoomFile(path, 'secret'));
             });
         }
-
-        // Fallback: Start music on the very first key press or click if autoplay failed
-        const startAudio = () => {
-            if (introMusic.paused && !Globals.musicMuted) fadeIn(introMusic, 5000);
-            if (Globals.audioCtx.state === 'suspended') Globals.audioCtx.resume();
-            window.removeEventListener('keydown', startAudio);
-            window.removeEventListener('mousedown', startAudio);
-        };
-        window.addEventListener('keydown', startAudio);
-        window.addEventListener('mousedown', startAudio);
-    }
-
-    // Init Menu UI
-    if (!isRestart) updateWelcomeScreen();
-    // Initialize Ammo
-    if (gun.Bullet?.ammo?.active) {
-        player.ammoMode = gun.Bullet?.ammo?.type || 'finite'; // 'finite', 'reload', 'recharge'
-        player.maxMag = gun.Bullet?.ammo?.amount || 100; // Clip size
-        // Handle resetTimer being 0 or undefined, treat as 0 if finite, but if reload/recharge usually non-zero.
-        // But if user sets resetTimer to 0, it instant reloads?
-        player.reloadTime = gun.Bullet?.ammo?.resetTimer !== undefined ? gun.Bullet?.ammo?.resetTimer : (gun.Bullet?.ammo?.reload || 1000);
-
-        // Initial State
-        player.ammo = player.maxMag;
-        player.reloading = false;
-
-        // Reserve Logic
-        if (player.ammoMode === 'reload') {
-            // Magazine Mode: maxAmount is total reserve
-            player.reserveAmmo = (gun.Bullet?.ammo?.maxAmount || 0) - player.maxMag;
-            if (player.reserveAmmo < 0) player.reserveAmmo = 0;
-        } else if (player.ammoMode === 'recharge') {
-            // Recharge Mode: Infinite reserve
-            player.reserveAmmo = Infinity;
-        } else {
-            // Finite Mode: No reserve
-            player.reserveAmmo = 0;
+        // NEW: Load Special Secret Rooms (Trophy, Home, Matrix)
+        if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.trophyRoom.room, 'secret'));
         }
-    }
+        if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.homeRoom.room, 'secret'));
+        }
+        if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active) {
+            roomProtos.push(loadRoomFile(Globals.gameData.matrixRoom.room, 'secret'));
+        }
 
+        // B. Boss Rooms
+        let bosses = Globals.gameData.bossrooms || [];
+        // Support singular 'bossRoom' fallback
+        if (Globals.gameData.bossRoom && Globals.gameData.bossRoom.trim() !== "") {
+            bosses.push(Globals.gameData.bossRoom);
+        }
+        bosses = bosses.filter(p => p && p.trim() !== "");
+        bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
+        log(bosses)
+        // C. Shop Room
+        if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.room) {
+            roomProtos.push(loadRoomFile(Globals.gameData.shop.room, 'shop'));
+        }
 
+        // D. Upgrade Room
+        if (Globals.isUpgradeUnlocked && Globals.gameData.upgradeRoom && typeof Globals.gameData.upgradeRoom === 'object' && Globals.gameData.upgradeRoom.room) {
 
-    // 4. Load Room Templates (Dynamic from Level Data)
-    Globals.roomTemplates = {};
-    const roomProtos = [];
+            roomProtos.push(loadRoomFile(Globals.gameData.upgradeRoom.room, 'upgrade'));
+        }
 
-    // Helper to load a room file
-    const loadRoomFile = (path, type) => {
-        if (!path || path.trim() === "") return Promise.resolve();
-        // Handle relative paths from JSON (e.g. "rooms/start.json")
-        // Ensure we don't double stack "json/" if valid path provided
-        const url = path.startsWith('http') || path.startsWith('/') || path.startsWith('json/') ? path : `json/${path}`;
-        return fetch(url + '?t=' + Date.now())
-            .then(res => {
-                if (!res.ok) throw new Error("404");
-                return res.json();
-            })
-            .then(data => {
-                log(data)
+        // WAIT FOR ALL TEMPLATES TO LOAD BEFORE GENERATING LEVEL
+        log("WAITING FOR ROOM PROTOS:", roomProtos.length);
+        await Promise.all(roomProtos);
+        log("ROOM TEMPLATES LOADED:", Object.keys(Globals.roomTemplates));
 
-                // ID Generation: Handle "room.json" collision
-                const parts = path.split('/');
-                let id = parts[parts.length - 1].replace('.json', '');
-                if (id === 'room' && parts.length > 1) {
-                    id = parts[parts.length - 2]; // Use folder name (e.g. "boss4", "start")
+        Globals.areAssetsLoaded = true; // Flag for startGame
+
+        // 4. Pre-load ALL enemy templates
+        Globals.enemyTemplates = {};
+        const enemyManifest = await fetch('json/enemies/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ enemies: [] }));
+        const ePromises = enemyManifest.enemies.map(id =>
+            fetch(`json/enemies/${id}.json?t=` + Date.now())
+                .then(res => res.json())
+                .then(data => {
+                    // Use the last part of the path as the key (e.g. "special/firstboss" -> "firstboss")
+                    const key = id.split('/').pop();
+                    log(key, data)
+                    Globals.enemyTemplates[key] = data;
+                })
+        );
+        await Promise.all(ePromises);
+
+        // 5. Generate Level
+        const urlParams = new URLSearchParams(window.location.search);
+        const isDebugRoom = DEBUG_FLAGS.TEST_ROOM || urlParams.get('debugRoom') === 'true';
+        DEBUG_FLAGS.TEST_ROOM = isDebugRoom;
+
+        if (DEBUG_FLAGS.START_BOSS) {
+            Globals.bossCoord = "0,0";
+            Globals.goldenPath = ["0,0"];
+            Globals.bossIntroEndTime = Date.now() + 2000;
+            Globals.levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(Globals.roomTemplates["boss"])), cleared: false };
+        }
+        else if (isDebugRoom) {
+            // --- EDITOR TEST ROOM BYPASS ---
+            try {
+                const debugJson = localStorage.getItem('debugRoomData');
+                if (debugJson) {
+                    const debugData = JSON.parse(debugJson);
+
+                    bossCoord = "0,0";
+                    goldenPath = ["0,0"];
+                    levelMap["0,0"] = { roomData: debugData, cleared: false }; // Directly inject into map
+
+                    // Force Skip Welcome
+                    Globals.gameData.showWelcome = false;
+                } else {
+                    console.error("No debugRoomData found in localStorage");
+                    generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
                 }
-
-                data.templateId = id;
-                // Tag it
-                if (type) data._type = type;
-
-                // Store
-                // SAFETY CHECK: Don't overwrite a 'start' room with a 'normal' one (Race condition fix)
-                if (Globals.roomTemplates[id] && Globals.roomTemplates[id]._type === 'start' && type !== 'start') {
-                    // We already have a definitive Start Room for this ID. Don't downgrade it.
-                    // However, we might want to store it by path still?
-                    Globals.roomTemplates[path] = data; // Store path variant anyway
-                    log(`Skipping override of Start Room ${id} with normal variant.`);
-                    return;
-                }
-
-                Globals.roomTemplates[id] = data;
-                // Also store by full path just in case
-                Globals.roomTemplates[path] = data;
-                log(`Loaded Room: ${id} (${type || 'normal'})`);
-            })
-            .catch(err => console.error(`Failed to load room: ${path}`, err));
-    };
-
-    // A. Standard Rooms
-    let available = Globals.gameData.avalibleroons || Globals.gameData.availablerooms || [];
-    available = available.filter(p => p && p.trim() !== "");
-    // If empty, fallback to manifest?
-    // ONE CHECK: Only fallback if we DON'T have a startRoom/bossRoom config
-    // meaning we are truly in a "default game" state, not a specific level file state.
-    //is this required?
-    if (available.length === 0 && !Globals.gameData.startRoom && !Globals.gameData.bossRoom) {
-        // FALLBACK: Load from old manifest
-        try {
-            const m = await fetch(JSON_PATHS.MANIFESTS.ROOMS + '?t=' + Date.now()).then(res => res.json());
-            if (m.rooms) {
-                m.rooms.forEach(r => roomProtos.push(loadRoomFile(`rooms/${r}/room.json`, 'normal')));
-                // Also try to load start/boss legacy
-                roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.START_ROOM, 'start'));
-                roomProtos.push(loadRoomFile(JSON_PATHS.DEFAULTS.BOSS_ROOM, 'boss'));
-            }
-        } catch (e) { console.warn("No legacy manifest found"); }
-    } else {
-        available.forEach(path => roomProtos.push(loadRoomFile(path, 'normal')));
-    }
-
-    // C. Explicit Start Room
-    if (Globals.gameData.startRoom) {
-        roomProtos.push(loadRoomFile(Globals.gameData.startRoom, 'start'));
-    }
-
-    // D. Secret Rooms (FIX: Needed to be explicitly loaded)
-    if (Globals.gameData.secrectrooms) {
-        Globals.gameData.secrectrooms.forEach(path => {
-            roomProtos.push(loadRoomFile(path, 'secret'));
-        });
-    }
-    // NEW: Load Special Secret Rooms (Trophy, Home, Matrix)
-    if (Globals.gameData.trophyRoom && Globals.gameData.trophyRoom.active) {
-        roomProtos.push(loadRoomFile(Globals.gameData.trophyRoom.room, 'secret'));
-    }
-    if (Globals.gameData.homeRoom && Globals.gameData.homeRoom.active) {
-        roomProtos.push(loadRoomFile(Globals.gameData.homeRoom.room, 'secret'));
-    }
-    if (Globals.gameData.matrixRoom && Globals.gameData.matrixRoom.active) {
-        roomProtos.push(loadRoomFile(Globals.gameData.matrixRoom.room, 'secret'));
-    }
-
-    // B. Boss Rooms
-    let bosses = Globals.gameData.bossrooms || [];
-    // Support singular 'bossRoom' fallback
-    if (Globals.gameData.bossRoom && Globals.gameData.bossRoom.trim() !== "") {
-        bosses.push(Globals.gameData.bossRoom);
-    }
-    bosses = bosses.filter(p => p && p.trim() !== "");
-    bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
-    log(bosses)
-    // C. Shop Room
-    if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.room) {
-        roomProtos.push(loadRoomFile(Globals.gameData.shop.room, 'shop'));
-    }
-
-    // D. Upgrade Room
-    if (Globals.isUpgradeUnlocked && Globals.gameData.upgradeRoom && typeof Globals.gameData.upgradeRoom === 'object' && Globals.gameData.upgradeRoom.room) {
-
-        roomProtos.push(loadRoomFile(Globals.gameData.upgradeRoom.room, 'upgrade'));
-    }
-
-    // WAIT FOR ALL TEMPLATES TO LOAD BEFORE GENERATING LEVEL
-    log("WAITING FOR ROOM PROTOS:", roomProtos.length);
-    await Promise.all(roomProtos);
-    log("ROOM TEMPLATES LOADED:", Object.keys(Globals.roomTemplates));
-
-    Globals.areAssetsLoaded = true; // Flag for startGame
-
-    // 4. Pre-load ALL enemy templates
-    Globals.enemyTemplates = {};
-    const enemyManifest = await fetch('json/enemies/manifest.json?t=' + Date.now()).then(res => res.json()).catch(() => ({ enemies: [] }));
-    const ePromises = enemyManifest.enemies.map(id =>
-        fetch(`json/enemies/${id}.json?t=` + Date.now())
-            .then(res => res.json())
-            .then(data => {
-                // Use the last part of the path as the key (e.g. "special/firstboss" -> "firstboss")
-                const key = id.split('/').pop();
-                log(key, data)
-                Globals.enemyTemplates[key] = data;
-            })
-    );
-    await Promise.all(ePromises);
-
-    // 5. Generate Level
-    const urlParams = new URLSearchParams(window.location.search);
-    const isDebugRoom = DEBUG_FLAGS.TEST_ROOM || urlParams.get('debugRoom') === 'true';
-    DEBUG_FLAGS.TEST_ROOM = isDebugRoom;
-
-    if (DEBUG_FLAGS.START_BOSS) {
-        Globals.bossCoord = "0,0";
-        Globals.goldenPath = ["0,0"];
-        Globals.bossIntroEndTime = Date.now() + 2000;
-        Globals.levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(Globals.roomTemplates["boss"])), cleared: false };
-    }
-    else if (isDebugRoom) {
-        // --- EDITOR TEST ROOM BYPASS ---
-        try {
-            const debugJson = localStorage.getItem('debugRoomData');
-            if (debugJson) {
-                const debugData = JSON.parse(debugJson);
-
-                bossCoord = "0,0";
-                goldenPath = ["0,0"];
-                levelMap["0,0"] = { roomData: debugData, cleared: false }; // Directly inject into map
-
-                // Force Skip Welcome
-                Globals.gameData.showWelcome = false;
-            } else {
-                console.error("No debugRoomData found in localStorage");
+            } catch (e) {
+                console.error("Failed to load test room", e);
                 generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
             }
-        } catch (e) {
-            console.error("Failed to load test room", e);
+        }
+        else if (nextLevel && (Globals.gameData.tiles || Globals.gameData.enemies)) {
+            log("Single Room Mode Detected via nextLevel");
+            Globals.bossCoord = "0,0";
+            Globals.goldenPath = ["0,0"];
+            // Use gData as the room source since nextLevel was merged into it
+            Globals.levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(Globals.gameData)), cleared: false };
+        }
+        else {
             generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
         }
+
+        const startEntry = Globals.levelMap["0,0"];
+        Globals.roomData = startEntry.roomData;
+        //only show intro if it is first time in the room
+        if (!Globals.visitedRooms["0,0"]) {
+            Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
+        }
+        Globals.visitedRooms["0,0"] = startEntry;
+
+        // If we loaded a specific room/level (via nextLevel or debug), we need to ensure enemies are spawned
+        // generateLevel usually handles this for procedural levels, but here we might be bypassing it.
+        // We need to re-trigger spawnEnemies for the current room if it wasn't done.
+        // CHECK: generateLevel populates the map. If we injected "0,0" manually (debug), we need to spawn.
+        if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
+            log("Debug/Direct Load: Spawning Enemies for 0,0");
+            spawnEnemies(Globals.roomData);
+            spawnChests(Globals.roomData);
+            spawnSwitches(Globals.roomData);
+        }
+
+        Globals.canvas.width = Globals.roomData.width || 800;
+        Globals.canvas.height = Globals.roomData.height || 600;
+
+        // if (gameState === STATES.PLAY) { spawnEnemies(); ... } 
+        // Logic removed: startGame() handles spawning now.
+        Globals.isGameStarting = false;
+
+        if (!Globals.gameLoopStarted) {
+            Globals.gameLoopStarted = true;
+            draw();
+        }
+
+        // Start Run Timer
+        // on restart if its a new game (NOT level transition)
+        if (isRestart && !nextLevel) {
+            Globals.runStartTime = Date.now();
+            Globals.runElapsedTime = 0;
+        }
+
+        // Level Split Tracking
+        Globals.levelStartTime = Date.now();
+
+        // AUTO START IF CONFIGURED (After everything is ready)
+    } finally {
+        Globals.isInitializing = false;
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.style.display = 'none';
+        // Moved here to ensure isInitializing is false before starting
+        const params = new URLSearchParams(window.location.search);
+        const shouldAutoStart = Globals.gameData.showWelcome === false || isRestart || params.get('autostart') === 'true';
+
+        log("TRACER: initGame End. shouldAutoStart=", shouldAutoStart);
+
+        if (shouldAutoStart) {
+            // Pass savedPlayerStats existence as keepState flag
+            startGame((savedPlayerStats && Object.keys(savedPlayerStats).length > 0) ? true : false);
+        } else {
+            // Manual Start (Show Welcome)
+            log("Waiting for user input (Welcome Screen)...");
+            Globals.gameState = STATES.START;
+            Globals.elements.welcome.style.display = 'flex';
+            updateWelcomeScreen();
+        }
+        window.startGame = startGame;
     }
-    else if (nextLevel && (Globals.gameData.tiles || Globals.gameData.enemies)) {
-        log("Single Room Mode Detected via nextLevel");
-        Globals.bossCoord = "0,0";
-        Globals.goldenPath = ["0,0"];
-        // Use gData as the room source since nextLevel was merged into it
-        Globals.levelMap["0,0"] = { roomData: JSON.parse(JSON.stringify(Globals.gameData)), cleared: false };
-    }
-    else {
-        generateLevel(Globals.gameData.NoRooms !== undefined ? Globals.gameData.NoRooms : 11);
-    }
-
-    const startEntry = Globals.levelMap["0,0"];
-    Globals.roomData = startEntry.roomData;
-    //only show intro if it is first time in the room
-    if (!Globals.visitedRooms["0,0"]) {
-        Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
-    }
-    Globals.visitedRooms["0,0"] = startEntry;
-
-    // If we loaded a specific room/level (via nextLevel or debug), we need to ensure enemies are spawned
-    // generateLevel usually handles this for procedural levels, but here we might be bypassing it.
-    // We need to re-trigger spawnEnemies for the current room if it wasn't done.
-    // CHECK: generateLevel populates the map. If we injected "0,0" manually (debug), we need to spawn.
-    if (nextLevel || isDebugRoom || DEBUG_FLAGS.START_BOSS) {
-        log("Debug/Direct Load: Spawning Enemies for 0,0");
-        spawnEnemies(Globals.roomData);
-        spawnChests(Globals.roomData);
-        spawnSwitches(Globals.roomData);
-    }
-
-    Globals.canvas.width = Globals.roomData.width || 800;
-    Globals.canvas.height = Globals.roomData.height || 600;
-
-    // if (gameState === STATES.PLAY) { spawnEnemies(); ... } 
-    // Logic removed: startGame() handles spawning now.
-    Globals.isGameStarting = false;
-
-    if (!Globals.gameLoopStarted) {
-        Globals.gameLoopStarted = true;
-        draw();
-    }
-
-    // Start Run Timer
-    // on restart if its a new game (NOT level transition)
-    if (isRestart && !nextLevel) {
-        Globals.runStartTime = Date.now();
-        Globals.runElapsedTime = 0;
-    }
-
-    // Level Split Tracking
-    Globals.levelStartTime = Date.now();
-
-    // AUTO START IF CONFIGURED (After everything is ready)
-} finally {
-    Globals.isInitializing = false;
-    const loadingEl = document.getElementById('loading');
-    if (loadingEl) loadingEl.style.display = 'none';
-    // Moved here to ensure isInitializing is false before starting
-    const params = new URLSearchParams(window.location.search);
-    const shouldAutoStart = Globals.gameData.showWelcome === false || isRestart || params.get('autostart') === 'true';
-
-    log("TRACER: initGame End. shouldAutoStart=", shouldAutoStart);
-
-    if (shouldAutoStart) {
-        // Pass savedPlayerStats existence as keepState flag
-        startGame((savedPlayerStats && Object.keys(savedPlayerStats).length > 0) ? true : false);
-    } else {
-        // Manual Start (Show Welcome)
-        log("Waiting for user input (Welcome Screen)...");
-        Globals.gameState = STATES.START;
-        Globals.elements.welcome.style.display = 'flex';
-        updateWelcomeScreen();
-    }
-    window.startGame = startGame;
-}
 }
 export async function startGame(keepState = false) {
     // Force Audio Resume on User Interaction
