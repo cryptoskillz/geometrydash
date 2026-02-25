@@ -2539,6 +2539,34 @@ function proceedLevelComplete() {
         }
         localStorage.setItem('numberOfRuns', Globals.NumberOfRuns);
 
+        // RESTORE BASE WEAPONS ON GAME COMPLETE
+        // So a new game inherits standard defaults (e.g. from Level 2) instead of endgame loadouts
+        const baseGun = localStorage.getItem('base_gun');
+        const baseGunConfig = localStorage.getItem('base_gun_config');
+        if (baseGun) {
+            localStorage.setItem('current_gun', baseGun);
+            if (baseGunConfig) localStorage.setItem('current_gun_config', baseGunConfig);
+        } else {
+            localStorage.removeItem('current_gun');
+            localStorage.removeItem('current_gun_config');
+        }
+
+        const baseBomb = localStorage.getItem('base_bomb');
+        const baseBombConfig = localStorage.getItem('base_bomb_config');
+        if (baseBomb) {
+            localStorage.setItem('current_bomb', baseBomb);
+            if (baseBombConfig) localStorage.setItem('current_bomb_config', baseBombConfig);
+        } else {
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_bomb_config');
+        }
+
+        localStorage.removeItem('rogue_player_state');
+        Globals.player.gunType = null;
+        Globals.player.bombType = null;
+        Globals.gun = {};
+        Globals.bomb = {};
+
         showCredits();
         return;
     }
@@ -4128,10 +4156,13 @@ export async function pickupItem(item, index) {
             // FIXED: If the ground item lacked a location, but the fetched config has one, use the config's location!
             const saveLocation = config.location || location || "";
 
+            let filename = config.name; // Fallback to name if location parsing fails
             if (saveLocation.includes("/")) {
                 const parts = saveLocation.split('/');
-                const filename = parts[parts.length - 1].replace(".json", "");
-                Globals.player.gunType = filename;
+                filename = parts[parts.length - 1].replace(".json", "");
+            }
+
+            if (filename) {
                 Globals.player.gunType = filename;
                 try {
                     // 1. Is this the first gun? (Base Checkpoint)
@@ -4197,10 +4228,13 @@ export async function pickupItem(item, index) {
             // FIXED: If the ground item lacked a location, but the fetched config has one, use the config's location!
             const saveLocation = config.location || location || "";
 
+            let filename = config.name; // Fallback to name if location parsing fails
             if (saveLocation.includes("/")) {
                 const parts = saveLocation.split('/');
-                const filename = parts[parts.length - 1].replace(".json", "");
-                Globals.player.bombType = filename;
+                filename = parts[parts.length - 1].replace(".json", "");
+            }
+
+            if (filename) {
                 Globals.player.bombType = filename;
                 try {
                     // 1. Is this the first bomb? (Base Checkpoint)

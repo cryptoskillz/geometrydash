@@ -819,9 +819,9 @@ export function showCredits() {
         STORAGE_KEYS.SESSION_WIPE.forEach(key => localStorage.removeItem(key));
 
         // Ensure the player doesn't restart with weapons from the completed run
+        // BUT keep base_gun and base_bomb so the new run has the right fallback defaults
         const runWipeKeys = [
-            'current_gun', 'current_bomb', 'current_gun_config', 'current_bomb_config',
-            'base_gun', 'base_bomb', 'base_gun_config', 'base_bomb_config'
+            'current_gun', 'current_bomb', 'current_gun_config', 'current_bomb_config'
         ];
         runWipeKeys.forEach(k => localStorage.removeItem(k));
 

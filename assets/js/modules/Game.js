@@ -94,7 +94,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
     // Debug panel setup moved after config load
 
-    // MOVED: Music start logic is now handled AFTER game.json is loaded to respect "music": false setting.
 
     // Initialize Music Source
     if (introMusic && Globals.gameData.introMusic) {
@@ -695,7 +694,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             Globals.player = JSON.parse(JSON.stringify(Globals.availablePlayers[0]));
         } else {
             console.error("No players found!");
-            Globals.player = { hp: 3, speed: 4, inventory: { keys: 0 }, gunType: 'geometry', bombType: 'normal' }; // Fallback
+            Globals.player = { hp: 3, speed: 4, inventory: { keys: 0 }, gunType: null, bombType: null }; // Fallback
         }
 
         // Restore Stats if kept
@@ -722,9 +721,9 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             if (!Globals.player.gunType && Globals.gameData.gunType) Globals.player.gunType = Globals.gameData.gunType;
             if (!Globals.player.bombType && Globals.gameData.bombType) Globals.player.bombType = Globals.gameData.bombType;
 
-            // Fallback Defaults if still empty
-            if (!Globals.player.bombType) Globals.player.bombType = 'normal';
-            if (!Globals.player.gunType) Globals.player.gunType = 'peashooter';
+            // Explicitly ensure new players start with NO WEAPONS unless gameData overrides them or they have base checkpoints
+            if (!Globals.player.bombType) Globals.player.bombType = null;
+            if (!Globals.player.gunType) Globals.player.gunType = null;
 
             log("Player Initialized. Bomb:", Globals.player.bombType, "Gun:", Globals.player.gunType);
         }
@@ -1366,7 +1365,10 @@ export async function startGame(keepState = false) {
                             .then(res => res.json())
                             .then(async (data) => {
                                 if (data.location) {
-                                    const realRes = await fetch(`json/${data.location}?t=` + Date.now());
+                                    let loc = data.location;
+                                    if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                                    const url = loc.startsWith(JSON_PATHS.ROOT) ? loc : `${JSON_PATHS.ROOT}${loc.replace(/^json\//, '')}`;
+                                    const realRes = await fetch(`${url}?t=` + Date.now());
                                     if (realRes.ok) return await realRes.json();
                                 }
                                 return data;
@@ -1383,7 +1385,10 @@ export async function startGame(keepState = false) {
                             .then(res => res.json())
                             .then(async (data) => {
                                 if (data.location) {
-                                    const realRes = await fetch(`json/${data.location}?t=` + Date.now());
+                                    let loc = data.location;
+                                    if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                                    const url = loc.startsWith(JSON_PATHS.ROOT) ? loc : `${JSON_PATHS.ROOT}${loc.replace(/^json\//, '')}`;
+                                    const realRes = await fetch(`${url}?t=` + Date.now());
                                     if (realRes.ok) return await realRes.json();
                                 }
                                 return data;
@@ -3291,6 +3296,9 @@ export async function restartGame(keepItems = false, targetLevel = null) {
 Globals.restartGame = restartGame;
 
 export async function newRun(targetLevel = null, keepWeapons = false) {
+    if (!keepWeapons) {
+        resetWeaponState();
+    }
 
     log("Starting New Run (Fresh Seed)");
     // Generate new seed manually here before calling init (as init handles restart specially)
@@ -3320,6 +3328,15 @@ Globals.newRun = newRun;
 export function goToWelcome() {
     saveGameStats();
     localStorage.removeItem('rogue_current_level');
+    // Restore weapons from the base checkpoint (e.g. Level 2 earned unlocks)
+    resetWeaponState();
+
+    // Explicitly wipe runtime weapon objects so initGame(false) enforces defaults
+    Globals.player.gunType = null;
+    Globals.player.bombType = null;
+    Globals.gun = {};
+    Globals.bomb = {};
+
     initGame(false);
 }
 Globals.goToWelcome = goToWelcome;

@@ -4,7 +4,7 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- When you complete the game an go to the welcome screen and the start a new game by pressing a key you do not have the default gun and bomb.  If you restart you get them so the are still in local storage.
+- end game music plays when you have sound toggle off
 - unlocks already dropped / unlocked are being dropped again
 - speedy timer, ghost health unlocks etc not showing instantly. Some do like timer, stats and minimap
 - when you go into any boos room you get 5 keys and 10 bombs on boss 3 you also get golden bombs
