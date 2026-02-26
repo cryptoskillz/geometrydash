@@ -4,7 +4,6 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- you lose the normal bomb on level 3 onwards. I spawned 3 bombs and pressing B did nothing. This happens on a restart as well.
 - You can move bombs into other bombs that are solid.
 - red bomb drops with a large B
 - Bomb goes blue when you leave a room and re-enter.
@@ -12,9 +11,6 @@ DONT DO ANY OF THESE TASKS AI
 - Bomb drop icon has a big 'B'.
 - Chained explosions should blow in sequence, not all at the same time.
 - Golden bomb doesn't stay on the next level if you pick it up (stays if equipped at the start).
-- `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
-- Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
-3
 
 # Upgrades
 - start with shield
@@ -47,6 +43,7 @@ DONT DO ANY OF THESE TASKS AI
 - Add bullet time.
 - Drops should calculate room hardness and player modifiers to increase drop pool chances.
 - **Modifiers**:
+- `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
   - You pick up `360 gun` and drop `360` (name mismatch).
   - Global gun/bomb modifiers as unlockables.
   - Lose gun modifiers on complete level, but they return on player restart if you pick the gun back up.
@@ -59,6 +56,7 @@ DONT DO ANY OF THESE TASKS AI
 - Show blur effect if player speed goes over 2x starting speed.
 
 # UI, Polish, & Sound
+- Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
 - Add "Speech" attribute to enemies (used for entering, bosses, death). Show text below enemies rather than at the top of the screen.
 - Narration:
   - Level 0: "You can hear me? go through the portal"

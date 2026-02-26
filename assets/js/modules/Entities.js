@@ -2515,9 +2515,12 @@ function proceedLevelComplete() {
             localStorage.setItem('current_gun', Globals.player.gunType || 'peashooter');
             localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
         }
-        if (Globals.bomb) {
-            localStorage.setItem('current_bomb', Globals.player.bombType || 'normal');
+        if (Globals.player.bombType && Object.keys(Globals.bomb || {}).length > 0) {
+            localStorage.setItem('current_bomb', Globals.player.bombType);
             localStorage.setItem('current_bomb_config', JSON.stringify(Globals.bomb));
+        } else {
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_bomb_config');
         }
         localStorage.setItem('rogue_transition', 'true');
         localStorage.setItem('rogue_current_level', nextLevel);
@@ -2579,9 +2582,12 @@ function proceedLevelComplete() {
             localStorage.setItem('current_gun', Globals.player.gunType || 'peashooter');
             localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
         }
-        if (Globals.bomb) {
-            localStorage.setItem('current_bomb', Globals.player.bombType || 'normal');
+        if (Globals.player.bombType && Object.keys(Globals.bomb || {}).length > 0) {
+            localStorage.setItem('current_bomb', Globals.player.bombType);
             localStorage.setItem('current_bomb_config', JSON.stringify(Globals.bomb));
+        } else {
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_bomb_config');
         }
         localStorage.setItem('rogue_transition', 'true');
         localStorage.setItem('rogue_current_level', nextLevel);
@@ -4237,19 +4243,16 @@ export async function pickupItem(item, index) {
             if (filename) {
                 Globals.player.bombType = filename;
                 try {
-                    // 1. Is this the first bomb? (Base Checkpoint)
-                    if (!localStorage.getItem('base_bomb')) {
-                        localStorage.setItem('base_bomb', filename);
-                        localStorage.setItem('base_bomb_config', JSON.stringify(config));
-                        log(`Checkpoint Set: Base Bomb = ${filename}`);
-                    }
-
-                    // 2. Always update Current
+                    // Update Current cache only, do NOT override base_bomb checkpoint mid-run
                     localStorage.setItem('current_bomb', filename);
                     localStorage.setItem('current_bomb_config', JSON.stringify(config));
                 } catch (e) { }
             }
-            log(`Equipped Bomb: ${config.name}`);
+            // Grant +3 bombs immediately upon getting a new bomb type so player has ammo to test it
+            Globals.player.inventory = Globals.player.inventory || {};
+            Globals.player.inventory.bombs = (Globals.player.inventory.bombs || 0) + 3;
+
+            log(`Equipped Bomb: ${config.name} (+3 bombs given)`);
             spawnFloatingText(Globals.player.x, Globals.player.y - 30, config.name.toUpperCase(), config.colour || "white");
         }
         else if (type === 'modifier' || data.modify) {
@@ -4296,6 +4299,11 @@ export async function pickupItem(item, index) {
                         // Map 'bombs' shorthand to 'inventory.bombs'
                         let targetKey = baseTarget + key;
                         if (targetKey === 'bombs') targetKey = 'inventory.bombs';
+
+                        if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
+                            Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
+                            log("Assigned 'normal' bombType because player picked up bomb ammo while unarmed.");
+                        }
 
                         let isRelative = false;
                         if (typeof val === 'string' && (val.startsWith('+') || val.startsWith('-'))) {
