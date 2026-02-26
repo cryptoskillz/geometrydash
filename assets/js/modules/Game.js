@@ -1932,7 +1932,8 @@ export function changeRoom(dx, dy) {
         }
 
         // --- GOLDEN PATH BONUS ---
-        if (Globals.roomData.isBoss && !Globals.goldenPathFailed && !nextEntry.goldenBonusAwarded) {
+        // Verify player actually completed the golden path, not just entered a boss room without failing
+        if (Globals.roomData.isBoss && !Globals.goldenPathFailed && !nextEntry.goldenBonusAwarded && Globals.goldenPathIndex >= Globals.goldenPath.length - 1) {
             nextEntry.goldenBonusAwarded = true;
             log("GOLDEN PATH BONUS AWARDED!");
 
@@ -1944,17 +1945,15 @@ export function changeRoom(dx, dy) {
             Globals.elements.perfect.style.animation = null;
 
             // Reward
-            Globals.player.inventory.bombs += 10;
-            Globals.player.inventory.keys += 3;
-            Globals.player.hp = Math.min(Globals.player.hp + 2, 10); // Heal
+            Globals.player.inventory.bombs += Globals.gameData.rewards.goldenpath.bombs;
+            Globals.player.inventory.keys += Globals.gameData.rewards.goldenpath.keys;
+            Globals.player.hp = Math.min(Globals.player.hp + Globals.gameData.rewards.goldenpath.health, 10); // Heal
 
             setTimeout(() => {
                 Globals.elements.perfect.style.display = 'none';
                 Globals.elements.perfect.style.color = '#e74c3c'; // Reset
             }, 4000);
         }
-
-
 
         if (!nextEntry.cleared) {
             spawnEnemies();
