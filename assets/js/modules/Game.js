@@ -422,7 +422,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             const currentFile = introMusic.src ? introMusic.src.split('/').pop().split('?')[0] : "";
             const targetFile = musicSrc.split('/').pop().split('?')[0];
 
-            console.log("MUSIC DEBUG:", { currentSrc: introMusic.src, targetSrc: musicSrc, currentFile, targetFile });
 
             if (currentFile !== targetFile) {
                 log("Switching Music Track:", currentFile, "->", targetFile);
@@ -838,7 +837,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         if (!fetchedGun) {
-            console.error("CRITICAL: Could not load ANY gun. Player will be unarmed.");
             Globals.gun = { Bullet: { NoBullets: true } };
         } else {
             Globals.gun = fetchedGun;
@@ -1975,9 +1973,9 @@ export function update() {
     if (Globals.isInitializing || Globals.isUnlocking) return;
 
     // DEBUG INPUT
-    if (Math.random() < 0.01) {
-        log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
-    }
+    // if (Math.random() < 0.01) {
+    //  log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
+    // }
 
     // 0. Global Inputs (Restart/Menu from non-play states)
     if (handleGlobalInputs({ restartGame, goToWelcome, newRun })) return;

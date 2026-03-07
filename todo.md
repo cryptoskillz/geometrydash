@@ -4,15 +4,8 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-
-- Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
-- remote bomb Chained explosions should blow in sequence, not all at the same time.
-  "remoteDenoate": {
-        "active": true,
-        "detonateAll": false,
-        "key": "space"
-    },
-    a
+- small golden bombs drop when you pick up bombs but have no normal bomb equipped, could be normal but they are yellow. this is on level 4 the start level 4 they go back to white but i didn not pick a bomb up so no matter how many bombs i pick up unless i have picked up a a bomb type it should not drop.
+- if you don't have a gun ammo should be hidden from the UI
 
 
 # Upgrades
@@ -115,7 +108,14 @@ DONT DO ANY OF THESE TASKS AI
 - Item concepts: `speed+`, `luck+`, `randomstat+`, kick bombs, `fps item` (special item is `game.json`).
 - **Guns**: Critical gun, freeze gun, angry gun, cosine gun, shard gun (got by pushing 50 items into the portal).
 - **Turrets/Gunners**: Separate enemy type. Fire delay (so multiple turrets stagger fire). Line of sight matching. Ranges. Shoot through enemies. Default load patterns (tl, c, tr, bl, br, tc, bc).
-- **Bombs**: Size, explode time/radius/damage/duration. Explode on impact/enemy/player/wall/floor/ceiling/nothing/everything. Range, damage, solid toggles. Remote detonate. Can shoot/kick. Max drop count.
+- **Bombs**:  
+- Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
+- remote bomb Chained explosions should blow in sequence, not all at the same time.
+  "remoteDenoate": {
+        "active": true,
+        "detonateAll": false,
+        "key": "space"
+    },
 
 # Player / Stats
 - Add an idle state.

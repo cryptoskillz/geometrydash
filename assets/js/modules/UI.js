@@ -193,28 +193,37 @@ export async function updateUI() {
     }
 
     // Gun & Ammo
-    const gunName = Globals.player.gunType || "Peashooter";
-    if (Globals.elements.gun) Globals.elements.gun.innerText = gunName.toUpperCase();
 
     let ammoText = "INF";
+    //check if user has a gun
+    if (Globals.player.gunType) {
+        if (Globals.elements.gun) Globals.elements.gun.innerText = Globals.player.gunType.toUpperCase();
+        // Check Player State (Dynamic) vs Gun Config (Static)
+        // Finite / Recharge / Reload modes are stored on player
+        const mode = Globals.player.ammoMode;
 
-    // Check Player State (Dynamic) vs Gun Config (Static)
-    // Finite / Recharge / Reload modes are stored on player
-    const mode = Globals.player.ammoMode;
+        if (Globals.player.reloading) {
+            ammoText = "RELOADING...";
+        } else if (!mode || mode === 'infinite') {
+            ammoText = "INF";
+        } else if (mode === 'recharge' || mode === 'finite') {
+            // Show Current / Max Clip
+            ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.maxMag}`;
+        } else if (mode === 'reload') {
+            // Show Current / Reserve
+            ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.reserveAmmo}`;
+        }
 
-    if (Globals.player.reloading) {
-        ammoText = "RELOADING...";
-    } else if (!mode || mode === 'infinite') {
-        ammoText = "INF";
-    } else if (mode === 'recharge' || mode === 'finite') {
-        // Show Current / Max Clip
-        ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.maxMag}`;
-    } else if (mode === 'reload') {
-        // Show Current / Reserve
-        ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.reserveAmmo}`;
+
+    }
+    else {
+        if (Globals.elements.gun) Globals.elements.gun.innerText = '-';
+        ammoText = "-";
     }
 
     if (Globals.elements.ammo) Globals.elements.ammo.innerText = ammoText;
+
+
 
     // Shards
     const redShards = Globals.player.inventory.redShards || 0;
