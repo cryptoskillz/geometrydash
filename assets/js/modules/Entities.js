@@ -4288,7 +4288,7 @@ export async function pickupItem(item, index) {
                         // Map 'bombs' shorthand to 'inventory.bombs'
                         let targetKey = baseTarget + key;
                         if (targetKey === 'bombs') targetKey = 'inventory.bombs';
-
+                        log("bomb type", Globals.player.bombType)
                         if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
                             //Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
                             log("Player picked up bomb but no bomb type assigned");
@@ -4864,7 +4864,6 @@ export function drawPlayer() {
     if (Globals.portal?.transitioning || Globals.portal?.warningActive) return;
     const now = Date.now();
     // 4. --- PLAYER ---
-
     // Gun Rendering (Barrels)
     if (Globals.gun && Globals.gun.Bullet && !Globals.gun.Bullet.NoBullets) {
         // Helper to draw a single barrel at a given angle

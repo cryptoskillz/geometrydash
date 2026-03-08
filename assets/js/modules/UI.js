@@ -169,72 +169,75 @@ export function updateWelcomeScreen() {
 
 export async function updateUI() {
     if (!Globals.elements.ui) return;
+    if (Globals.gameData.showStatsPanel == true) {
+        // HP
+        if (Globals.statsPanel && Globals.statsPanel.style.display === 'none') Globals.statsPanel.style.display = 'block';
+        if (Globals.elements.hp) Globals.elements.hp.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
 
-    // HP
-    if (Globals.elements.hp) Globals.elements.hp.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
+        // Room Name (Ensure it persists)
+        if (Globals.elements.roomName && Globals.roomData) Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
 
-    // Room Name (Ensure it persists)
-    if (Globals.elements.roomName && Globals.roomData) Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
-
-    // Keys
-    if (Globals.elements.keys) {
-        const keyCount = Globals.player.inventory.keys || 0;
-        const maxKeys = Globals.player.inventory.maxKeys || 5;
-        Globals.elements.keys.innerText = `${keyCount}/${maxKeys}`;
-    }
-
-    // Bombs
-    if (Globals.elements.bombs) {
-        const bombCount = Globals.player.inventory.bombs || 0;
-        const maxBombs = Globals.player.inventory.maxBombs || 10;
-        const bombColor = (Globals.player.bombType || 'normal') === 'normal' ? '#fff' : '#e74c3c'; // Red for special?
-        Globals.elements.bombs.style.color = ""; // Reset parent color
-        Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}/${maxBombs}</span>`;
-    }
-
-    // Gun & Ammo
-
-    let ammoText = "INF";
-    //check if user has a gun
-    if (Globals.player.gunType) {
-        if (Globals.elements.gun) Globals.elements.gun.innerText = Globals.player.gunType.toUpperCase();
-        // Check Player State (Dynamic) vs Gun Config (Static)
-        // Finite / Recharge / Reload modes are stored on player
-        const mode = Globals.player.ammoMode;
-
-        if (Globals.player.reloading) {
-            ammoText = "RELOADING...";
-        } else if (!mode || mode === 'infinite') {
-            ammoText = "INF";
-        } else if (mode === 'recharge' || mode === 'finite') {
-            // Show Current / Max Clip
-            ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.maxMag}`;
-        } else if (mode === 'reload') {
-            // Show Current / Reserve
-            ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.reserveAmmo}`;
+        // Keys
+        if (Globals.elements.keys) {
+            const keyCount = Globals.player.inventory.keys || 0;
+            const maxKeys = Globals.player.inventory.maxKeys || 5;
+            Globals.elements.keys.innerText = `${keyCount}/${maxKeys}`;
         }
 
+        // Bombs
+        if (Globals.elements.bombs) {
+            const bombCount = Globals.player.inventory.bombs || 0;
+            const maxBombs = Globals.player.inventory.maxBombs || 10;
+            const bombColor = (Globals.player.bombType || 'normal') === 'normal' ? '#fff' : '#e74c3c'; // Red for special?
+            Globals.elements.bombs.style.color = ""; // Reset parent color
+            Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}/${maxBombs}</span>`;
+        }
 
+        // Gun & Ammo
+
+        let ammoText = "INF";
+        //check if user has a gun
+        if (Globals.gun.name) {
+            if (Globals.elements.gun) Globals.elements.gun.innerText = Globals.gun.name;
+            // Check Player State (Dynamic) vs Gun Config (Static)
+            // Finite / Recharge / Reload modes are stored on player
+            const mode = Globals.player.ammoMode;
+
+            if (Globals.player.reloading) {
+                ammoText = "RELOADING...";
+            } else if (!mode || mode === 'infinite') {
+                ammoText = "INF";
+            } else if (mode === 'recharge' || mode === 'finite') {
+                // Show Current / Max Clip
+                ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.maxMag}`;
+            } else if (mode === 'reload') {
+                // Show Current / Reserve
+                ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.reserveAmmo}`;
+            }
+
+
+        }
+        else {
+            if (Globals.elements.gun) Globals.elements.gun.innerText = '-';
+            ammoText = "-";
+        }
+
+        if (Globals.elements.ammo) Globals.elements.ammo.innerText = ammoText;
+
+
+
+        // Shards
+        const redShards = Globals.player.inventory.redShards || 0;
+        const maxRed = Globals.player.inventory.maxRedShards || 500;
+        const greenShards = Globals.player.inventory.greenShards || 0;
+        const maxGreen = Globals.player.inventory.maxGreenShards || 100;
+        const redEl = document.getElementById('red-shards');
+        const greenEl = document.getElementById('green-shards');
+
+        if (redEl) redEl.innerHTML = `<span style="color: #e74c3c">♦</span> ${redShards} / ${maxRed}`;
+        if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen} `;
     }
-    else {
-        if (Globals.elements.gun) Globals.elements.gun.innerText = '-';
-        ammoText = "-";
-    }
 
-    if (Globals.elements.ammo) Globals.elements.ammo.innerText = ammoText;
-
-
-
-    // Shards
-    const redShards = Globals.player.inventory.redShards || 0;
-    const maxRed = Globals.player.inventory.maxRedShards || 500;
-    const greenShards = Globals.player.inventory.greenShards || 0;
-    const maxGreen = Globals.player.inventory.maxGreenShards || 100;
-    const redEl = document.getElementById('red-shards');
-    const greenEl = document.getElementById('green-shards');
-
-    if (redEl) redEl.innerHTML = `<span style="color: #e74c3c">♦</span> ${redShards} / ${maxRed}`;
-    if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen} `;
 
     // Timer
     if (Globals.elements.timer) {
@@ -487,7 +490,7 @@ export function drawTutorial() {
         Globals.ctx.restore();
     }
 }
-
+/*
 export function drawStatsPanel() {
     //get the ids
     const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
@@ -503,7 +506,7 @@ export function drawStatsPanel() {
         if (Globals.statsPanel && Globals.statsPanel.style.display === 'none') Globals.statsPanel.style.display = 'block';
     }
 }
-
+*/
 export function drawMinimap() {
     if (!Globals.mctx) return; // Safety check
     //get the ids

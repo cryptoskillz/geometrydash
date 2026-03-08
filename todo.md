@@ -4,9 +4,38 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- small golden bombs drop when you pick up bombs but have no normal bomb equipped, could be normal but they are yellow. this is on level 4 the start level 4 they go back to white but i didn not pick a bomb up so no matter how many bombs i pick up unless i have picked up a a bomb type it should not drop.
-- if you don't have a gun ammo should be hidden from the UI
 
+Only upodtae ui elements if they are visible
+
+if you pick up the normal bomb type on level 2 you have it, it is equipped i can see current_bomb etc in localstorahe, but when you go through the portal it is remvoed from local storage and you no longer have it.   In entities JS we have this
+
+  if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
+                            Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
+                            log("Player picked up bomb but no bomb type assigned");
+                        }
+
+this made it work as we assigned normal bomb but this is inccorrect as it breaks pacacifists runss.  If you pick up bombs but not have a bomb type you cannot drop them
+
+  if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
+                            //Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
+                            log("Player picked up bomb but no bomb type assigned");
+                        }
+either way on level 2 tooling up it should not be resetting your bomg back to nothing when you go through the portal.
+
+- **Level Sequences**:
+  - **Level 0**: Just a portal
+  - **Level 1**: The Gebining (one room and a portal)
+  - **Level 2**: Tooling UP First Boss
+  - **Level 3**: It Begins for real (second boss)
+  - **Level 4**: Sokata, his eyes uncovered (first enemies, real start to the game) Third Boss
+  - **Level 5**: oh my god level 5 fourth boss
+
+
+  - **Level 6**: Golden path maze level (World 7-4). Room name followed by "deja vu".
+  - **Level 7**: Ghost chase.
+  - **Level 8**: Crazy rooms.
+  - **Level 9**: Boss rush.
+  - **Level 10**: Unlocks permanence (enabling permanence mode lets you use sweet modifiers, but the whole game becomes harder).
 
 # Upgrades
 - start with shield
@@ -14,12 +43,7 @@ DONT DO ANY OF THESE TASKS AI
 
 # Rooms & Levels
 - All rooms should have a number of switches that have to be stood on for x seconds to open the door, so we can do a pacafist run.
-- **Level Sequences**:
-  - **Level 6**: Golden path maze level (World 7-4). Room name followed by "deja vu".
-  - **Level 7**: Ghost chase.
-  - **Level 8**: Crazy rooms.
-  - **Level 9**: Boss rush.
-  - **Level 10**: Unlocks permanence (enabling permanence mode lets you use sweet modifiers, but the whole game becomes harder).
+
 - **Shop Room**: Can spawn a locked door as the only way to the boss (there should always be a keyless way, otherwise spawn a key in the start room as a hint).
 - **Special Rooms**:
   - Max special rooms per level attribute.
@@ -61,8 +85,6 @@ DONT DO ANY OF THESE TASKS AI
   - Level 3: "find the secrets"
 - Achievements: Enemies killed, feed the portal.
 - Game Over Screen: Add what killed you.
-- Completion Screen: Count dead enemies, scroll dead enemy types. Show an increasing number of killed enemy types on the Welcome screen.
-- Screen overlays for portals: Live portals purple, used ones green (when spawned via debug).
 - Add Epic rarity items.
 - Menus & Settings: Add Inventory screen (shows unlocked items), Stats, Player modifiers, unlocks.
 - Minimap:
@@ -126,7 +148,6 @@ DONT DO ANY OF THESE TASKS AI
 - If you press 0 or 9, it should update the debug buttons to on/off.
 - Update debug editor so it updates in real-time when the game runs.
 - Clicking off the debug window should focus back on the game.
-- Add God mode to the debug window.
 - Add visual editors: Enemy editor, player editor, item editor, object editor.
 - Look into JSON compressors.
 
