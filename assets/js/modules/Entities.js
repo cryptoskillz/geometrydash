@@ -359,17 +359,6 @@ export function spawnEnemies() {
             log(`Restored Enemy: ${inst.type}, HP: ${inst.hp}`);
         });
 
-        // Handle Ghost if Haunted (still spawn it separately if consistent with design?)
-        // The original code handled Haunted via map property. 
-        // We should probably fall through to allow ghost spawn if desired, BUT
-        // the original code returns early if room is cleared. 
-        // Here we have enemies, so we should allow Ghost check below?
-        // Let's stick to restoring only explicitly saved ones for now. 
-        // If the room was haunted, the ghost might be handled separately or saved?
-        // Original logic: "If room is haunted... return". 
-        // Let's keep the Ghost Check that is BELOW this block in my insertion point?
-        // Wait, I am inserting this at the top.
-        // Let's actually ensure we do the Haunted check separately as it was.
     }
 
     // START STANDARD SPAWN (Skip if we restored)
@@ -651,6 +640,7 @@ export function spawnEnemies() {
 
 }
 export async function dropBomb() {
+    log("Bonb Type: ", Globals.player.bombType);
     if (!Globals.player.bombType) return false;
 
     // Parse Timer Config
@@ -2349,7 +2339,6 @@ export function updatePortal() {
     const currentCoord = `${Globals.player.roomX},${Globals.player.roomY}`;
     // Only interact if active
     // if (!Globals.roomData.isBoss) return; // Allow anywhere per user request
-    log(Globals.portal);
     const dist = Math.hypot(Globals.player.x - Globals.portal.x, Globals.player.y - Globals.portal.y);
     if (dist < 30) {
 
@@ -4301,8 +4290,8 @@ export async function pickupItem(item, index) {
                         if (targetKey === 'bombs') targetKey = 'inventory.bombs';
 
                         if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
-                            Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
-                            log("Assigned 'normal' bombType because player picked up bomb ammo while unarmed.");
+                            //Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
+                            log("Player picked up bomb but no bomb type assigned");
                         }
 
                         let isRelative = false;
@@ -5402,7 +5391,6 @@ export function updateItems() {
             if ((Globals.keys && Globals.keys['Space'])) {
                 // Only consume input if pickup succeeded
                 if (pickupItem(item, i)) {
-                    // console.log("Entities.js Consumed SPACE for item:", item);
                     if (Globals.keys) Globals.keys['Space'] = false; // Consume input
                 }
             }

@@ -945,7 +945,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     return res.json();
                 })
                 .then(data => {
-                    log(data)
 
                     // ID Generation: Handle "room.json" collision
                     const parts = path.split('/');
@@ -1028,7 +1027,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
         bosses = bosses.filter(p => p && p.trim() !== "");
         bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
-        log(bosses)
         // C. Shop Room
         if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.room) {
             roomProtos.push(loadRoomFile(Globals.gameData.shop.room, 'shop'));
@@ -1056,7 +1054,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 .then(data => {
                     // Use the last part of the path as the key (e.g. "special/firstboss" -> "firstboss")
                     const key = id.split('/').pop();
-                    log(key, data)
                     Globals.enemyTemplates[key] = data;
                 })
         );
@@ -1972,11 +1969,6 @@ export function update() {
     // 0. STOP updates if loading/initializing OR unlocking to prevent movement during transition
     if (Globals.isInitializing || Globals.isUnlocking) return;
 
-    // DEBUG INPUT
-    // if (Math.random() < 0.01) {
-    //  log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
-    // }
-
     // 0. Global Inputs (Restart/Menu from non-play states)
     if (handleGlobalInputs({ restartGame, goToWelcome, newRun })) return;
 
@@ -2765,17 +2757,9 @@ export function updateRoomTransitions(doors, roomLocked) {
                 spawnFloatingText(Globals.player.x, promptY, "Key Required!", "#ff0000", 2);
             }
         } else {
-            // Unlocked (0)
-            // Implicitly allow IF lockVal is 0. 
-            // If it's some other weird number, Block it? 
-            // console.log("Door Unlocked:", lockVal);
-            //if (lockVal === 0) {
+
             allowed = true;
 
-            /* } else {
-                console.warn("Unknown Lock Value Blocked:", lockVal);
-                allowed = false;
-            } */
         }
 
         // 5. Execution
@@ -2804,7 +2788,6 @@ export function isRoomLocked() {
     // Trophy Rooms are NEVER locked, regardless of enemies (trophies) inside
     // Add logging to verify this is called
     if (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy' || Globals.roomData.isSecret) {
-        // log("isRoomLocked: False (Trophy/Secret Override)"); // Too spammy? Maybe occasional?
         return false;
     }
 
@@ -2882,7 +2865,6 @@ export function updateRoomLock() {
         const allDead = Globals.enemies.every(en => en.isDead || en.hp <= 0);
 
         if (allDead) {
-            console.warn("Detected Dead-on-Arrival Glitch! Reviving enemies to enforce gameplay.");
             Globals.enemies.forEach(en => {
                 if (en.isDead || en.hp <= 0) {
                     en.isDead = false;

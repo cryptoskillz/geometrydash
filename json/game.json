@@ -332,7 +332,7 @@
         "player": true,
         "godMode": false,
         "windowEnabled": true,
-        "log": false,
+        "log": true,
         "showConsole": false,
         "spawn": {
             "allItems": false,
