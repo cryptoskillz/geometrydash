@@ -5,7 +5,16 @@ DONT DO ANY OF THESE TASKS AI
 
 # Bugs & Fixes
 
-Only upodtae ui elements if they are visible
+Only redraw ui elements if they are visible in update UI
+  stats panel
+  timer
+  speedy timer
+  ghost timer
+  no damge bonus
+  golden path bonus
+  sharp shooter bonus
+
+check why we are sing gun tyoe when we have a globals.gun element it seems to make things more complex for no real reason. 
 
 if you pick up the normal bomb type on level 2 you have it, it is equipped i can see current_bomb etc in localstorahe, but when you go through the portal it is remvoed from local storage and you no longer have it.   In entities JS we have this
 
