@@ -1928,13 +1928,13 @@ export function changeRoom(dx, dy) {
         if (Globals.roomData.isBoss && !Globals.goldenPathFailed && !nextEntry.goldenBonusAwarded && Globals.goldenPathIndex >= Globals.goldenPath.length - 1) {
             nextEntry.goldenBonusAwarded = true;
             log("GOLDEN PATH BONUS AWARDED!");
-
-            Globals.elements.perfect.innerText = "GOLDEN PATH BONUS!";
-            Globals.elements.perfect.style.color = "gold";
-            Globals.elements.perfect.style.display = 'block';
-            Globals.elements.perfect.style.animation = 'none';
-            Globals.elements.perfect.offsetHeight; /* trigger reflow */
-            Globals.elements.perfect.style.animation = null;
+            let perfectEl = document.getElementById('perfect');
+            perfectEl.innerText = "GOLDEN PATH BONUS!";
+            perfectEl.style.color = "gold";
+            perfectEl.style.display = 'block';
+            perfectEl.style.animation = 'none';
+            perfectEl.offsetHeight; /* trigger reflow */
+            perfectEl.style.animation = null;
 
             // Reward
             Globals.player.inventory.bombs += Globals.gameData.rewards.goldenpath.bombs;
@@ -1942,8 +1942,8 @@ export function changeRoom(dx, dy) {
             Globals.player.hp = Math.min(Globals.player.hp + Globals.gameData.rewards.goldenpath.health, 10); // Heal
 
             setTimeout(() => {
-                Globals.elements.perfect.style.display = 'none';
-                Globals.elements.perfect.style.color = '#e74c3c'; // Reset
+                perfectEl.style.display = 'none';
+                perfectEl.style.color = '#e74c3c'; // Reset
             }, 4000);
         }
 
@@ -3093,8 +3093,8 @@ export function gameOver() {
 
     Globals.elements.overlay.style.display = 'flex';
     // Fix: Count unique visited rooms instead of displacement
-    Globals.elements.stats.innerText = getGameStats(0);
-
+    //Globals.elements.stats.innerText = getGameStats(0);
+    document.getElementById('stats').innerText = getGameStats(0);
     const h1 = document.querySelector('#overlay h1');
     if (Globals.gameState === STATES.WIN) {
         h1.innerText = "VICTORY!";
@@ -3109,19 +3109,9 @@ export function gameOver() {
     const restartBtn = Globals.elements.overlay.querySelector('#restartBtn');
     const newRunBtn = Globals.elements.overlay.querySelector('#newRunBtn');
 
-    // Add Seed Display
-    let seedEl = document.getElementById('game-over-seed');
-    if (!seedEl) {
-        seedEl = document.createElement('div');
-        seedEl.id = 'game-over-seed';
-        seedEl.style.color = '#888';
-        seedEl.style.marginTop = '10px';
-        seedEl.style.fontFamily = 'monospace';
-        // Insert before buttons container (which is usually flex column at bottom?)
-        // Let's insert after stats
-        Globals.elements.stats.parentNode.insertBefore(seedEl, Globals.elements.stats.nextSibling);
-    }
-    seedEl.innerText = `Seed: ${Globals.seed || 'Unknown'}`;
+    //check if there is a seed to show
+    if (Globals.gameData.showSeed == true) document.getElementById('modalSeed').innerText = `Seed: ${Globals.seed || ''}`;
+
 
     if (Globals.gameState === STATES.WIN) {
         // Victory: Show Continue (Enter)
