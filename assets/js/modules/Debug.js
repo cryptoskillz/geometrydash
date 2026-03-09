@@ -205,7 +205,7 @@ export function renderDebugForm() {
                 }
             } catch (e) { console.error("Golden Bomb fetch error:", e); }
 
-            updateUI();
+            if (gameState === STATES.PLAY) updateUI();
             log("UI Updated called");
         });
 

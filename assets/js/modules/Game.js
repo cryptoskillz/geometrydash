@@ -112,6 +112,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     if (Globals.elements.welcome) Globals.elements.welcome.style.display = 'none';
 
     // Initial UI State
+    /*
+    replace by update UI
     if (Globals.elements.ui) {
         Globals.elements.ui.style.display = 'flex'; // Always keep flex container for layout
         const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
@@ -127,6 +129,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             mapCanvas.style.display = hasMap ? 'block' : 'none';
         }
     }
+    */
     Globals.bullets = [];
     Globals.bombs = [];
     Globals.particles = [];
@@ -1419,7 +1422,8 @@ export async function startGame(keepState = false) {
             log("TRACER: startGame Async End -> PLAY");
             Globals.gameState = STATES.PLAY;
             Globals.elements.welcome.style.display = 'none';
-
+            /*
+            replaced by upadate UI
             if (Globals.elements.ui) {
                 // Manage UI Components Independently
                 Globals.elements.overlay.style.display = 'none'; // Ensure Game Over screen is hidden
@@ -1430,6 +1434,7 @@ export async function startGame(keepState = false) {
                 // FORCE UI UPDATE for Room Namem why? NOTE: not sure this is required
                 //document.getElementById("roomName").innerText = Globals.roomData.name || "Unknown Room";
             }
+            */
             // Show Level Title
             if (Globals.gameData.description || Globals.gameData.name) {
                 showLevelTitle(Globals.gameData.description || Globals.gameData.name);

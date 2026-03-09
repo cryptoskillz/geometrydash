@@ -2814,7 +2814,7 @@ export function takeDamage(amount) {
     const iFrameDuration = Globals.player.invulHitTimer || 1000;
     Globals.player.invulnUntil = Date.now() + iFrameDuration;
 
-    updateUI();
+    if (gameState === STATES.PLAY) updateUI();
 }
 
 export function updateShield() {

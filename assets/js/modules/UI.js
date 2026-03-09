@@ -168,7 +168,10 @@ export function updateWelcomeScreen() {
 }
 
 export async function updateUI() {
-    if (!Globals.elements.ui) return;
+    //check the game has started
+    if (Globals.gameState != 1) return;
+
+
     //show stats panel
     if (Globals.gameData.showStatsPanel == true) {
         // HP
