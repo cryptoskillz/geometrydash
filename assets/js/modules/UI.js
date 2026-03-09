@@ -266,36 +266,26 @@ export async function updateUI() {
     }
 
     // --- SPEEDY TIMER ---
-    const speedyEl = document.getElementById('speedy-timer');
-    if (speedyEl) {
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        if (Globals.gameData.showSpeedyTimer || unlockedIds.includes('speedytimer')) {
-            speedyEl.style.display = 'block';
-            if (!Globals.roomData.cleared) {
-                // Logic: Limit - (Now - FreezeEnd)
-                // Default limit 5000ms if not set
-                const limit = Globals.roomData.speedGoal !== undefined ? Globals.roomData.speedGoal : 5000;
-                const start = Globals.roomFreezeUntil || 0;
-                const now = Date.now();
-
-                let remaining = limit;
-                if (now > start) {
-                    remaining = Math.max(0, limit - (now - start));
-                }
-
-                const sec = Math.floor(remaining / 1000);
-                const ms = Math.floor((remaining % 1000) / 10);
-
-                const valEl = document.getElementById('st-val');
-                if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
-
-                if (remaining <= 0) speedyEl.style.color = '#555';
-                else speedyEl.style.color = '#3498db';
-            }
-        } else {
-            speedyEl.style.display = 'none';
+    if (Globals.gameData.showSpeedyTimer == true) {
+        const speedyTimer = document.getElementById('speedy-timer');
+        //check element is visible
+        if (speedyTimer.style.display == 'none') speedyTimer.style.display = 'block';
+        const limit = Globals.roomData.speedGoal !== undefined ? Globals.roomData.speedGoal : 5000;
+        const start = Globals.roomFreezeUntil || 0;
+        const now = Date.now();
+        let remaining = limit;
+        if (now > start) {
+            remaining = Math.max(0, limit - (now - start));
         }
+        const sec = Math.floor(remaining / 1000);
+        const ms = Math.floor((remaining % 1000) / 10);
+        const valEl = document.getElementById('st-val');
+        if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+
+        if (remaining <= 0) speedyTimer.style.color = '#555';
+        else speedyTimer.style.color = '#3498db';
     }
+
 
     // --- GHOST TIMER ---
     const ghostEl = document.getElementById('ghost-timer');

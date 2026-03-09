@@ -5,6 +5,9 @@ DONT DO ANY OF THESE TASKS AI
 
 # Bugs & Fixes
 
+some levels cannot be completed as the shop renders requiring a key, might leave this to annoy the user but may fix it
+check the key required on each door 
+  left door: ey required has to be a few pixeels from the door to the right 
 Only redraw ui elements if they are visible in update UI
   speedy timer
   ghost timer
