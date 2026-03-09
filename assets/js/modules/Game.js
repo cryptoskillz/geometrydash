@@ -1163,6 +1163,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             log("Waiting for user input (Welcome Screen)...");
             Globals.gameState = STATES.START;
             Globals.elements.welcome.style.display = 'flex';
+            //document.getElementById('welcome').style.display = 'flex';
             updateWelcomeScreen();
         }
         window.startGame = startGame;

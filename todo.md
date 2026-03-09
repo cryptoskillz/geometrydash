@@ -4,12 +4,38 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
+do we require UI elements
+   // UI Elements
+    elements: {
+        hp: null,
+        keys: null,
+        room: null,
+        overlay: null,
+        welcome: null,
+        ui: null,
+        stats: null,
+        perfect: null,
+        roomName: null,
+        bombs: null,
+        ammo: null,
+        gun: null,
+        debugSelect: null,
+        debugForm: null,
+        debugPanel: null,
+        debugLog: null,
+        timer: null,
+        seed: null,
+        tMin: null, tSec: null, tMs: null,
+        bankModal: null,
+        bankInvVal: null,
+        bankVaultVal: null
+    },
+as its only really updated on updateUI so its quicker and more memory efficient just to check it there and remove the globals i think 
 
 some levels cannot be completed as the shop renders requiring a key, might leave this to annoy the user but may fix it
 check the key required on each door 
   left door: ey required has to be a few pixeels from the door to the right 
 Only redraw ui elements if they are visible in update UI
-  speedy timer
   ghost timer
   no damge bonus
   golden path bonus
