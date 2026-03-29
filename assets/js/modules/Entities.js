@@ -1851,7 +1851,17 @@ export function updateEnemies() {
                     dirY = Math.sin(en.wanderAngle);
                 } else if (distToPlayer > 0.1) {
                     // If runAway, we invert the direction to push AWAY from player
-                    const factor = isRunAway ? -1.0 : 1.0;
+                    let factor = isRunAway ? -1.0 : 1.0;
+
+                    // --- GHOST TROPHY FLEE LOGIC ---
+                    if (en.type === 'ghost_trophy' || (en.type === 'ghost' && (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy'))) {
+                        if (distToPlayer < 150) {
+                            factor = -1.5; // Flee quickly when close
+                        } else {
+                            factor = 0.5; // Drift slowly towards player when far
+                        }
+                    }
+
                     dirX = (dx / distToPlayer) * factor;
                     dirY = (dy / distToPlayer) * factor;
                 }
