@@ -155,7 +155,7 @@ export function updateWelcomeScreen() {
     // Globals.elements.welcome is cached
     if (Globals.elements.welcome) {
         Globals.elements.welcome.innerHTML = `
-        <h1 class="welcome-title">GEOMETRY DASH</h1>
+        <h1 class="welcome-title">VERTEX VOID</h1>
         ${charSelectHtml}
         <div class="welcome-instructions">${instructions}</div>
         <p style="margin-top: 30px; font-size: 1.4rem; animation: blink 1.5s infinite;">${startText}</p>
