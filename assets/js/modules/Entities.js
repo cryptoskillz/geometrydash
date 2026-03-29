@@ -1844,26 +1844,26 @@ export function updateEnemies() {
                 const distToPlayer = Math.hypot(dx, dy);
                 let dirX = 0, dirY = 0;
 
-                if (isWander) {
+                let factor = isRunAway ? -1.0 : 1.0;
+                let isFleeingTrophy = false;
+
+                // --- GHOST TROPHY FLEE LOGIC ---
+                if (en.type === 'ghost_trophy' || (en.type === 'ghost' && (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy'))) {
+                    if (distToPlayer < 150) {
+                        isFleeingTrophy = true;
+                        factor = -1.5; // Flee quickly when close
+                    }
+                }
+
+                if (isFleeingTrophy || (!isWander && distToPlayer > 0.1)) {
+                    // Seek or Flee
+                    dirX = (dx / distToPlayer) * factor;
+                    dirY = (dy / distToPlayer) * factor;
+                } else if (isWander) {
                     if (en.wanderAngle === undefined) en.wanderAngle = Math.random() * Math.PI * 2;
                     en.wanderAngle += (Math.random() - 0.5) * 0.5; // Turn slightly
                     dirX = Math.cos(en.wanderAngle);
                     dirY = Math.sin(en.wanderAngle);
-                } else if (distToPlayer > 0.1) {
-                    // If runAway, we invert the direction to push AWAY from player
-                    let factor = isRunAway ? -1.0 : 1.0;
-
-                    // --- GHOST TROPHY FLEE LOGIC ---
-                    if (en.type === 'ghost_trophy' || (en.type === 'ghost' && (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy'))) {
-                        if (distToPlayer < 150) {
-                            factor = -1.5; // Flee quickly when close
-                        } else {
-                            factor = 0.5; // Drift slowly towards player when far
-                        }
-                    }
-
-                    dirX = (dx / distToPlayer) * factor;
-                    dirY = (dy / distToPlayer) * factor;
                 }
 
                 // 2. Avoid Bombs
