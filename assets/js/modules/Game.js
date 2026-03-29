@@ -2724,37 +2724,42 @@ export function updateRoomTransitions(doors, roomLocked) {
 
         let allowed = false;
         let promptY = Globals.player.y - 60;
-        if (door.x == 400) promptY = Globals.player.y + 60; // Adjust for Top/Bottom doors
+        let promptX = Globals.player.x;
+
+        // Adjust for edges so text doesn't overlap boundary
+        if (dy === -1) promptY = Globals.player.y + 60; // Top door -> shift text below
+        if (dx === -1) promptX = Globals.player.x + 120; // Left door -> shift text right
+        if (dx === 1) promptX = Globals.player.x - 120; // Right door -> shift text left
 
         // STRICT HIERARCHY: Specific Locks override generic "Unlocked" status
         if (lockVal === 2) { // Home Key
             if (Globals.player.inventory.houseKey) {
                 // Interaction Required
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Home Room", "#fff", 2);
+                spawnFloatingText(promptX, promptY, "Press SPACE to open Home Room", "#fff", 2);
 
             } else {
-                spawnFloatingText(Globals.player.x, promptY, "Need House Key!", "#ff0000", 2);
+                spawnFloatingText(promptX, promptY, "Need House Key!", "#ff0000", 2);
             }
         } else if (lockVal === 3) { // Matrix Key
             if (Globals.player.inventory.matrixKey) {
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Matrix Room", "#fff", 2);
+                spawnFloatingText(promptX, promptY, "Press SPACE to open Matrix Room", "#fff", 2);
 
 
             } else {
-                spawnFloatingText(Globals.player.x, promptY, "Need Matrix Key!", "#ff0000", 2);
+                spawnFloatingText(promptX, promptY, "Need Matrix Key!", "#ff0000", 2);
             }
         } else if (lockVal === 1) { // Standard Key
             // Interaction Required (Unified Logic)
             if (Globals.player.inventory.keys > 0) {
                 log("Press SPACE to open door");
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE", "#fff", 2);
+                spawnFloatingText(promptX, promptY, "Press SPACE", "#fff", 2);
 
 
             } else if (door.forcedOpen || isSecretExit) {
                 // Allow passing through standard locked door if it's forced open or we are exiting secret room
                 allowed = true;
             } else {
-                spawnFloatingText(Globals.player.x, promptY, "Key Required!", "#ff0000", 2);
+                spawnFloatingText(promptX, promptY, "Key Required!", "#ff0000", 2);
             }
         } else {
 
