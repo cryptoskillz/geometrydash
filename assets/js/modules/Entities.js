@@ -2513,13 +2513,19 @@ function proceedLevelComplete() {
         if (Globals.gun) {
             localStorage.setItem('current_gun', Globals.player.gunType || 'peashooter');
             localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
+            localStorage.setItem('base_gun', Globals.player.gunType || 'peashooter');
+            localStorage.setItem('base_gun_config', JSON.stringify(Globals.gun));
         }
         if (Globals.player.bombType && Object.keys(Globals.bomb || {}).length > 0) {
             localStorage.setItem('current_bomb', Globals.player.bombType);
             localStorage.setItem('current_bomb_config', JSON.stringify(Globals.bomb));
+            localStorage.setItem('base_bomb', Globals.player.bombType);
+            localStorage.setItem('base_bomb_config', JSON.stringify(Globals.bomb));
         } else {
             localStorage.removeItem('current_bomb');
             localStorage.removeItem('current_bomb_config');
+            localStorage.removeItem('base_bomb');
+            localStorage.removeItem('base_bomb_config');
         }
         localStorage.setItem('rogue_transition', 'true');
         localStorage.setItem('rogue_current_level', nextLevel);
