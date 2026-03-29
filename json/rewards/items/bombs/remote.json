@@ -29,7 +29,7 @@
     },
     "remoteDenoate": {
         "active": true,
-        "detonateAll": true,
+        "detonateAll": false,
         "key": "space"
     },
     "explosion": {

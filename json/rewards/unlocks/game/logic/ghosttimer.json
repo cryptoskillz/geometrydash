@@ -1,7 +1,7 @@
 {
-    "name": "Speedy Timer",
-    "description": "Unlocks the Speedy Timer",
-    "unlock": "speedytimer",
+    "name": "Ghost Timer",
+    "description": "Unlocks the Ghost Timer",
+    "unlock": "ghosttimer",
     "json": "game.json",
     "attr": "showGhostTimer",
     "value": true,

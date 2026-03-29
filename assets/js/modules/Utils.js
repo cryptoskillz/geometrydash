@@ -26,17 +26,18 @@ export function log(...args) {
     }
 
     // Update DOM if visible
-    if (Globals.elements.debugLog) {
+    const debugLogEl = document.getElementById('debug-log');
+    if (debugLogEl) {
         // Optimization: Debounce or only update if visible?
         // For now, simpler port.
         const line = document.createElement('div');
         line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
         line.style.borderBottom = "1px solid #333";
-        Globals.elements.debugLog.appendChild(line);
-        Globals.elements.debugLog.scrollTop = Globals.elements.debugLog.scrollHeight;
+        debugLogEl.appendChild(line);
+        debugLogEl.scrollTop = debugLogEl.scrollHeight;
 
-        while (Globals.elements.debugLog.childElementCount > CONFIG.MAX_DEBUG_LOGS) {
-            Globals.elements.debugLog.removeChild(Globals.elements.debugLog.firstChild);
+        while (debugLogEl.childElementCount > CONFIG.MAX_DEBUG_LOGS) {
+            debugLogEl.removeChild(debugLogEl.firstChild);
         }
     }
 }

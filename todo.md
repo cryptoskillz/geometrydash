@@ -4,23 +4,42 @@ DONT DO ANY OF THESE TASKS AI
 415303 <--- home room can be bombed intow
 
 # Bugs & Fixes
-- when a boss is set to alwaysAngry true it would appear the dont start angry as they are not fast or have any of the other attrs.
-- When you complete the game an go to the welcome screen and the start a new game by pressing a key you do not have the default gun and bomb.
-- unlocks already dropped / unlocked are being dropped again
-- speedy timer, ghost health unlocks etc not showing instantly. Some do like timer, stats and minimap
-- music restarts when you go through a portal to the next level
-- when you go into any boos room you get 5 keys and 10 bombs on boss 3 you also get golden bombs
-- you lose the normal bomb on level 3 onwards. I spawned 3 bombs and pressing B did nothing. This happens on a restart as well.
-- You can move bombs into other bombs that are solid.
-- red bomb drops with a large B
-- Bomb goes blue when you leave a room and re-enter.
-- Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
-- Bomb drop icon has a big 'B'.
-- Chained explosions should blow in sequence, not all at the same time.
-- Golden bomb doesn't stay on the next level if you pick it up (stays if equipped at the start).
-- `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
-- Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
-3
+some levels cannot be completed as the shop renders requiring a key, might leave this to annoy the user but may fix it
+check the key required on each door 
+  left door: key required has to be a few pixels from the door to the right 
+ 
+
+check why we are sing gun tyoe when we have a globals.gun element it seems to make things more complex for no real reason. 
+
+if you pick up the normal bomb type on level 2 you have it, it is equipped i can see current_bomb etc in localstorage, but when you go through the portal it is remvoed from local storage and you no longer have it.   In entities JS we have this
+
+  if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
+                            Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
+                            log("Player picked up bomb but no bomb type assigned");
+                        }
+
+this made it work as we assigned normal bomb but this is inccorrect as it breaks pacacifists runss.  If you pick up bombs but not have a bomb type you cannot drop them
+
+  if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
+                            //Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
+                            log("Player picked up bomb but no bomb type assigned");
+                        }
+either way on level 2 tooling up it should not be resetting your bomg back to nothing when you go through the portal.
+
+- **Level Sequences**:
+  - **Level 0**: Just a portal
+  - **Level 1**: The Gebining (one room and a portal)
+  - **Level 2**: Tooling UP First Boss
+  - **Level 3**: It Begins for real (second boss)
+  - **Level 4**: Sokata, his eyes uncovered (first enemies, real start to the game) Third Boss
+  - **Level 5**: oh my god level 5 fourth boss
+
+
+  - **Level 6**: Golden path maze level (World 7-4). Room name followed by "deja vu".
+  - **Level 7**: Ghost chase.
+  - **Level 8**: Crazy rooms.
+  - **Level 9**: Boss rush.
+  - **Level 10**: Unlocks permanence (enabling permanence mode lets you use sweet modifiers, but the whole game becomes harder).
 
 # Upgrades
 - start with shield
@@ -28,12 +47,7 @@ DONT DO ANY OF THESE TASKS AI
 
 # Rooms & Levels
 - All rooms should have a number of switches that have to be stood on for x seconds to open the door, so we can do a pacafist run.
-- **Level Sequences**:
-  - **Level 6**: Golden path maze level (World 7-4). Room name followed by "deja vu".
-  - **Level 7**: Ghost chase.
-  - **Level 8**: Crazy rooms.
-  - **Level 9**: Boss rush.
-  - **Level 10**: Unlocks permanence (enabling permanence mode lets you use sweet modifiers, but the whole game becomes harder).
+
 - **Shop Room**: Can spawn a locked door as the only way to the boss (there should always be a keyless way, otherwise spawn a key in the start room as a hint).
 - **Special Rooms**:
   - Max special rooms per level attribute.
@@ -53,6 +67,7 @@ DONT DO ANY OF THESE TASKS AI
 - Add bullet time.
 - Drops should calculate room hardness and player modifiers to increase drop pool chances.
 - **Modifiers**:
+- `max bullet+1`, `pierce`, and other modifiers don't stay on the next level.
   - You pick up `360 gun` and drop `360` (name mismatch).
   - Global gun/bomb modifiers as unlockables.
   - Lose gun modifiers on complete level, but they return on player restart if you pick the gun back up.
@@ -65,6 +80,7 @@ DONT DO ANY OF THESE TASKS AI
 - Show blur effect if player speed goes over 2x starting speed.
 
 # UI, Polish, & Sound
+- Level transition fix: Last screen shows a little before going to the welcome screen on levels 0, 1, 2, and 5.
 - Add "Speech" attribute to enemies (used for entering, bosses, death). Show text below enemies rather than at the top of the screen.
 - Narration:
   - Level 0: "You can hear me? go through the portal"
@@ -73,8 +89,6 @@ DONT DO ANY OF THESE TASKS AI
   - Level 3: "find the secrets"
 - Achievements: Enemies killed, feed the portal.
 - Game Over Screen: Add what killed you.
-- Completion Screen: Count dead enemies, scroll dead enemy types. Show an increasing number of killed enemy types on the Welcome screen.
-- Screen overlays for portals: Live portals purple, used ones green (when spawned via debug).
 - Add Epic rarity items.
 - Menus & Settings: Add Inventory screen (shows unlocked items), Stats, Player modifiers, unlocks.
 - Minimap:
@@ -120,7 +134,14 @@ DONT DO ANY OF THESE TASKS AI
 - Item concepts: `speed+`, `luck+`, `randomstat+`, kick bombs, `fps item` (special item is `game.json`).
 - **Guns**: Critical gun, freeze gun, angry gun, cosine gun, shard gun (got by pushing 50 items into the portal).
 - **Turrets/Gunners**: Separate enemy type. Fire delay (so multiple turrets stagger fire). Line of sight matching. Ranges. Shoot through enemies. Default load patterns (tl, c, tr, bl, br, tc, bc).
-- **Bombs**: Size, explode time/radius/damage/duration. Explode on impact/enemy/player/wall/floor/ceiling/nothing/everything. Range, damage, solid toggles. Remote detonate. Can shoot/kick. Max drop count.
+- **Bombs**:  
+- Bomb radius shouldn't hit you instantly; add wave speed so you can run from the blast wave.
+- remote bomb Chained explosions should blow in sequence, not all at the same time.
+  "remoteDenoate": {
+        "active": true,
+        "detonateAll": false,
+        "key": "space"
+    },
 
 # Player / Stats
 - Add an idle state.
@@ -131,7 +152,6 @@ DONT DO ANY OF THESE TASKS AI
 - If you press 0 or 9, it should update the debug buttons to on/off.
 - Update debug editor so it updates in real-time when the game runs.
 - Clicking off the debug window should focus back on the game.
-- Add God mode to the debug window.
 - Add visual editors: Enemy editor, player editor, item editor, object editor.
 - Look into JSON compressors.
 

@@ -144,6 +144,11 @@
     },
     "portalWarning": true,
     "rewards": {
+        "goldenpath": {
+            "bombs": 10,
+            "keys": 3,
+            "health": 2
+        },
         "shards": {
             "green": {
                 "killEnemy": {

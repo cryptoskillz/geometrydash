@@ -13,27 +13,7 @@ export const Globals = {
 
     // UI Elements
     elements: {
-        hp: null,
-        keys: null,
-        room: null,
-        overlay: null,
-        welcome: null,
-        ui: null,
-        stats: null,
-        perfect: null,
-        roomName: null,
-        bombs: null,
-        ammo: null,
-        gun: null,
-        debugSelect: null,
-        debugForm: null,
-        debugPanel: null,
-        debugLog: null,
-        timer: null,
-        tMin: null, tSec: null, tMs: null,
-        bankModal: null,
-        bankInvVal: null,
-        bankVaultVal: null
+
     },
 
     //game counters
@@ -209,6 +189,8 @@ export const Globals = {
         this.ctx = this.canvas.getContext('2d');
         this.mapCanvas = document.getElementById('minimapCanvas');
         this.statsPanel = document.getElementById('stats-panel');
+
+        this.seed = document.getElementById('seed');
         this.mctx = this.mapCanvas ? this.mapCanvas.getContext('2d') : null;
 
         // Initialize AudioContext
@@ -216,27 +198,30 @@ export const Globals = {
             this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        const ids = ['hp', 'keys', 'room', 'overlay', 'welcome', 'ui', 'perfect',
-            'stats', 'perfect-count', 'nodamage-count', 'shooter-count',
-            'roomName', 'bombs', 'ammo', 'gun',
-            'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer',
-            't-min', 't-sec', 't-ms', 'bankModal', 'bankInvVal', 'bankVaultVal'];
-
+        const ids = ['welcome', 'overlay'];
+        /*
+                const ids = ['welcome', 'hp', 'keys', 'room', 'overlay', , 'ui', 'perfect',
+                    'stats', 'perfect-count', 'nodamage-count', 'shooter-count',
+                    'roomName', 'bombs', 'ammo', 'gun',
+                    'debug-select', 'debug-form', 'debug-panel', 'debug-log', 'timer',
+                    't-min', 't-sec', 't-ms', 'bankModal', 'bankInvVal', 'bankVaultVal'];
+        */
         ids.forEach(id => {
             // camelCase conversion for property name
             let prop = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-
+            //leave this for debugging but its a bumch of naughty hacks once it is been refactored we can remove.
             // Manual overrides for specific counters to match Game.js expectation
-            if (id === 'nodamage-count') prop = 'nodamage';
-            if (id === 'shooter-count') prop = 'shooter';
-
+            //if (id === 'nodamage-count') prop = 'nodamage';
+            //if (id === 'shooter-count') prop = 'shooter';
+            /*
             const key = prop === 'debugSelect' ? 'debugSelect' :
                 prop === 'debugForm' ? 'debugForm' :
                     prop === 'debugPanel' ? 'debugPanel' :
                         prop === 'debugLog' ? 'debugLog' : prop;
-
-            this.elements[key] = document.getElementById(id);
+            */
+            this.elements[prop] = document.getElementById(id);
         });
+
 
         // Initialize Debug Log Visibility from Storage
         if (this.elements.debugLog) {

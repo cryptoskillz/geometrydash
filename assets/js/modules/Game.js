@@ -3,7 +3,7 @@ import { STATES, BOUNDARY, DOOR_SIZE, DOOR_THICKNESS, CONFIG, DEBUG_FLAGS, JSON_
 import { log, deepMerge, triggerSpeech, generateLore, spawnFloatingText } from './Utils.js';
 import { SFX, introMusic, unlockAudio, fadeIn, fadeOut } from './Audio.js';
 import { setupInput, handleGlobalInputs } from './Input.js';
-import { drawStatsPanel, updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawRoomIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats, saveGameStats } from './UI.js';
+import { updateUI, updateWelcomeScreen, showLevelTitle, drawMinimap, drawTutorial, drawBossIntro, drawRoomIntro, drawDebugLogs, drawFloatingTexts, updateFloatingTexts, getGameStats, updateGameStats, loadGameStats, resetSessionStats, saveGameStats } from './UI.js';
 import { renderDebugForm, updateDebugEditor } from './Debug.js';
 import { generateLevel } from './Level.js';
 import {
@@ -25,7 +25,6 @@ window.addEventListener('beforeunload', (e) => {
     e.preventDefault();
     e.returnValue = '';
 });
-
 export async function initGame(isRestart = false, nextLevel = null, keepStats = false) {
 
     // 0. Force Audio Resume (Must be first, to catch user interaction)
@@ -94,7 +93,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
 
     // Debug panel setup moved after config load
 
-    // MOVED: Music start logic is now handled AFTER game.json is loaded to respect "music": false setting.
 
     // Initialize Music Source
     if (introMusic && Globals.gameData.introMusic) {
@@ -113,6 +111,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     if (Globals.elements.welcome) Globals.elements.welcome.style.display = 'none';
 
     // Initial UI State
+    /*
+    replace by update UI
     if (Globals.elements.ui) {
         Globals.elements.ui.style.display = 'flex'; // Always keep flex container for layout
         const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
@@ -128,6 +128,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             mapCanvas.style.display = hasMap ? 'block' : 'none';
         }
     }
+    */
     Globals.bullets = [];
     Globals.bombs = [];
     Globals.particles = [];
@@ -214,7 +215,8 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
     Globals.player.inventory.greenShards = 0; // Always reset on run start
 
     Globals.perfectStreak = 0;
-    if (Globals.elements.perfect) Globals.elements.perfect.style.display = 'none';
+
+    //if (perfectEl) perfectEl.style = 'none';
     Globals.roomStartTime = Date.now();
     Globals.ghostSpawned = false; // Reset Ghost
     Globals.ghostKilled = false;
@@ -419,9 +421,10 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         Globals.gameData.music = isMusicEnabled;
 
         if (introMusic && musicSrc) {
-            // Check if we need to change track
-            const currentFile = introMusic.src ? introMusic.src.split('/').pop() : "";
-            const targetFile = musicSrc.split('/').pop();
+            // Check if we need to change track (ignoring query parameters)
+            const currentFile = introMusic.src ? introMusic.src.split('/').pop().split('?')[0] : "";
+            const targetFile = musicSrc.split('/').pop().split('?')[0];
+
 
             if (currentFile !== targetFile) {
                 log("Switching Music Track:", currentFile, "->", targetFile);
@@ -432,7 +435,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             }
 
             // Auto-Play (if enabled)
-            if (Globals.gameData.music) {
+            if (Globals.gameData.music && !Globals.musicMuted) {
                 // Force volume and play if paused or if we just switched
                 if (introMusic.paused || currentFile !== targetFile) {
                     if (Globals.audioCtx.state === 'running') {
@@ -442,7 +445,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                         log("Music waiting for interaction (AudioCtx suspended)");
                     }
                 }
-            } else if (!Globals.gameData.music && !introMusic.paused) {
+            } else if ((!Globals.gameData.music || Globals.musicMuted) && !introMusic.paused) {
                 // Enforce Lock: Stop music if disabled/locked
                 fadeOut(introMusic, 500); // Friendly fade out
                 log("Music Halted (Locked/Disabled)");
@@ -693,7 +696,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             Globals.player = JSON.parse(JSON.stringify(Globals.availablePlayers[0]));
         } else {
             console.error("No players found!");
-            Globals.player = { hp: 3, speed: 4, inventory: { keys: 0 }, gunType: 'geometry', bombType: 'normal' }; // Fallback
+            Globals.player = { hp: 3, speed: 4, inventory: { keys: 0 }, gunType: null, bombType: null }; // Fallback
         }
 
         // Restore Stats if kept
@@ -720,9 +723,9 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             if (!Globals.player.gunType && Globals.gameData.gunType) Globals.player.gunType = Globals.gameData.gunType;
             if (!Globals.player.bombType && Globals.gameData.bombType) Globals.player.bombType = Globals.gameData.bombType;
 
-            // Fallback Defaults if still empty
-            if (!Globals.player.bombType) Globals.player.bombType = 'normal';
-            if (!Globals.player.gunType) Globals.player.gunType = 'peashooter';
+            // Explicitly ensure new players start with NO WEAPONS unless gameData overrides them or they have base checkpoints
+            if (!Globals.player.bombType) Globals.player.bombType = null;
+            if (!Globals.player.gunType) Globals.player.gunType = null;
 
             log("Player Initialized. Bomb:", Globals.player.bombType, "Gun:", Globals.player.gunType);
         }
@@ -837,7 +840,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
 
         if (!fetchedGun) {
-            console.error("CRITICAL: Could not load ANY gun. Player will be unarmed.");
             Globals.gun = { Bullet: { NoBullets: true } };
         } else {
             Globals.gun = fetchedGun;
@@ -946,7 +948,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                     return res.json();
                 })
                 .then(data => {
-                    log(data)
 
                     // ID Generation: Handle "room.json" collision
                     const parts = path.split('/');
@@ -1029,7 +1030,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
         }
         bosses = bosses.filter(p => p && p.trim() !== "");
         bosses.forEach(path => roomProtos.push(loadRoomFile(path, 'boss')));
-        log(bosses)
         // C. Shop Room
         if (Globals.gameData.shop && Globals.gameData.shop.active && Globals.gameData.shop.room) {
             roomProtos.push(loadRoomFile(Globals.gameData.shop.room, 'shop'));
@@ -1057,7 +1057,6 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
                 .then(data => {
                     // Use the last part of the path as the key (e.g. "special/firstboss" -> "firstboss")
                     const key = id.split('/').pop();
-                    log(key, data)
                     Globals.enemyTemplates[key] = data;
                 })
         );
@@ -1167,6 +1166,7 @@ export async function initGame(isRestart = false, nextLevel = null, keepStats = 
             log("Waiting for user input (Welcome Screen)...");
             Globals.gameState = STATES.START;
             Globals.elements.welcome.style.display = 'flex';
+            //document.getElementById('welcome').style.display = 'flex';
             updateWelcomeScreen();
         }
         window.startGame = startGame;
@@ -1206,12 +1206,20 @@ export async function startGame(keepState = false) {
         // If we have a specific level track pending
         if (Globals.levelMusic) {
             // Switch track
-            // Check current src to avoid reload if same
-            if (!introMusic.src || !introMusic.src.includes(Globals.levelMusic.split('/').pop())) {
+            // Check current src to avoid reload if same (ignoring query parameters)
+            const targetFileName = Globals.levelMusic.split('/').pop().split('?')[0];
+            const currentFileName = introMusic.src ? introMusic.src.split('/').pop().split('?')[0] : "";
+
+            if (currentFileName !== targetFileName) {
                 introMusic.src = Globals.levelMusic;
                 introMusic.load();
-                introMusic.play().catch(e => console.warn("Switched Level Music Play Blocked", e));
+                if (!Globals.musicMuted) {
+                    introMusic.play().catch(e => console.warn("Switched Level Music Play Blocked", e));
+                }
                 log("Switched to Level Music:", Globals.levelMusic);
+            } else if (introMusic.paused && !Globals.musicMuted) {
+                // If it's the same track but was paused, resume it, ONLY if not muted
+                introMusic.play().catch(e => console.warn("Resume Level Music Play Blocked", e));
             }
         }
         // If no level override, keep playing whatever is playing (Intro)
@@ -1356,7 +1364,10 @@ export async function startGame(keepState = false) {
                             .then(res => res.json())
                             .then(async (data) => {
                                 if (data.location) {
-                                    const realRes = await fetch(`json/${data.location}?t=` + Date.now());
+                                    let loc = data.location;
+                                    if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                                    const url = loc.startsWith(JSON_PATHS.ROOT) ? loc : `${JSON_PATHS.ROOT}${loc.replace(/^json\//, '')}`;
+                                    const realRes = await fetch(`${url}?t=` + Date.now());
                                     if (realRes.ok) return await realRes.json();
                                 }
                                 return data;
@@ -1373,7 +1384,10 @@ export async function startGame(keepState = false) {
                             .then(res => res.json())
                             .then(async (data) => {
                                 if (data.location) {
-                                    const realRes = await fetch(`json/${data.location}?t=` + Date.now());
+                                    let loc = data.location;
+                                    if (loc.startsWith('items/')) loc = 'rewards/' + loc;
+                                    const url = loc.startsWith(JSON_PATHS.ROOT) ? loc : `${JSON_PATHS.ROOT}${loc.replace(/^json\//, '')}`;
+                                    const realRes = await fetch(`${url}?t=` + Date.now());
                                     if (realRes.ok) return await realRes.json();
                                 }
                                 return data;
@@ -1407,22 +1421,20 @@ export async function startGame(keepState = false) {
             log("TRACER: startGame Async End -> PLAY");
             Globals.gameState = STATES.PLAY;
             Globals.elements.welcome.style.display = 'none';
-
+            /*
+            replaced by upadate UI
             if (Globals.elements.ui) {
                 // Manage UI Components Independently
                 Globals.elements.overlay.style.display = 'none'; // Ensure Game Over screen is hidden
-
                 // Show Parent UI Container
                 Globals.elements.ui.style.display = 'flex';
-
                 const statsPanel = document.getElementById('stats-panel');
                 if (statsPanel) statsPanel.style.display = (Globals.gameData.showStatsPanel !== false) ? 'block' : 'none';
-
-                // FORCE UI UPDATE for Room Name
-                if (Globals.elements.roomName) {
-                    Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
-                }
-            }     // Show Level Title
+                // FORCE UI UPDATE for Room Namem why? NOTE: not sure this is required
+                //document.getElementById("roomName").innerText = Globals.roomData.name || "Unknown Room";
+            }
+            */
+            // Show Level Title
             if (Globals.gameData.description || Globals.gameData.name) {
                 showLevelTitle(Globals.gameData.description || Globals.gameData.name);
             }
@@ -1778,8 +1790,6 @@ export function changeRoom(dx, dy) {
     Globals.ghostSpawned = false; // Reset Ghost flag (will respawn via timer hack if following)
     Globals.bulletsInRoom = 0;
     Globals.hitsInRoom = 0;
-    Globals.elements.perfect.style.display = 'none';
-
     // Transition to the pre-generated room
     const nextEntry = Globals.levelMap[nextCoord];
     if (nextEntry) {
@@ -1824,8 +1834,7 @@ export function changeRoom(dx, dy) {
             Globals.roomIntroEndTime = Globals.roomData.showIntro ? (Date.now() + 2000) : 0;
         }
         Globals.visitedRooms[nextCoord] = nextEntry; // Add to visited for minimap
-
-        Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
+        if (document.getElementById('roomName')) document.getElementById("roomName").innerText = Globals.roomData.name || "Unknown Room";
         Globals.canvas.width = Globals.roomData.width || 800;
         Globals.canvas.height = Globals.roomData.height || 600;
 
@@ -1917,29 +1926,29 @@ export function changeRoom(dx, dy) {
         }
 
         // --- GOLDEN PATH BONUS ---
-        if (Globals.roomData.isBoss && !Globals.goldenPathFailed && !nextEntry.goldenBonusAwarded) {
+        // Verify player actually completed the golden path, not just entered a boss room without failing
+        if (Globals.roomData.isBoss && !Globals.goldenPathFailed && !nextEntry.goldenBonusAwarded && Globals.goldenPathIndex >= Globals.goldenPath.length - 1) {
             nextEntry.goldenBonusAwarded = true;
             log("GOLDEN PATH BONUS AWARDED!");
+            let perfectEl = document.getElementById('perfect');
 
-            Globals.elements.perfect.innerText = "GOLDEN PATH BONUS!";
-            Globals.elements.perfect.style.color = "gold";
-            Globals.elements.perfect.style.display = 'block';
-            Globals.elements.perfect.style.animation = 'none';
-            Globals.elements.perfect.offsetHeight; /* trigger reflow */
-            Globals.elements.perfect.style.animation = null;
+            perfectEl.innerText = "GOLDEN PATH BONUS!";
+            perfectEl.style.color = "gold";
+            perfectEl.style.display = 'block';
+            perfectEl.style.animation = 'none';
+            perfectEl.offsetHeight; /* trigger reflow */
+            perfectEl.style.animation = null;
 
             // Reward
-            Globals.player.inventory.bombs += 10;
-            Globals.player.inventory.keys += 3;
-            Globals.player.hp = Math.min(Globals.player.hp + 2, 10); // Heal
+            Globals.player.inventory.bombs += Globals.gameData.rewards.goldenpath.bombs;
+            Globals.player.inventory.keys += Globals.gameData.rewards.goldenpath.keys;
+            Globals.player.hp = Math.min(Globals.player.hp + Globals.gameData.rewards.goldenpath.health, 10); // Heal
 
             setTimeout(() => {
-                Globals.elements.perfect.style.display = 'none';
-                Globals.elements.perfect.style.color = '#e74c3c'; // Reset
+                perfectEl.style.display = 'none';
+                perfectEl.style.color = '#e74c3c'; // Reset
             }, 4000);
         }
-
-
 
         if (!nextEntry.cleared) {
             spawnEnemies();
@@ -1959,11 +1968,6 @@ export function changeRoom(dx, dy) {
 export function update() {
     // 0. STOP updates if loading/initializing OR unlocking to prevent movement during transition
     if (Globals.isInitializing || Globals.isUnlocking) return;
-
-    // DEBUG INPUT
-    if (Math.random() < 0.01) {
-        log("Update running. State:", Globals.gameState, "Keys:", JSON.stringify(Globals.keys), "Player:", Globals.player.x, Globals.player.y);
-    }
 
     // 0. Global Inputs (Restart/Menu from non-play states)
     if (handleGlobalInputs({ restartGame, goToWelcome, newRun })) return;
@@ -2401,7 +2405,7 @@ export async function draw() {
 
         }
     }
-    drawStatsPanel();
+    //drawStatsPanel();
     drawMinimap();
     if (!DEBUG_FLAGS.TEST_ROOM) drawTutorial();
     drawBossIntro();
@@ -2720,50 +2724,47 @@ export function updateRoomTransitions(doors, roomLocked) {
 
         let allowed = false;
         let promptY = Globals.player.y - 60;
-        if (door.x == 400) promptY = Globals.player.y + 60; // Adjust for Top/Bottom doors
+        let promptX = Globals.player.x;
+
+        // Adjust for edges so text doesn't overlap boundary
+        if (dy === -1) promptY = Globals.player.y + 60; // Top door -> shift text below
+        if (dx === -1) promptX = Globals.player.x + 120; // Left door -> shift text right
+        if (dx === 1) promptX = Globals.player.x - 120; // Right door -> shift text left
 
         // STRICT HIERARCHY: Specific Locks override generic "Unlocked" status
         if (lockVal === 2) { // Home Key
             if (Globals.player.inventory.houseKey) {
                 // Interaction Required
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Home Room", "#fff", 2);
+                spawnFloatingText(promptX, promptY, "Press SPACE to open Home Room", "#fff", 2);
 
             } else {
-                spawnFloatingText(Globals.player.x, promptY, "Need House Key!", "#ff0000", 2);
+                spawnFloatingText(promptX, promptY, "Need House Key!", "#ff0000", 2);
             }
         } else if (lockVal === 3) { // Matrix Key
             if (Globals.player.inventory.matrixKey) {
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE to open Matrix Room", "#fff", 2);
+                spawnFloatingText(promptX, promptY, "Press SPACE to open Matrix Room", "#fff", 2);
 
 
             } else {
-                spawnFloatingText(Globals.player.x, promptY, "Need Matrix Key!", "#ff0000", 2);
+                spawnFloatingText(promptX, promptY, "Need Matrix Key!", "#ff0000", 2);
             }
         } else if (lockVal === 1) { // Standard Key
             // Interaction Required (Unified Logic)
             if (Globals.player.inventory.keys > 0) {
                 log("Press SPACE to open door");
-                spawnFloatingText(Globals.player.x, promptY, "Press SPACE", "#fff", 2);
+                spawnFloatingText(promptX, promptY, "Press SPACE", "#fff", 2);
 
 
             } else if (door.forcedOpen || isSecretExit) {
                 // Allow passing through standard locked door if it's forced open or we are exiting secret room
                 allowed = true;
             } else {
-                spawnFloatingText(Globals.player.x, promptY, "Key Required!", "#ff0000", 2);
+                spawnFloatingText(promptX, promptY, "Key Required!", "#ff0000", 2);
             }
         } else {
-            // Unlocked (0)
-            // Implicitly allow IF lockVal is 0. 
-            // If it's some other weird number, Block it? 
-            // console.log("Door Unlocked:", lockVal);
-            //if (lockVal === 0) {
+
             allowed = true;
 
-            /* } else {
-                console.warn("Unknown Lock Value Blocked:", lockVal);
-                allowed = false;
-            } */
         }
 
         // 5. Execution
@@ -2792,7 +2793,6 @@ export function isRoomLocked() {
     // Trophy Rooms are NEVER locked, regardless of enemies (trophies) inside
     // Add logging to verify this is called
     if (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy' || Globals.roomData.isSecret) {
-        // log("isRoomLocked: False (Trophy/Secret Override)"); // Too spammy? Maybe occasional?
         return false;
     }
 
@@ -2870,7 +2870,6 @@ export function updateRoomLock() {
         const allDead = Globals.enemies.every(en => en.isDead || en.hp <= 0);
 
         if (allDead) {
-            console.warn("Detected Dead-on-Arrival Glitch! Reviving enemies to enforce gameplay.");
             Globals.enemies.forEach(en => {
                 if (en.isDead || en.hp <= 0) {
                     en.isDead = false;
@@ -2917,7 +2916,7 @@ export function updateRoomLock() {
 
         // Require minimum time to disqualify glitches (e.g. 100ms)
         const isGlitch = timeTakenMs < 100;
-        const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 5000;
+        const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 0;
         log(`Room Cleared! TimeTaken: ${timeTakenMs}ms, Limit: ${speedyLimitMs}ms (Start: ${freezeEnd}, Now: ${Date.now()})`);
 
         // Fix: check timeTakenMs > 100 to avoid glitch "instant clears"
@@ -3102,8 +3101,8 @@ export function gameOver() {
 
     Globals.elements.overlay.style.display = 'flex';
     // Fix: Count unique visited rooms instead of displacement
-    Globals.elements.stats.innerText = getGameStats(0);
-
+    //Globals.elements.stats.innerText = getGameStats(0);
+    document.getElementById('stats').innerText = getGameStats(0);
     const h1 = document.querySelector('#overlay h1');
     if (Globals.gameState === STATES.WIN) {
         h1.innerText = "VICTORY!";
@@ -3118,19 +3117,9 @@ export function gameOver() {
     const restartBtn = Globals.elements.overlay.querySelector('#restartBtn');
     const newRunBtn = Globals.elements.overlay.querySelector('#newRunBtn');
 
-    // Add Seed Display
-    let seedEl = document.getElementById('game-over-seed');
-    if (!seedEl) {
-        seedEl = document.createElement('div');
-        seedEl.id = 'game-over-seed';
-        seedEl.style.color = '#888';
-        seedEl.style.marginTop = '10px';
-        seedEl.style.fontFamily = 'monospace';
-        // Insert before buttons container (which is usually flex column at bottom?)
-        // Let's insert after stats
-        Globals.elements.stats.parentNode.insertBefore(seedEl, Globals.elements.stats.nextSibling);
-    }
-    seedEl.innerText = `Seed: ${Globals.seed || 'Unknown'}`;
+    //check if there is a seed to show
+    if (Globals.gameData.showSeed == true) document.getElementById('modalSeed').innerText = `Seed: ${Globals.seed || ''}`;
+
 
     if (Globals.gameState === STATES.WIN) {
         // Victory: Show Continue (Enter)
@@ -3281,6 +3270,9 @@ export async function restartGame(keepItems = false, targetLevel = null) {
 Globals.restartGame = restartGame;
 
 export async function newRun(targetLevel = null, keepWeapons = false) {
+    if (!keepWeapons) {
+        resetWeaponState();
+    }
 
     log("Starting New Run (Fresh Seed)");
     // Generate new seed manually here before calling init (as init handles restart specially)
@@ -3310,6 +3302,15 @@ Globals.newRun = newRun;
 export function goToWelcome() {
     saveGameStats();
     localStorage.removeItem('rogue_current_level');
+    // Restore weapons from the base checkpoint (e.g. Level 2 earned unlocks)
+    resetWeaponState();
+
+    // Explicitly wipe runtime weapon objects so initGame(false) enforces defaults
+    Globals.player.gunType = null;
+    Globals.player.bombType = null;
+    Globals.gun = {};
+    Globals.bomb = {};
+
     initGame(false);
 }
 Globals.goToWelcome = goToWelcome;

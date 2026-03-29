@@ -359,17 +359,6 @@ export function spawnEnemies() {
             log(`Restored Enemy: ${inst.type}, HP: ${inst.hp}`);
         });
 
-        // Handle Ghost if Haunted (still spawn it separately if consistent with design?)
-        // The original code handled Haunted via map property. 
-        // We should probably fall through to allow ghost spawn if desired, BUT
-        // the original code returns early if room is cleared. 
-        // Here we have enemies, so we should allow Ghost check below?
-        // Let's stick to restoring only explicitly saved ones for now. 
-        // If the room was haunted, the ghost might be handled separately or saved?
-        // Original logic: "If room is haunted... return". 
-        // Let's keep the Ghost Check that is BELOW this block in my insertion point?
-        // Wait, I am inserting this at the top.
-        // Let's actually ensure we do the Haunted check separately as it was.
     }
 
     // START STANDARD SPAWN (Skip if we restored)
@@ -454,6 +443,28 @@ export function spawnEnemies() {
 
             // Ensure ID/Key is set for uniqueness/logic
             inst.isBoss = true;
+
+            // Apply Always Angry stats for explicit bosses
+            if (inst.alwaysAngry) {
+                inst.mode = 'angry';
+                inst.angryUntil = Infinity;
+                if (!inst.baseStats) {
+                    inst.baseStats = {
+                        speed: inst.speed,
+                        hp: inst.hp,
+                        damage: inst.damage,
+                        color: inst.color,
+                        size: inst.size
+                    };
+                }
+                const angryStats = Globals.gameData.enemyConfig?.modeStats?.angry;
+                if (angryStats) {
+                    if (angryStats.hp) inst.hp = (inst.baseStats?.hp || inst.hp || 10) * angryStats.hp;
+                    if (angryStats.damage) inst.damage = (inst.baseStats?.damage || inst.damage || 1) * angryStats.damage;
+                    if (angryStats.speed) inst.speed = (inst.baseStats?.speed || inst.speed || 1) * angryStats.speed;
+                    if (angryStats.color) inst.color = angryStats.color;
+                }
+            }
 
             Globals.enemies.push(inst);
         } else {
@@ -629,6 +640,7 @@ export function spawnEnemies() {
 
 }
 export async function dropBomb() {
+    log("Bonb Type: ", Globals.player.bombType);
     if (!Globals.player.bombType) return false;
 
     // Parse Timer Config
@@ -1832,16 +1844,26 @@ export function updateEnemies() {
                 const distToPlayer = Math.hypot(dx, dy);
                 let dirX = 0, dirY = 0;
 
-                if (isWander) {
+                let factor = isRunAway ? -1.0 : 1.0;
+                let isFleeingTrophy = false;
+
+                // --- GHOST TROPHY FLEE LOGIC ---
+                if (en.type === 'ghost_trophy' || (en.type === 'ghost' && (Globals.roomData.type === 'trophy' || Globals.roomData._type === 'trophy'))) {
+                    if (distToPlayer < 150) {
+                        isFleeingTrophy = true;
+                        factor = -1.5; // Flee quickly when close
+                    }
+                }
+
+                if (isFleeingTrophy || (!isWander && distToPlayer > 0.1)) {
+                    // Seek or Flee
+                    dirX = (dx / distToPlayer) * factor;
+                    dirY = (dy / distToPlayer) * factor;
+                } else if (isWander) {
                     if (en.wanderAngle === undefined) en.wanderAngle = Math.random() * Math.PI * 2;
                     en.wanderAngle += (Math.random() - 0.5) * 0.5; // Turn slightly
                     dirX = Math.cos(en.wanderAngle);
                     dirY = Math.sin(en.wanderAngle);
-                } else if (distToPlayer > 0.1) {
-                    // If runAway, we invert the direction to push AWAY from player
-                    const factor = isRunAway ? -1.0 : 1.0;
-                    dirX = (dx / distToPlayer) * factor;
-                    dirY = (dy / distToPlayer) * factor;
                 }
 
                 // 2. Avoid Bombs
@@ -2327,7 +2349,6 @@ export function updatePortal() {
     const currentCoord = `${Globals.player.roomX},${Globals.player.roomY}`;
     // Only interact if active
     // if (!Globals.roomData.isBoss) return; // Allow anywhere per user request
-    log(Globals.portal);
     const dist = Math.hypot(Globals.player.x - Globals.portal.x, Globals.player.y - Globals.portal.y);
     if (dist < 30) {
 
@@ -2492,10 +2513,19 @@ function proceedLevelComplete() {
         if (Globals.gun) {
             localStorage.setItem('current_gun', Globals.player.gunType || 'peashooter');
             localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
+            localStorage.setItem('base_gun', Globals.player.gunType || 'peashooter');
+            localStorage.setItem('base_gun_config', JSON.stringify(Globals.gun));
         }
-        if (Globals.bomb) {
-            localStorage.setItem('current_bomb', Globals.player.bombType || 'normal');
+        if (Globals.player.bombType && Object.keys(Globals.bomb || {}).length > 0) {
+            localStorage.setItem('current_bomb', Globals.player.bombType);
             localStorage.setItem('current_bomb_config', JSON.stringify(Globals.bomb));
+            localStorage.setItem('base_bomb', Globals.player.bombType);
+            localStorage.setItem('base_bomb_config', JSON.stringify(Globals.bomb));
+        } else {
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_bomb_config');
+            localStorage.removeItem('base_bomb');
+            localStorage.removeItem('base_bomb_config');
         }
         localStorage.setItem('rogue_transition', 'true');
         localStorage.setItem('rogue_current_level', nextLevel);
@@ -2517,6 +2547,34 @@ function proceedLevelComplete() {
         }
         localStorage.setItem('numberOfRuns', Globals.NumberOfRuns);
 
+        // RESTORE BASE WEAPONS ON GAME COMPLETE
+        // So a new game inherits standard defaults (e.g. from Level 2) instead of endgame loadouts
+        const baseGun = localStorage.getItem('base_gun');
+        const baseGunConfig = localStorage.getItem('base_gun_config');
+        if (baseGun) {
+            localStorage.setItem('current_gun', baseGun);
+            if (baseGunConfig) localStorage.setItem('current_gun_config', baseGunConfig);
+        } else {
+            localStorage.removeItem('current_gun');
+            localStorage.removeItem('current_gun_config');
+        }
+
+        const baseBomb = localStorage.getItem('base_bomb');
+        const baseBombConfig = localStorage.getItem('base_bomb_config');
+        if (baseBomb) {
+            localStorage.setItem('current_bomb', baseBomb);
+            if (baseBombConfig) localStorage.setItem('current_bomb_config', baseBombConfig);
+        } else {
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_bomb_config');
+        }
+
+        localStorage.removeItem('rogue_player_state');
+        Globals.player.gunType = null;
+        Globals.player.bombType = null;
+        Globals.gun = {};
+        Globals.bomb = {};
+
         showCredits();
         return;
     }
@@ -2524,18 +2582,17 @@ function proceedLevelComplete() {
     // 3. Always go to next level
     if (hasNextLevel && welcomeScreen === false && completedItMate === false) {
         log("Proceeding to Next Level:", nextLevel);
-        if (Globals.introMusic) {
-            Globals.introMusic.pause();
-            Globals.introMusic.currentTime = 0;
-        }
         // Force save current weapon config to prevent loss on transition
         if (Globals.gun) {
             localStorage.setItem('current_gun', Globals.player.gunType || 'peashooter');
             localStorage.setItem('current_gun_config', JSON.stringify(Globals.gun));
         }
-        if (Globals.bomb) {
-            localStorage.setItem('current_bomb', Globals.player.bombType || 'normal');
+        if (Globals.player.bombType && Object.keys(Globals.bomb || {}).length > 0) {
+            localStorage.setItem('current_bomb', Globals.player.bombType);
             localStorage.setItem('current_bomb_config', JSON.stringify(Globals.bomb));
+        } else {
+            localStorage.removeItem('current_bomb');
+            localStorage.removeItem('current_bomb_config');
         }
         localStorage.setItem('rogue_transition', 'true');
         localStorage.setItem('rogue_current_level', nextLevel);
@@ -4110,10 +4167,13 @@ export async function pickupItem(item, index) {
             // FIXED: If the ground item lacked a location, but the fetched config has one, use the config's location!
             const saveLocation = config.location || location || "";
 
+            let filename = config.name; // Fallback to name if location parsing fails
             if (saveLocation.includes("/")) {
                 const parts = saveLocation.split('/');
-                const filename = parts[parts.length - 1].replace(".json", "");
-                Globals.player.gunType = filename;
+                filename = parts[parts.length - 1].replace(".json", "");
+            }
+
+            if (filename) {
                 Globals.player.gunType = filename;
                 try {
                     // 1. Is this the first gun? (Base Checkpoint)
@@ -4179,25 +4239,25 @@ export async function pickupItem(item, index) {
             // FIXED: If the ground item lacked a location, but the fetched config has one, use the config's location!
             const saveLocation = config.location || location || "";
 
+            let filename = config.name; // Fallback to name if location parsing fails
             if (saveLocation.includes("/")) {
                 const parts = saveLocation.split('/');
-                const filename = parts[parts.length - 1].replace(".json", "");
-                Globals.player.bombType = filename;
+                filename = parts[parts.length - 1].replace(".json", "");
+            }
+
+            if (filename) {
                 Globals.player.bombType = filename;
                 try {
-                    // 1. Is this the first bomb? (Base Checkpoint)
-                    if (!localStorage.getItem('base_bomb')) {
-                        localStorage.setItem('base_bomb', filename);
-                        localStorage.setItem('base_bomb_config', JSON.stringify(config));
-                        log(`Checkpoint Set: Base Bomb = ${filename}`);
-                    }
-
-                    // 2. Always update Current
+                    // Update Current cache only, do NOT override base_bomb checkpoint mid-run
                     localStorage.setItem('current_bomb', filename);
                     localStorage.setItem('current_bomb_config', JSON.stringify(config));
                 } catch (e) { }
             }
-            log(`Equipped Bomb: ${config.name}`);
+            // Grant +3 bombs immediately upon getting a new bomb type so player has ammo to test it
+            Globals.player.inventory = Globals.player.inventory || {};
+            Globals.player.inventory.bombs = (Globals.player.inventory.bombs || 0) + 3;
+
+            log(`Equipped Bomb: ${config.name} (+3 bombs given)`);
             spawnFloatingText(Globals.player.x, Globals.player.y - 30, config.name.toUpperCase(), config.colour || "white");
         }
         else if (type === 'modifier' || data.modify) {
@@ -4244,6 +4304,11 @@ export async function pickupItem(item, index) {
                         // Map 'bombs' shorthand to 'inventory.bombs'
                         let targetKey = baseTarget + key;
                         if (targetKey === 'bombs') targetKey = 'inventory.bombs';
+                        log("bomb type", Globals.player.bombType)
+                        if (targetKey === 'inventory.bombs' && !Globals.player.bombType) {
+                            //Globals.player.bombType = 'normal'; // Assign basic bomb if they just got ammo but had no type
+                            log("Player picked up bomb but no bomb type assigned");
+                        }
 
                         let isRelative = false;
                         if (typeof val === 'string' && (val.startsWith('+') || val.startsWith('-'))) {
@@ -4643,12 +4708,14 @@ export function spawnRoomRewards(dropConfig, label = null) {
         // Roll for drop
         if (Math.random() < (conf.dropChance || 0)) {
             // Find items of this rarity
-            // Fix: Check for null items in template list AND Unlock Status
+            // Fix: Check for null items, ensure Unlock Status, and NEVER drop 'unlock' wrappers from chest logic
             const candidates = window.allItemTemplates.filter(i =>
                 i &&
                 (i.rarity || 'common').toLowerCase() === rarity.toLowerCase() &&
                 i.starter === false &&
                 i.special !== true &&
+                i.type !== 'unlock' &&
+                i.isUnlockWrapper !== true &&
                 (i._isUnlock === true || isUnlocked(i))
             );
 
@@ -4813,7 +4880,7 @@ export function drawPlayer() {
     if (Globals.portal?.transitioning || Globals.portal?.warningActive) return;
     const now = Date.now();
     // 4. --- PLAYER ---
-
+    log(Globals.player.gun)
     // Gun Rendering (Barrels)
     if (Globals.gun && Globals.gun.Bullet && !Globals.gun.Bullet.NoBullets) {
         // Helper to draw a single barrel at a given angle
@@ -5340,7 +5407,6 @@ export function updateItems() {
             if ((Globals.keys && Globals.keys['Space'])) {
                 // Only consume input if pickup succeeded
                 if (pickupItem(item, i)) {
-                    // console.log("Entities.js Consumed SPACE for item:", item);
                     if (Globals.keys) Globals.keys['Space'] = false; // Consume input
                 }
             }
@@ -5392,13 +5458,11 @@ export function drawItems() {
             Globals.ctx.textAlign = 'center';
             Globals.ctx.fillText("G", 0, 4);
         } else if (itemType === 'bomb') {
-            Globals.ctx.fillStyle = '#f1c40f'; // Yellow
+            const bombColor = (item.data && (item.data.colour || item.data.color)) ? (item.data.colour || item.data.color) : '#f1c40f';
+            Globals.ctx.fillStyle = bombColor;
             Globals.ctx.beginPath();
             Globals.ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
             Globals.ctx.fill();
-            Globals.ctx.fillStyle = 'black';
-            Globals.ctx.textAlign = 'center';
-            Globals.ctx.fillText("B", 0, 4);
         } else if (itemType === 'health' || itemType === 'heart') {
             Globals.ctx.fillStyle = '#e74c3c';
             Globals.ctx.beginPath();

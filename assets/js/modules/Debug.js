@@ -5,7 +5,8 @@ import { log } from './Utils.js';
 import { updateUI } from './UI.js';
 
 export function updateDebugEditor() {
-    const selector = Globals.elements.debugSelect;
+    // const selector = Globals.elements.debugSelect;
+    const selector = document.getElementById('debug-select');
     if (!selector) return;
 
     // Only populate if empty
@@ -36,8 +37,10 @@ export function updateDebugEditor() {
 }
 
 export function renderDebugForm() {
-    const debugForm = Globals.elements.debugForm;
-    const debugSelect = Globals.elements.debugSelect;
+    // const debugForm = Globals.elements.debugForm;
+    const debugForm = document.getElementById('debug-form');
+    // const debugSelect = Globals.elements.debugSelect;
+    const debugSelect = document.getElementById('debug-select');
 
     if (!debugForm || !debugSelect) return;
     debugForm.innerHTML = '';
@@ -129,10 +132,12 @@ export function renderDebugForm() {
             if (!saved.debug) saved.debug = {};
             saved.debug.log = Globals.gameData.debug.log;
             localStorage.setItem('game_data', JSON.stringify(saved));
-
             // Immediate DOM update
-            if (Globals.elements.debugLog) {
-                Globals.elements.debugLog.style.display = Globals.gameData.debug.log ? 'block' : 'none';
+            const debugLog = document.getElementById('debug-log');
+            if (logState == "OFF") {
+                debugLog.style.display = 'block';
+            } else {
+                debugLog.style.display = 'none';
             }
 
             log(`On-Screen Log: ${Globals.gameData.debug.log ? 'ENABLED' : 'DISABLED'}`);

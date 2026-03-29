@@ -155,7 +155,7 @@ export function updateWelcomeScreen() {
     // Globals.elements.welcome is cached
     if (Globals.elements.welcome) {
         Globals.elements.welcome.innerHTML = `
-        <h1 class="welcome-title">GEOMETRY DASH</h1>
+        <h1 class="welcome-title">VERTEX VOID</h1>
         ${charSelectHtml}
         <div class="welcome-instructions">${instructions}</div>
         <p style="margin-top: 30px; font-size: 1.4rem; animation: blink 1.5s infinite;">${startText}</p>
@@ -168,208 +168,194 @@ export function updateWelcomeScreen() {
 }
 
 export async function updateUI() {
-    if (!Globals.elements.ui) return;
+    //check the game has started
+    if (Globals.gameState != 1) return;
+    const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
 
-    // HP
-    if (Globals.elements.hp) Globals.elements.hp.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
+    //show stats panel
+    if (Globals.gameData.showStatsPanel == true || unlockedIds.includes("statsPanel")) {
+        // HP
+        if (Globals.statsPanel && Globals.statsPanel.style.display === 'none') Globals.statsPanel.style.display = 'block';
+        const hpEl = document.getElementById('hp')
+        hpEl.innerText = `HP: ${Math.ceil(Globals.player.hp)} / ${Globals.player.maxHp}`;
+        hpEl.style.color = Globals.player.hp < 3 ? "red" : "white";
+        document.getElementById('roomName').innerText = Globals.roomData.name || "Unknown Room";
 
-    // Room Name (Ensure it persists)
-    if (Globals.elements.roomName && Globals.roomData) Globals.elements.roomName.innerText = Globals.roomData.name || "Unknown Room";
-
-    // Keys
-    if (Globals.elements.keys) {
+        // Keys
         const keyCount = Globals.player.inventory.keys || 0;
         const maxKeys = Globals.player.inventory.maxKeys || 5;
-        Globals.elements.keys.innerText = `${keyCount}/${maxKeys}`;
-    }
+        document.getElementById('keys').innerText = `${keyCount}/${maxKeys}`;
 
-    // Bombs
-    if (Globals.elements.bombs) {
+        // Bombs
+        const bombEl = document.getElementById('bombs')
         const bombCount = Globals.player.inventory.bombs || 0;
         const maxBombs = Globals.player.inventory.maxBombs || 10;
-        const bombColor = (Globals.player.bombType || 'normal') === 'normal' ? '#fff' : '#e74c3c'; // Red for special?
-        Globals.elements.bombs.style.color = ""; // Reset parent color
-        Globals.elements.bombs.innerHTML = `BOMBS: <span style="color: ${bombColor}">${bombCount}/${maxBombs}</span>`;
-    }
-
-    // Gun & Ammo
-    const gunName = Globals.player.gunType || "Peashooter";
-    if (Globals.elements.gun) Globals.elements.gun.innerText = gunName.toUpperCase();
-
-    let ammoText = "INF";
-
-    // Check Player State (Dynamic) vs Gun Config (Static)
-    // Finite / Recharge / Reload modes are stored on player
-    const mode = Globals.player.ammoMode;
-
-    if (Globals.player.reloading) {
-        ammoText = "RELOADING...";
-    } else if (!mode || mode === 'infinite') {
-        ammoText = "INF";
-    } else if (mode === 'recharge' || mode === 'finite') {
-        // Show Current / Max Clip
-        ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.maxMag}`;
-    } else if (mode === 'reload') {
-        // Show Current / Reserve
-        ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.reserveAmmo}`;
-    }
-
-    if (Globals.elements.ammo) Globals.elements.ammo.innerText = ammoText;
-
-    // Shards
-    const redShards = Globals.player.inventory.redShards || 0;
-    const maxRed = Globals.player.inventory.maxRedShards || 500;
-    const greenShards = Globals.player.inventory.greenShards || 0;
-    const maxGreen = Globals.player.inventory.maxGreenShards || 100;
-    const redEl = document.getElementById('red-shards');
-    const greenEl = document.getElementById('green-shards');
-
-    if (redEl) redEl.innerHTML = `<span style="color: #e74c3c">♦</span> ${redShards} / ${maxRed}`;
-    if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen} `;
-
-    // Timer
-    if (Globals.elements.timer) {
-        // Check Unlock Status or Config
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        const showTimer = Globals.gameData.showTimer || unlockedIds.includes('timer');
-
-        if (showTimer) {
-            Globals.elements.timer.style.display = 'block';
-            const elapsed = Globals.runElapsedTime || 0;
-            const minutes = Math.floor(elapsed / 60000);
-            const seconds = Math.floor((elapsed % 60000) / 1000);
-            const ms = Math.floor((elapsed % 1000) / 10);
-
-            // Direct Span Update (No layout thrashing of container)
-            if (Globals.elements.tMin) Globals.elements.tMin.textContent = minutes.toString().padStart(2, '0');
-            if (Globals.elements.tSec) Globals.elements.tSec.textContent = seconds.toString().padStart(2, '0');
-            if (Globals.elements.tMs) Globals.elements.tMs.textContent = ms.toString().padStart(2, '0');
-
-            if (Globals.gameData.showSeed && Globals.seed) {
-                let seedEl = document.getElementById('seed-display');
-                if (!seedEl) {
-                    seedEl = document.createElement('div');
-                    seedEl.id = 'seed-display';
-                    seedEl.style.fontSize = '12px';
-                    seedEl.style.color = '#888';
-                    seedEl.style.textAlign = 'center';
-                    seedEl.style.marginTop = '-5px';
-                    Globals.elements.timer.appendChild(seedEl);
-                }
-                seedEl.innerText = `${Globals.seed}`;
-            }
+        if (Globals.player.bombType != "") {
+            //white for normal, red for red, and yellow for golden
+            const bombColor = (Globals.player.bombType || 'normal') === 'normal' ? '#fff' : (Globals.player.bombType === 'red' ? '#e74c3c' : '#f1c40f');
+            bombEl.innerText = `${bombCount}/${maxBombs}`;
+            bombEl.style.color = bombColor;
         } else {
-            Globals.elements.timer.style.display = 'none';
+            bombEl.innerText = `0/${maxBombs}`;
+            bombEl.style.color = "#fff";
         }
+        // Gun
+        const gunEl = document.getElementById('gun')
+        let ammoText = "INF";
+        //check if user has a gun
+        if (Globals.gun.name) {
+            gunEl.innerText = Globals.gun.name;
+            // Check Player State (Dynamic) vs Gun Config (Static)
+            // Finite / Recharge / Reload modes are stored on player
+            const mode = Globals.player.ammoMode;
+            if (Globals.player.reloading) {
+                ammoText = "RELOADING...";
+            } else if (!mode || mode === 'infinite') {
+                ammoText = "INF";
+            } else if (mode === 'recharge' || mode === 'finite') {
+                // Show Current / Max Clip
+                ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.maxMag}`;
+            } else if (mode === 'reload') {
+                // Show Current / Reserve
+                ammoText = `${Math.floor(Globals.player.ammo)} / ${Globals.player.reserveAmmo}`;
+            }
+        }
+        else {
+            gunEl.innerText = "-";
+            ammoText = "-";
+        }
+        //ammo
+        const ammoEl = document.getElementById('ammo')
+        ammoEl.innerText = ammoText;
+        // Shards
+        const redShards = Globals.player.inventory.redShards || 0;
+        const maxRed = Globals.player.inventory.maxRedShards || 500;
+        const greenShards = Globals.player.inventory.greenShards || 0;
+        const maxGreen = Globals.player.inventory.maxGreenShards || 100;
+        const redEl = document.getElementById('red-shards');
+        const greenEl = document.getElementById('green-shards');
+
+        if (redEl) redEl.innerHTML = `<span style="color: #e74c3c">♦</span> ${redShards} / ${maxRed}`;
+        if (greenEl) greenEl.innerHTML = `<span style="color: #2ecc71">◊</span> ${greenShards} / ${maxGreen} `;
+    }
+
+
+    // game timer
+    if (Globals.gameData.showTimer == true || unlockedIds.includes('timer')) {
+        const timer = document.getElementById('timer');
+        //show element
+        if (timer.style.display == 'none') timer.style.display = 'block';
+        //do the math
+        const elapsed = Globals.runElapsedTime || 0;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        const ms = Math.floor((elapsed % 1000) / 10);
+        // Direct Span Update
+        document.getElementById('t-min').textContent = minutes.toString().padStart(2, '0');
+        document.getElementById('t-sec').textContent = seconds.toString().padStart(2, '0');
+        document.getElementById('t-ms').textContent = ms.toString().padStart(2, '0');
+    }
+
+
+    // --- SEED DISPLAY  ---
+    if (Globals.gameData.showSeed == true) {
+        const seedUI = document.getElementById('seedUI');
+        //check element is visible
+        if (seedUI.style.display == 'none') seedUI.style.display = 'block';
+        //update seed if changed
+        if (seedUI.innerText != Globals.seed) seedUI.innerText = Globals.seed;
     }
 
     // --- SPEEDY TIMER ---
-    const speedyEl = document.getElementById('speedy-timer');
-    if (speedyEl) {
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        if (Globals.gameData.showSpeedyTimer || unlockedIds.includes('speedytimer')) {
-            if (Globals.roomData.cleared) return;
-            speedyEl.style.display = 'block';
-            // Logic: Limit - (Now - FreezeEnd)
-            // Default limit 5000ms if not set
-            const limit = Globals.roomData.speedGoal !== undefined ? Globals.roomData.speedGoal : 5000;
+    // Check if it's unlocked or configured to show
+    if (Globals.gameData.showSpeedyTimer == true || unlockedIds.includes('speedytimer')) {
+        const speedyTimer = document.getElementById('speedy-timer');
+        if (speedyTimer && speedyTimer.style.display == 'none') speedyTimer.style.display = 'block';
+
+        const speedGoal = Globals.roomData.speedGoal;
+        const valEl = document.getElementById('st-val');
+
+        if (speedGoal !== undefined && speedGoal > 0) {
+            const limit = speedGoal;
             const start = Globals.roomFreezeUntil || 0;
             const now = Date.now();
-
             let remaining = limit;
             if (now > start) {
                 remaining = Math.max(0, limit - (now - start));
             }
-
             const sec = Math.floor(remaining / 1000);
             const ms = Math.floor((remaining % 1000) / 10);
-
-            const valEl = document.getElementById('st-val');
             if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 
-            if (remaining <= 0) speedyEl.style.color = '#555';
-            else speedyEl.style.color = '#3498db';
-
+            if (remaining <= 0) speedyTimer.style.color = '#555';
+            else speedyTimer.style.color = '#3498db';
         } else {
-            speedyEl.style.display = 'none';
+            // Unlocked, but no speed goal set for this room
+            if (valEl) valEl.innerText = `--.--`;
+            if (speedyTimer) speedyTimer.style.color = '#555'; // Greyed out
         }
+    } else {
+        const speedyTimer = document.getElementById('speedy-timer');
+        if (speedyTimer && speedyTimer.style.display != 'none') speedyTimer.style.display = 'none';
     }
+
+
 
     // --- GHOST TIMER ---
-    const ghostEl = document.getElementById('ghost-timer');
-    if (ghostEl) {
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        // Note: User property is "showGhostimer" (one T)
-        if (Globals.gameData.showGhostimer || unlockedIds.includes('ghosttimer')) {
-            ghostEl.style.display = 'block';
 
-            // Time is accumulated in Globals.ghostTime (ms)
-            const remaining = Globals.ghostTime || 0;
+    if (Globals.gameData.showGhostimer || Globals.gameData.showGhostTimer || unlockedIds.includes('ghosttimer')) {
+        const ghostEl = document.getElementById('ghost-timer');
+        //check element is visible
+        if (ghostEl.style.display == 'none') ghostEl.style.display = 'block';
+        // Time is accumulated in Globals.ghostTime (ms)
+        const remaining = Globals.ghostTime || 0;
 
-            const sec = Math.floor(remaining / 1000);
-            const ms = Math.floor((remaining % 1000) / 10);
+        const sec = Math.floor(remaining / 1000);
+        const ms = Math.floor((remaining % 1000) / 10);
 
-            const valEl = document.getElementById('gt-val');
-            if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+        const valEl = document.getElementById('gt-val');
+        if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 
-            // Style: Grey if Inactive, Red if Active
-            if (Globals.ghostTimerActive) {
-                ghostEl.style.color = '#e74c3c'; // Active Red (matches CSS)
-                ghostEl.style.opacity = '1.0';
-            } else {
-                ghostEl.style.color = '#555'; // Inactive Grey
-                ghostEl.style.opacity = '0.5'; // Ghosted out
-            }
-
+        // Style: Grey if Inactive, Red if Active
+        if (Globals.ghostTimerActive) {
+            ghostEl.style.color = '#e74c3c'; // Active Red (matches CSS)
+            ghostEl.style.opacity = '1.0';
         } else {
-            ghostEl.style.display = 'none';
+            ghostEl.style.color = '#555'; // Inactive Grey
+            ghostEl.style.opacity = '0.5'; // Ghosted out
         }
     }
 
-    // --- PERFECT COUNT ---
-    const perfectCountEl = document.getElementById('perfect-count');
-    if (perfectCountEl) {
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        if (Globals.gameData.showPerfectCount || unlockedIds.includes('perfectcount')) {
-            perfectCountEl.style.display = 'block';
-            const valEl = document.getElementById('pc-val');
-            const streak = Globals.perfectStreak || 0;
-            const goal = Globals.gameData.perfectGoal || 3;
-            if (valEl) valEl.innerText = `${streak} / ${goal}`;
-        } else {
-            perfectCountEl.style.display = 'none';
-        }
+    if (Globals.gameData.showPerfectCount == true || unlockedIds.includes('perfectcount')) {
+        const perfectCountEl = document.getElementById('perfect-count');
+        //show element
+        if (perfectCountEl.style.display == 'none') perfectCountEl.style.display = 'block';
+        const valEl = document.getElementById('pc-val');
+        const streak = Globals.perfectStreak || 0;
+        const goal = Globals.gameData.perfectGoal || 3;
+        if (valEl) valEl.innerText = `${streak} / ${goal}`;
     }
 
-    // --- NO DAMAGE COUNT ---
-    const noDamageEl = document.getElementById('nodamage-count');
-    if (noDamageEl) {
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        if (Globals.gameData.showNoDamageCount || unlockedIds.includes('nodamagecount')) {
-            noDamageEl.style.display = 'block';
-            const valEl = document.getElementById('nd-val');
-            const streak = Globals.noDamageStreak || 0;
-            const goal = Globals.gameData.noDamageGoal || 3;
-            if (valEl) valEl.innerText = `${streak} / ${goal}`;
-        } else {
-            noDamageEl.style.display = 'none';
-        }
+    if (Globals.gameData.showNoDamageCount || unlockedIds.includes('nodamagecount')) {
+        const noDamageEl = document.getElementById('nodamage-count');
+        //show element
+        if (noDamageEl.style.display == 'none') noDamageEl.style.display = 'block';
+        const valEl = document.getElementById('nd-val');
+        const streak = Globals.noDamageStreak || 0;
+        const goal = Globals.gameData.noDamageGoal || 3;
+        if (valEl) valEl.innerText = `${streak} / ${goal}`;
     }
 
-    // --- SHOOTER COUNT ---
-    const shooterEl = document.getElementById('shooter-count');
-    if (shooterEl) {
-        const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
-        if (Globals.gameData.showShooterCount || unlockedIds.includes('shootercount')) {
-            shooterEl.style.display = 'block';
-            const valEl = document.getElementById('sc-val');
-            const streak = Globals.shooterStreak || 0;
-            const goal = Globals.gameData.shooterGoal || 3;
-            if (valEl) valEl.innerText = `${streak} / ${goal}`;
-        } else {
-            shooterEl.style.display = 'none';
-        }
+    if (Globals.gameData.showShooterCount || unlockedIds.includes('shootercount')) {
+        const shooterEl = document.getElementById('shooter-count');
+        //show element
+        if (shooterEl.style.display == 'none') shooterEl.style.display = 'block';
+        const valEl = document.getElementById('sc-val');
+        const streak = Globals.shooterStreak || 0;
+        const goal = Globals.gameData.shooterGoal || 3;
+        if (valEl) valEl.innerText = `${streak} / ${goal}`;
     }
+
 }
 
 // ... DEBUG EDITOR ...
@@ -464,7 +450,7 @@ export function drawTutorial() {
         Globals.ctx.restore();
     }
 }
-
+/*
 export function drawStatsPanel() {
     //get the ids
     const unlockedIds = JSON.parse(localStorage.getItem('game_unlocked_ids') || '[]');
@@ -480,7 +466,7 @@ export function drawStatsPanel() {
         if (Globals.statsPanel && Globals.statsPanel.style.display === 'none') Globals.statsPanel.style.display = 'block';
     }
 }
-
+*/
 export function drawMinimap() {
     if (!Globals.mctx) return; // Safety check
     //get the ids
@@ -819,9 +805,9 @@ export function showCredits() {
         STORAGE_KEYS.SESSION_WIPE.forEach(key => localStorage.removeItem(key));
 
         // Ensure the player doesn't restart with weapons from the completed run
+        // BUT keep base_gun and base_bomb so the new run has the right fallback defaults
         const runWipeKeys = [
-            'current_gun', 'current_bomb', 'current_gun_config', 'current_bomb_config',
-            'base_gun', 'base_bomb', 'base_gun_config', 'base_bomb_config'
+            'current_gun', 'current_bomb', 'current_gun_config', 'current_bomb_config'
         ];
         runWipeKeys.forEach(k => localStorage.removeItem(k));
 
