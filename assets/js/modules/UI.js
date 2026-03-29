@@ -267,25 +267,38 @@ export async function updateUI() {
     }
 
     // --- SPEEDY TIMER ---
+    // Check if it's unlocked or configured to show
     if (Globals.gameData.showSpeedyTimer == true || unlockedIds.includes('speedytimer')) {
         const speedyTimer = document.getElementById('speedy-timer');
-        //check element is visible
-        if (speedyTimer.style.display == 'none') speedyTimer.style.display = 'block';
-        const limit = Globals.roomData.speedGoal !== undefined ? Globals.roomData.speedGoal : 5000;
-        const start = Globals.roomFreezeUntil || 0;
-        const now = Date.now();
-        let remaining = limit;
-        if (now > start) {
-            remaining = Math.max(0, limit - (now - start));
-        }
-        const sec = Math.floor(remaining / 1000);
-        const ms = Math.floor((remaining % 1000) / 10);
-        const valEl = document.getElementById('st-val');
-        if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+        if (speedyTimer && speedyTimer.style.display == 'none') speedyTimer.style.display = 'block';
 
-        if (remaining <= 0) speedyTimer.style.color = '#555';
-        else speedyTimer.style.color = '#3498db';
+        const speedGoal = Globals.roomData.speedGoal;
+        const valEl = document.getElementById('st-val');
+
+        if (speedGoal !== undefined && speedGoal > 0) {
+            const limit = speedGoal;
+            const start = Globals.roomFreezeUntil || 0;
+            const now = Date.now();
+            let remaining = limit;
+            if (now > start) {
+                remaining = Math.max(0, limit - (now - start));
+            }
+            const sec = Math.floor(remaining / 1000);
+            const ms = Math.floor((remaining % 1000) / 10);
+            if (valEl) valEl.innerText = `${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+
+            if (remaining <= 0) speedyTimer.style.color = '#555';
+            else speedyTimer.style.color = '#3498db';
+        } else {
+            // Unlocked, but no speed goal set for this room
+            if (valEl) valEl.innerText = `--.--`;
+            if (speedyTimer) speedyTimer.style.color = '#555'; // Greyed out
+        }
+    } else {
+        const speedyTimer = document.getElementById('speedy-timer');
+        if (speedyTimer && speedyTimer.style.display != 'none') speedyTimer.style.display = 'none';
     }
+
 
 
     // --- GHOST TIMER ---

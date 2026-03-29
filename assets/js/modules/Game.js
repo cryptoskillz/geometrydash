@@ -2911,7 +2911,7 @@ export function updateRoomLock() {
 
         // Require minimum time to disqualify glitches (e.g. 100ms)
         const isGlitch = timeTakenMs < 100;
-        const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 5000;
+        const speedyLimitMs = (Globals.roomData.speedGoal !== undefined) ? Globals.roomData.speedGoal : 0;
         log(`Room Cleared! TimeTaken: ${timeTakenMs}ms, Limit: ${speedyLimitMs}ms (Start: ${freezeEnd}, Now: ${Date.now()})`);
 
         // Fix: check timeTakenMs > 100 to avoid glitch "instant clears"
